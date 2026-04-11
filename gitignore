@@ -1,0 +1,29 @@
+# Compiled output
+out/
+*.class
+*.jar
+!lib/*.jar
+
+# Logs and binary audit files
+*.log
+*.bin
+*.dat
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+nbproject/
+.settings/
+.classpath
+.project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Package files
+*.zip
+*.tar.gz
