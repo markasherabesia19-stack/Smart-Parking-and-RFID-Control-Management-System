@@ -1,4 +1,4 @@
-package sparcs.model;
+package model;
 
 import java.time.LocalDateTime;
 
