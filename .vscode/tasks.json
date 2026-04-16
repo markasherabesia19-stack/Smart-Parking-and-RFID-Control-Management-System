@@ -1,0 +1,41 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Compile SPARCS",
+            "type": "shell",
+            "command": "find src -name '*.java' | xargs javac -d out -cp 'lib/*:src'",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false
+            }
+        },
+        {
+            "label": "Run SPARCS",
+            "type": "shell",
+            "command": "java",
+            "args": [
+                "-cp",
+                "out:lib/*",
+                "SPARCS"
+            ],
+            "dependsOn": ["Compile SPARCS"],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true
+            }
+        }
+    ]
+}
