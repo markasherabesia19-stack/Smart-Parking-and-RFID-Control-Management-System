@@ -1,1 +1,5 @@
-{"java.project.sourcePaths":["src","assets"]}
+{
+    "java.project.sourcePaths": [
+        "src/sparcs"
+    ]
+}

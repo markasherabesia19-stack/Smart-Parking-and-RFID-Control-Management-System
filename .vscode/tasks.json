@@ -4,10 +4,7 @@
         {
             "label": "Compile SPARCS",
             "type": "shell",
-            "command": "find src -name '*.java' | xargs javac -d out -cp 'lib/*:src:assets'",
-            "windows": {
-                "command": "Get-ChildItem -Recurse -Filter '*.java' src | ForEach-Object { $_.FullName } | ForEach-Object { javac -d out -cp 'lib/*;src;assets' $_ }"
-            },
+            "command": "Get-ChildItem -Recurse -Filter '*.java' -Path src | Select-Object -ExpandProperty FullName | ForEach-Object { javac -d out -cp 'lib/*;src/sparcs;assets' $_ }",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -25,17 +22,9 @@
             "command": "java",
             "args": [
                 "-cp",
-                "out:lib/*:assets",
+                "out;lib/*;assets",
                 "SPARCS"
             ],
-            "windows": {
-                "command": "java",
-                "args": [
-                    "-cp",
-                    "out;lib/*;assets",
-                    "SPARCS"
-                ]
-            },
             "dependsOn": ["Compile SPARCS"],
             "group": {
                 "kind": "test",
