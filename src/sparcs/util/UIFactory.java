@@ -23,8 +23,8 @@ import java.io.IOException;
 public class UIFactory {
 
     // ── Resource paths (single place to change if files move) ────────────────
-    private static final String RES_BG   = "/assets/gradientbg.png";
-    private static final String RES_LOGO = "/assets/logo.png";
+    private static final String RES_BG   = "/gradientbg.png";
+    private static final String RES_LOGO = "/logo.png";
 
     // ── Cached images ─────────────────────────────────────────────────────────
     private static Image bgImage   = null;
