@@ -17,6 +17,17 @@
             }
         },
         {
+            "label": "Copy db.properties",
+            "type": "shell",
+            "command": "if (Test-Path 'db.properties') { Copy-Item 'db.properties' 'out/db.properties' -Force; Write-Host '[OK] db.properties copied to out/' } else { Write-Warning 'db.properties not found in project root! Create it first.' }",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false
+            }
+        },
+        {
             "label": "Run SPARCS",
             "type": "shell",
             "command": "java",
@@ -25,7 +36,7 @@
                 "out;lib/*;assets",
                 "SPARCS"
             ],
-            "dependsOn": ["Compile SPARCS"],
+            "dependsOn": ["Compile SPARCS", "Copy db.properties"],
             "group": {
                 "kind": "test",
                 "isDefault": true
