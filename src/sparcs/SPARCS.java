@@ -9,7 +9,6 @@ import ui.shared.*;
 import static util.UIConstants.*;
 
 public class SPARCS extends JFrame {
-
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel     rootPanel  = new JPanel(cardLayout);
     private final AppState   state      = new AppState();
@@ -21,7 +20,7 @@ public class SPARCS extends JFrame {
         setMinimumSize(new Dimension(900, 600));
         setLocationRelativeTo(null);
         getContentPane().setBackground(C_BG_DARK);
-
+    
         registerScreens();
 
         add(rootPanel);
@@ -29,13 +28,12 @@ public class SPARCS extends JFrame {
         setVisible(true);
     }
 
-    /** Register every screen with the CardLayout. */
     private void registerScreens() {
-        // ── Shared / Auth ────────────────────────────────────────────────────
+        //Shared/Auth
         rootPanel.add(SplashPanel.build(cardLayout, rootPanel),                        "SPLASH");
         rootPanel.add(RolePickerScreen.build(cardLayout, rootPanel, state),             "ROLE_PICKER");
 
-        // ── Admin ────────────────────────────────────────────────────────────
+        //Admin 
         rootPanel.add(AdminLoginScreen.build(cardLayout, rootPanel, state),             "ADMIN_LOGIN");
         rootPanel.add(AdminDashboardScreen.build(cardLayout, rootPanel, state),         "ADMIN_DASHBOARD");
         rootPanel.add(AdminSlotMapScreen.build(cardLayout, rootPanel, state),           "ADMIN_SLOT_MAP");
@@ -45,8 +43,8 @@ public class SPARCS extends JFrame {
         rootPanel.add(AdminFeesScreen.build(cardLayout, rootPanel, state),              "ADMIN_FEES");
         rootPanel.add(AdminReportsScreen.build(cardLayout, rootPanel, state),           "ADMIN_REPORTS");
         rootPanel.add(AdminAuditLogScreen.build(cardLayout, rootPanel, state),          "ADMIN_AUDIT_LOG");
-
-        // ── User ─────────────────────────────────────────────────────────────
+        
+        //User
         rootPanel.add(UserLoginScreen.build(cardLayout, rootPanel, state),              "USER_LOGIN");
         rootPanel.add(UserRegisterScreen.build(cardLayout, rootPanel),                  "USER_REGISTER");
         rootPanel.add(UserDashboardScreen.build(cardLayout, rootPanel, state),          "USER_DASHBOARD");

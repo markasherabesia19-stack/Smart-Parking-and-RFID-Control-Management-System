@@ -15,11 +15,11 @@ public class UIFactory {
  
     private static Image getBgImage() {
         if (bgImage == null) {
-            URL url = UIFactory.class.getResource("/Users/marrianebalano/Smart-Parking-and-RFID-Control-Management-System/src/sparcs/ui/resources/gradientbg.png");
+            URL url = UIFactory.class.getResource("src\\sparcs\\ui\\resources\\gradientbg.png");
             if (url != null) {
                 bgImage = new ImageIcon(url).getImage();
             } else {
-                bgImage = new ImageIcon("/Users/marrianebalano/Smart-Parking-and-RFID-Control-Management-System/src/sparcs/ui/resources/gradientbg.png").getImage();
+                bgImage = new ImageIcon("src\\sparcs\\ui\\resources\\gradientbg.png").getImage();
             }
         }
         return bgImage;
@@ -226,7 +226,7 @@ public class UIFactory {
             File logoFile = new File("src/sparcs/ui/resources/logo.png");
             if (!logoFile.exists()) {
                 // Fallback for running from compiled output
-                logoFile = new File("../src/sparcs/ui/resources/logo.png");
+                logoFile = new File("src/sparcs/ui/resources/logo.png");
             }
             logoImg = ImageIO.read(logoFile);
         } catch (IOException e) {

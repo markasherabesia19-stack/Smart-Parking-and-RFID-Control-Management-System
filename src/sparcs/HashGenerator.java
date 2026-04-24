@@ -1,9 +1,5 @@
-
 import util.PasswordUtil;
 
-/**
- * Utility to generate password hashes for database setup
- */
 public class HashGenerator {
     public static void main(String[] args) {
         if (args.length == 0) {

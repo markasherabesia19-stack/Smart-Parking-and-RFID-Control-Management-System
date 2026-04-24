@@ -1,4 +1,3 @@
-
 import db.DatabaseConfig;
 import dao.UserAccountDAO;
 import model.UserAccount;
@@ -7,9 +6,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Optional;
 
-/**
- * Diagnostic tool to troubleshoot login issues
- */
 public class LoginDiagnostic {
     public static void main(String[] args) throws Exception {
         System.out.println("=== SPARCS Login Diagnostic Tool ===\n");
@@ -70,7 +66,6 @@ public class LoginDiagnostic {
             System.out.println("  1. Password is incorrect");
             System.out.println("  2. Password hash was not properly generated");
             
-            // Generate correct hash for display
             System.out.println("\n  Correct hash for this password:");
             String correctHash = PasswordUtil.hashPassword(testPassword);
             System.out.println("  " + correctHash);
