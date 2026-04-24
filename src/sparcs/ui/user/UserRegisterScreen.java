@@ -1,15 +1,19 @@
 package ui.user;
 
+import dao.UserAccountDAO;
+import model.UserAccount;
+import util.PasswordUtil;
 import util.UIFactory;
 import static util.UIConstants.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.sql.SQLException;
 
 /**
  * SPARCS — User self-registration screen.
- * TODO (back-end): INSERT new user record into DB on submit.
+ * Inserts new user record into DB on submit.
  */
 public class UserRegisterScreen {
 
@@ -61,10 +65,72 @@ public class UserRegisterScreen {
         JButton backBtn = UIFactory.outlineButton("BACK TO LOGIN");
         card.add(backBtn, cc);
 
+        // fields[0] = First Name, fields[1] = Last Name, fields[2] = Username, fields[3] = Email
+        // pfs[0] = Password, pfs[1] = Confirm Password
         registerBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(null, "Account created! Please sign in.", "Success", JOptionPane.INFORMATION_MESSAGE);
-            cardLayout.show(rootPanel, "USER_LOGIN");
+            String firstName    = fields[0].getText().trim();
+            String lastName     = fields[1].getText().trim();
+            String username     = fields[2].getText().trim();
+            String email        = fields[3].getText().trim();
+            String password     = new String(pfs[0].getPassword());
+            String confirmPass  = new String(pfs[1].getPassword());
+
+            // Validation
+            if (firstName.isEmpty() || lastName.isEmpty() || username.isEmpty()
+                    || email.isEmpty() || password.isEmpty() || confirmPass.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Please fill in all fields.",
+                        "Registration Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (!password.equals(confirmPass)) {
+                JOptionPane.showMessageDialog(null, "Passwords do not match.",
+                        "Registration Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (password.length() < 6) {
+                JOptionPane.showMessageDialog(null, "Password must be at least 6 characters.",
+                        "Registration Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Save to database
+            try {
+                UserAccountDAO dao = new UserAccountDAO();
+
+                // Check if username already exists
+                if (dao.findByUsername(username).isPresent()) {
+                    JOptionPane.showMessageDialog(null, "Username already taken. Please choose another.",
+                            "Registration Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                UserAccount newUser = new UserAccount();
+                newUser.setUsername(username);
+                newUser.setPasswordHash(PasswordUtil.hashPassword(password));
+                newUser.setEmail(email);
+                newUser.setRole("USER");
+                newUser.setActive(true);
+
+                dao.create(newUser);
+
+                JOptionPane.showMessageDialog(null, "Account created successfully! Please sign in.",
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
+
+                // Clear fields
+                for (JTextField f : fields) f.setText("");
+                for (JPasswordField pf : pfs) pf.setText("");
+
+                cardLayout.show(rootPanel, "USER_LOGIN");
+
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(null, "Database error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
         });
+
         backBtn.addActionListener(e -> cardLayout.show(rootPanel, "USER_LOGIN"));
 
         p.add(card, gc);
