@@ -26,38 +26,40 @@ public class AdminLoginScreen {
         // Logo
         cc.gridy = 0;
         cc.fill = GridBagConstraints.NONE;
+        cc.weightx = 0;
         cc.anchor = GridBagConstraints.CENTER;
-        card.add(UIFactory.logoPanel(500), cc);
+        cc.insets = new Insets(0, 0, 8, 0);
+        card.add(UIFactory.logoPanel(90), cc);
 
         cc.fill = GridBagConstraints.HORIZONTAL;
         cc.anchor = GridBagConstraints.CENTER;
 
-        cc.gridy = 2; cc.insets = new Insets(30, 0, 2, 0);
+        cc.gridy = 1; cc.insets = new Insets(8, 0, 2, 0);
         JLabel sub = UIFactory.lbl("Admin Portal", Font.PLAIN, 12, C_MUTED);
         sub.setHorizontalAlignment(SwingConstants.CENTER);
         card.add(sub, cc);
 
-        cc.gridy = 3; cc.insets = new Insets(60, 0, 2, 0);  // increased top to push fields lower
+        cc.gridy = 2; cc.insets = new Insets(20, 0, 2, 0);
         card.add(UIFactory.lbl("USERNAME", Font.BOLD, 10, C_MUTED), cc);
-        cc.gridy = 4; cc.insets = new Insets(0, 0, 0, 0);
+        cc.gridy = 3; cc.insets = new Insets(0, 0, 0, 0);
         JTextField usernameField = UIFactory.styledField("Enter username");
         card.add(usernameField, cc);
 
-        cc.gridy = 5; cc.insets = new Insets(6, 0, 2, 0);
+        cc.gridy = 4; cc.insets = new Insets(6, 0, 2, 0);
         card.add(UIFactory.lbl("PASSWORD", Font.BOLD, 10, C_MUTED), cc);
-        cc.gridy = 6; cc.insets = new Insets(0, 0, 0, 0);
+        cc.gridy = 5; cc.insets = new Insets(0, 0, 0, 0);
         JPasswordField passwordField = UIFactory.styledPasswordField("Enter password");
         card.add(passwordField, cc);
 
-        cc.gridy = 7; cc.insets = new Insets(10, 0, 4, 0);
+        cc.gridy = 6; cc.insets = new Insets(10, 0, 4, 0);
         JButton signInBtn = UIFactory.gradientButton("SIGN IN AS ADMIN");
         card.add(signInBtn, cc);
 
-        cc.gridy = 8; cc.insets = new Insets(0, 0, 0, 0);
+        cc.gridy = 7; cc.insets = new Insets(0, 0, 0, 0);
         card.add(UIFactory.lbl("ADMIN ACCESS POLICY", Font.BOLD, 9, C_MUTED), cc);
-        cc.gridy = 9;
+        cc.gridy = 8;
         card.add(UIFactory.lbl("Admin accounts are created in the database.", Font.PLAIN, 9, new Color(100, 90, 140)), cc);
-        cc.gridy = 10;
+        cc.gridy = 9;
         card.add(UIFactory.lbl("Self-registration is disabled for admins.", Font.PLAIN, 9, new Color(100, 90, 140)), cc);
 
         JButton backBtn = new JButton("<- Back to Role Picker");
@@ -66,7 +68,7 @@ public class AdminLoginScreen {
         backBtn.setBorderPainted(false); backBtn.setContentAreaFilled(false); backBtn.setFocusPainted(false);
         backBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         backBtn.addActionListener(e -> cardLayout.show(rootPanel, "ROLE_PICKER"));
-        cc.gridy = 11; cc.insets = new Insets(4, 0, 0, 0);
+        cc.gridy = 10; cc.insets = new Insets(4, 0, 0, 0);
         card.add(backBtn, cc);
 
         signInBtn.addActionListener(e -> {
