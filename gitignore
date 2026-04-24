@@ -27,3 +27,6 @@ Thumbs.db
 # Package files
 *.zip
 *.tar.gz
+
+# Local database credentials
+db.properties
