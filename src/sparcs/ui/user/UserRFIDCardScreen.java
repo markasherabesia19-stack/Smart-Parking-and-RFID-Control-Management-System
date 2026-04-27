@@ -38,10 +38,6 @@ public class UserRFIDCardScreen {
         topBar.setBackground(C_BG_PANEL);
         topBar.setBorder(new EmptyBorder(14, 24, 14, 24));
         topBar.add(UIFactory.lbl("MY RFID CARD", Font.BOLD, 20, C_WHITE), BorderLayout.WEST);
-        JButton signOutBtn = new JButton("SIGN OUT");
-        UIFactory.styleSmallBtn(signOutBtn);
-        signOutBtn.addActionListener(e -> { state.clearSession(); cardLayout.show(rootPanel, "ROLE_PICKER"); });
-        topBar.add(signOutBtn, BorderLayout.EAST);
         content.add(topBar, BorderLayout.NORTH);
 
         // Center: card display
