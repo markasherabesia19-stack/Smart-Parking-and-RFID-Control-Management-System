@@ -54,6 +54,10 @@ public class UserLoginScreen {
         JButton signInBtn = UIFactory.gradientButton("SIGN IN");
         card.add(signInBtn, cc);
 
+        // Allow pressing Enter on either field to trigger sign in
+        usernameField.addActionListener(e -> signInBtn.doClick());
+        passwordField.addActionListener(e -> signInBtn.doClick());
+
         cc.gridy = 8; cc.insets = new Insets(0, 0, 4, 0);
         JButton registerBtn = UIFactory.outlineButton("CREATE NEW ACCOUNT");
         card.add(registerBtn, cc);
