@@ -10,12 +10,17 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.sql.SQLException;
+import java.util.regex.Pattern;
 
-/**
- * SPARCS — User self-registration screen.
- * Inserts new user record into DB on submit.
- */
 public class UserRegisterScreen {
+    
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+        "^[A-Za-z0-9+_-]+(\\.[A-Za-z0-9+_-]+)*"           // local part: no leading/trailing/consecutive dots
+        + "@"                                                 // exactly one @
+        + "[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?"          // first domain label, no leading/trailing hyphen
+        + "(\\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*"   // additional domain labels
+        + "\\.[A-Za-z]{2,}$"                                  // TLD: at least 2 letters
+    );
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel) {
         JPanel p = UIFactory.gradientPanel(new GridBagLayout());
@@ -75,7 +80,7 @@ public class UserRegisterScreen {
             String password     = new String(pfs[0].getPassword());
             String confirmPass  = new String(pfs[1].getPassword());
 
-            // Validation
+            // All fields required
             if (firstName.isEmpty() || lastName.isEmpty() || username.isEmpty()
                     || email.isEmpty() || password.isEmpty() || confirmPass.isEmpty()) {
                 JOptionPane.showMessageDialog(null, "Please fill in all fields.",
@@ -83,25 +88,46 @@ public class UserRegisterScreen {
                 return;
             }
 
+            // Valid email format
+            if (!EMAIL_PATTERN.matcher(email).matches()) {
+                JOptionPane.showMessageDialog(null,
+                        "Please enter a valid email address.\n" +
+                        "Example: john.doe@example.com\n\n" +
+                        "• Must contain exactly one @\n" +
+                        "• No spaces or consecutive dots (e.g. john..doe is invalid)\n" +
+                        "• Domain must have a valid extension (e.g. .com, .org)",
+                        "Invalid Email", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Passwords match
             if (!password.equals(confirmPass)) {
                 JOptionPane.showMessageDialog(null, "Passwords do not match.",
                         "Registration Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            if (password.length() < 6) {
-                JOptionPane.showMessageDialog(null, "Password must be at least 6 characters.",
+            // Password length
+            if (password.length() < 5) {
+                JOptionPane.showMessageDialog(null, "Password must be at least 5 characters.",
                         "Registration Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            // Save to database
+            // Database checks & save
             try {
                 UserAccountDAO dao = new UserAccountDAO();
 
-                // Check if username already exists
-                if (dao.findByUsername(username).isPresent()) {
-                    JOptionPane.showMessageDialog(null, "Username already taken. Please choose another.",
+                // Check duplicate username
+                if (dao.existsByUsername(username)) {
+                    JOptionPane.showMessageDialog(null, "Username is already taken. Please choose another.",
+                            "Registration Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Check duplicate email
+                if (dao.existsByEmail(email)) {
+                    JOptionPane.showMessageDialog(null, "Email is already registered. Please use a different email.",
                             "Registration Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
