@@ -96,17 +96,26 @@ public class UserLoginScreen {
                         } else if ("ADMIN".equals(user.getRole())) {
                             JOptionPane.showMessageDialog(null, "Please use the Admin portal to login.",
                                     "Access Denied", JOptionPane.ERROR_MESSAGE);
+                            usernameField.setText("");
+                            passwordField.setText("");
                         } else {
                             JOptionPane.showMessageDialog(null, "Unknown user role.",
                                     "Authorization Error", JOptionPane.ERROR_MESSAGE);
+                            usernameField.setText("");
+                            passwordField.setText("");
                         }
                     } else {
                         JOptionPane.showMessageDialog(null, "Invalid username or password.",
                                 "Authentication Failed", JOptionPane.ERROR_MESSAGE);
+                        usernameField.setText("");
+                        passwordField.setText("");
+                        usernameField.requestFocus();
                     }
                 } catch (SQLException ex) {
                     JOptionPane.showMessageDialog(null, "Database error: " + ex.getMessage(),
                             "Error", JOptionPane.ERROR_MESSAGE);
+                    usernameField.setText("");
+                    passwordField.setText("");
                     ex.printStackTrace();
                 }
             }
