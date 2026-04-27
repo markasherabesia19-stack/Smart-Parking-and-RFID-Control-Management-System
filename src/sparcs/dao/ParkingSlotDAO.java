@@ -7,21 +7,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-
+/**
+ * Parking Slot Data Access Object
+ */
 public class ParkingSlotDAO {
 
     public void create(ParkingSlot slot) throws SQLException {
-        String sql = "INSERT INTO parking_slot (slot_code, zone_name, status, location_details, is_active) " +
-                "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO parking_slot (slot_code, zone, status) VALUES (?, ?, ?)";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, slot.getSlotCode());
-            stmt.setString(2, slot.getZoneName());
+            stmt.setString(2, slot.getZone());
             stmt.setString(3, slot.getStatus());
-            stmt.setString(4, slot.getLocationDetails());
-            stmt.setBoolean(5, slot.isActive());
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -37,7 +36,7 @@ public class ParkingSlotDAO {
     }
 
     public Optional<ParkingSlot> findById(int slotId) throws SQLException {
-        String sql = "SELECT * FROM parking_slot WHERE slot_id = ? AND is_active = TRUE";
+        String sql = "SELECT * FROM parking_slot WHERE slot_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -53,7 +52,7 @@ public class ParkingSlotDAO {
     }
 
     public Optional<ParkingSlot> findBySlotCode(String slotCode) throws SQLException {
-        String sql = "SELECT * FROM parking_slot WHERE slot_code = ? AND is_active = TRUE";
+        String sql = "SELECT * FROM parking_slot WHERE slot_code = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -83,14 +82,14 @@ public class ParkingSlotDAO {
         return slots;
     }
 
-    public List<ParkingSlot> findByZone(String zoneName) throws SQLException {
+    public List<ParkingSlot> findByZone(String zone) throws SQLException {
         String sql = "SELECT * FROM parking_slot WHERE zone = ? ORDER BY slot_code";
         List<ParkingSlot> slots = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, zoneName);
+            stmt.setString(1, zone);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     slots.add(mapResultSetToParkingSlot(rs));
@@ -118,13 +117,12 @@ public class ParkingSlotDAO {
     }
 
     public void update(ParkingSlot slot) throws SQLException {
-        String sql = "UPDATE parking_slot SET zone_name = ?, status = ?, current_vehicle_id = ?, " +
-                "entry_time = ?, location_details = ?, is_active = ? WHERE slot_id = ?";
+        String sql = "UPDATE parking_slot SET zone = ?, status = ?, current_vehicle_id = ?, entry_time = ? WHERE slot_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, slot.getZoneName());
+            stmt.setString(1, slot.getZone());
             stmt.setString(2, slot.getStatus());
             stmt.setObject(3, slot.getCurrentVehicleId());
 
@@ -134,16 +132,25 @@ public class ParkingSlotDAO {
                 stmt.setNull(4, Types.TIMESTAMP);
             }
 
-            stmt.setString(5, slot.getLocationDetails());
-            stmt.setBoolean(6, slot.isActive());
-            stmt.setInt(7, slot.getSlotId());
+            stmt.setInt(5, slot.getSlotId());
+            stmt.executeUpdate();
+        }
+    }
 
+    public void updateStatus(int slotId, String status) throws SQLException {
+        String sql = "UPDATE parking_slot SET status = ? WHERE slot_id = ?";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, status);
+            stmt.setInt(2, slotId);
             stmt.executeUpdate();
         }
     }
 
     public void delete(int slotId) throws SQLException {
-        String sql = "UPDATE parking_slot SET is_active = FALSE WHERE slot_id = ?";
+        String sql = "DELETE FROM parking_slot WHERE slot_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -154,7 +161,7 @@ public class ParkingSlotDAO {
     }
 
     public int countAvailableSlots() throws SQLException {
-        String sql = "SELECT COUNT(*) as count FROM parking_slot WHERE status = 'AVAILABLE' AND is_active = TRUE";
+        String sql = "SELECT COUNT(*) as count FROM parking_slot WHERE status = 'AVAILABLE'";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              Statement stmt = conn.createStatement();
@@ -168,7 +175,7 @@ public class ParkingSlotDAO {
     }
 
     public int countOccupiedSlots() throws SQLException {
-        String sql = "SELECT COUNT(*) as count FROM parking_slot WHERE status = 'OCCUPIED' AND is_active = TRUE";
+        String sql = "SELECT COUNT(*) as count FROM parking_slot WHERE status = 'OCCUPIED'";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              Statement stmt = conn.createStatement();
@@ -182,7 +189,7 @@ public class ParkingSlotDAO {
     }
 
     public int getTotalSlots() throws SQLException {
-        String sql = "SELECT COUNT(*) as count FROM parking_slot WHERE is_active = TRUE";
+        String sql = "SELECT COUNT(*) as count FROM parking_slot";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              Statement stmt = conn.createStatement();
@@ -199,7 +206,7 @@ public class ParkingSlotDAO {
         ParkingSlot slot = new ParkingSlot();
         slot.setSlotId(rs.getInt("slot_id"));
         slot.setSlotCode(rs.getString("slot_code"));
-        slot.setZoneName(rs.getString("zone_name"));
+        slot.setZone(rs.getString("zone"));
         slot.setStatus(rs.getString("status"));
 
         Integer currentVehicleId = rs.getInt("current_vehicle_id");
@@ -211,9 +218,6 @@ public class ParkingSlotDAO {
         if (entryTime != null) {
             slot.setEntryTime(entryTime.toLocalDateTime());
         }
-
-        slot.setLocationDetails(rs.getString("location_details"));
-        slot.setActive(rs.getBoolean("is_active"));
 
         return slot;
     }
