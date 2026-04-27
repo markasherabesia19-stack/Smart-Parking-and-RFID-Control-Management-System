@@ -1,4 +1,3 @@
-/* control shift b to run */
 import javax.swing.*;
 import java.awt.*;
 
