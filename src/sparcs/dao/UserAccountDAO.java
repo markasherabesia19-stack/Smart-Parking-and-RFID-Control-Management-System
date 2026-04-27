@@ -68,6 +68,38 @@ public class UserAccountDAO {
         return Optional.empty();
     }
 
+    /**
+     * Checks if a username is already taken (case-insensitive).
+     */
+    public boolean existsByUsername(String username) throws SQLException {
+        String sql = "SELECT 1 FROM user_account WHERE LOWER(username) = LOWER(?) AND is_active = TRUE";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, username);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    /**
+     * Checks if an email is already registered (case-insensitive).
+     */
+    public boolean existsByEmail(String email) throws SQLException {
+        String sql = "SELECT 1 FROM user_account WHERE LOWER(email) = LOWER(?) AND is_active = TRUE";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, email);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
     public List<UserAccount> findAll() throws SQLException {
         String sql = "SELECT * FROM user_account WHERE is_active = TRUE ORDER BY created_at DESC";
         List<UserAccount> accounts = new ArrayList<>();
