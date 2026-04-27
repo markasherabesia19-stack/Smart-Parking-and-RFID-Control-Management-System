@@ -49,16 +49,15 @@ public class UserRFIDCardScreen {
         center.setBackground(C_BG_DARK);
         content.add(center, BorderLayout.CENTER);
 
-        // Load owner info by matching username
+        // Load owner info using the logged-in user's ID from AppState
         VehicleOwner owner = null;
         try {
             VehicleOwnerDAO ownerDAO = new VehicleOwnerDAO();
-            String currentUsername = state.currentUsername;
-            if (currentUsername != null && !currentUsername.isEmpty()) {
+            model.UserAccount currentUser = state.getCurrentUserAccount();
+            if (currentUser != null) {
+                int loggedInUserId = currentUser.getUserId();
                 Optional<VehicleOwner> opt = ownerDAO.findAll().stream()
-                        .filter(o -> currentUsername.equalsIgnoreCase(
-                                o.getFirstName() + " " + o.getLastName()) ||
-                                currentUsername.equalsIgnoreCase(o.getEmail()))
+                        .filter(o -> o.getUserId() != null && o.getUserId() == loggedInUserId)
                         .findFirst();
                 if (opt.isPresent()) owner = opt.get();
             }
@@ -68,7 +67,7 @@ public class UserRFIDCardScreen {
 
         // Card panel
         JPanel card = UIFactory.cardPanel(new GridBagLayout());
-        card.setPreferredSize(new Dimension(420, 520));
+        card.setPreferredSize(new Dimension(420, 480));
         card.setBorder(new EmptyBorder(32, 36, 32, 36));
 
         GridBagConstraints cc = new GridBagConstraints();
@@ -93,10 +92,12 @@ public class UserRFIDCardScreen {
         card.add(sep, cc);
 
         // User info
-        String fullName  = owner != null ? owner.getFullName()  : state.currentUsername;
-        String username  = state.currentUsername;
-        String email     = owner != null ? owner.getEmail()     : "N/A";
-        String userId    = owner != null ? String.valueOf(owner.getOwnerId()) : "N/A";
+        model.UserAccount currentUser = state.getCurrentUserAccount();
+        String username  = currentUser != null ? currentUser.getUsername() : state.currentUsername;
+        String email     = owner != null ? owner.getEmail()
+                         : currentUser != null ? currentUser.getEmail()
+                         : "N/A";
+        String fullName  = owner != null ? owner.getFullName() : username;
 
         cc.insets = new Insets(4, 0, 4, 0);
 
@@ -106,19 +107,17 @@ public class UserRFIDCardScreen {
         card.add(infoRow("USERNAME",   username),  cc);
         cc.gridy = 5;
         card.add(infoRow("EMAIL",      email),     cc);
-        cc.gridy = 6;
-        card.add(infoRow("USER ID",    userId),    cc);
 
         // Divider
-        cc.gridy = 7; cc.insets = new Insets(16, 0, 16, 0);
+        cc.gridy = 6; cc.insets = new Insets(16, 0, 16, 0);
         JSeparator sep2 = new JSeparator();
         sep2.setForeground(new Color(255, 255, 255, 40));
         card.add(sep2, cc);
 
-        // Barcode — encodes: SPARCS::<userId>::<username>
-        cc.gridy = 8; cc.insets = new Insets(0, 0, 8, 0);
+        // Barcode — encodes: SPARCS - <username>
+        cc.gridy = 7; cc.insets = new Insets(0, 0, 8, 0);
         // CODE_128 only supports ASCII 0-127 — strip anything outside that range
-        String rawData = "SPARCS::" + userId + "::" + username;
+        String rawData = "SPARCS - " + username;
         String barcodeData = rawData.replaceAll("[^\\x00-\\x7F]", "");
         JLabel barcodeLbl = new JLabel();
         barcodeLbl.setHorizontalAlignment(SwingConstants.CENTER);
@@ -132,13 +131,13 @@ public class UserRFIDCardScreen {
         card.add(barcodeLbl, cc);
 
         // Barcode text
-        cc.gridy = 9; cc.insets = new Insets(0, 0, 16, 0);
+        cc.gridy = 8; cc.insets = new Insets(0, 0, 16, 0);
         JLabel barcodeText = UIFactory.lbl(barcodeData, Font.PLAIN, 9, C_MUTED);
         barcodeText.setHorizontalAlignment(SwingConstants.CENTER);
         card.add(barcodeText, cc);
 
         // Save button
-        cc.gridy = 10; cc.insets = new Insets(8, 0, 0, 0);
+        cc.gridy = 9; cc.insets = new Insets(8, 0, 0, 0);
         JButton saveBtn = UIFactory.gradientButton("SAVE CARD AS IMAGE");
         saveBtn.addActionListener(e -> saveCardAsImage(card, username));
         card.add(saveBtn, cc);
