@@ -13,7 +13,8 @@ import java.awt.*;
 /**
  * SPARCS — User parking history screen.
  * TODO (back-end): Query parking_log table filtered by current user's account ID.
- */
+ */ 
+
 public class UserHistoryScreen {
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {

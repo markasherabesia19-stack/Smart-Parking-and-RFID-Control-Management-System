@@ -163,4 +163,21 @@ public class AuditLogDAO {
 
         return log;
     }
+
+    public List<AuditLog> findRecent(int limit) throws SQLException {
+        String sql = "SELECT * FROM audit_log ORDER BY created_at DESC LIMIT ?";
+        List<AuditLog> logs = new ArrayList<>();
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, limit);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    logs.add(mapResultSetToAuditLog(rs));
+                }
+            }
+        }
+        return logs;
+    }
 }

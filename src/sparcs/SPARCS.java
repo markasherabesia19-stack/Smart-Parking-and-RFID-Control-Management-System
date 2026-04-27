@@ -52,7 +52,7 @@ public class SPARCS extends JFrame {
         rootPanel.add(UserSlotViewScreen.build(cardLayout, rootPanel, state),           "USER_SLOT_VIEW");
         rootPanel.add(UserHistoryScreen.build(cardLayout, rootPanel, state),            "USER_HISTORY");
         rootPanel.add(UserFeeScheduleScreen.build(cardLayout, rootPanel, state),        "USER_FEE_SCHEDULE");
-        rootPanel.add(UserRFIDCardScreen.build(cardLayout, rootPanel, state), "USER_RFID_CARD");
+        rootPanel.add(UserRFIDCardScreen.build(cardLayout, rootPanel, state),           "USER_RFID_CARD");
     }
 
     public static void main(String[] args) {

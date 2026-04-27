@@ -115,9 +115,9 @@ public class UserRFIDCardScreen {
         sep2.setForeground(new Color(255, 255, 255, 40));
         card.add(sep2, cc);
 
-        // Barcode — encodes: SPARCS::<userId>::<username>
+        
         cc.gridy = 8; cc.insets = new Insets(0, 0, 8, 0);
-        // CODE_128 only supports ASCII 0-127 — strip anything outside that range
+        
         String rawData = "SPARCS::" + userId + "::" + username;
         String barcodeData = rawData.replaceAll("[^\\x00-\\x7F]", "");
         JLabel barcodeLbl = new JLabel();
@@ -131,13 +131,13 @@ public class UserRFIDCardScreen {
         }
         card.add(barcodeLbl, cc);
 
-        // Barcode text
+        
         cc.gridy = 9; cc.insets = new Insets(0, 0, 16, 0);
         JLabel barcodeText = UIFactory.lbl(barcodeData, Font.PLAIN, 9, C_MUTED);
         barcodeText.setHorizontalAlignment(SwingConstants.CENTER);
         card.add(barcodeText, cc);
 
-        // Save button
+        //save pic
         cc.gridy = 10; cc.insets = new Insets(8, 0, 0, 0);
         JButton saveBtn = UIFactory.gradientButton("SAVE CARD AS IMAGE");
         saveBtn.addActionListener(e -> saveCardAsImage(card, username));

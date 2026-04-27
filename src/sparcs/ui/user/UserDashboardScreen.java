@@ -1,6 +1,9 @@
 package ui.user;
 
+import dao.*;
 import model.AppState;
+import model.ParkingTransaction;
+import model.VehicleOwner;
 import ui.shared.SidebarPanel;
 import ui.shared.SlotGridPanel;
 import util.UIFactory;
@@ -9,7 +12,10 @@ import static util.UIConstants.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
- 
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Optional;
+
 public class UserDashboardScreen {
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
@@ -32,14 +38,31 @@ public class UserDashboardScreen {
         topBar.add(signOutBtn, BorderLayout.EAST);
         content.add(topBar, BorderLayout.NORTH);
 
+        // Load user's parking history from database
+        ParkingTransaction currentTransaction = null;
+        try {
+            if (state.getCurrentUserAccount() != null) {
+                // Get current/latest parking transaction for this user
+                currentTransaction = loadCurrentParking(state);
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error loading user parking history: " + ex.getMessage());
+        }
+
         // Stats row
         JPanel statsRow = new JPanel(new GridLayout(1, 4, 12, 0));
         statsRow.setOpaque(false);
         statsRow.setBorder(new EmptyBorder(20, 20, 10, 20));
-        statsRow.add(UIFactory.statCard("Current Slot",   "B-12",  C_ACCENT));
-        statsRow.add(UIFactory.statCard("Duration",       "01:45", C_AVAILABLE));
-        statsRow.add(UIFactory.statCard("Estimated Fee",  "₱50",   C_RESERVED));
-        statsRow.add(UIFactory.statCard("Wallet Balance", "₱250",  C_PINK));
+        
+        String currentSlot = currentTransaction != null ? "Slot " + currentTransaction.getSlotId() : "None";
+        String durationStr = currentTransaction != null ? formatDuration(currentTransaction.getDurationMinutes()) : "-";
+        String estimatedFee = currentTransaction != null ? "₱" + currentTransaction.getCalculatedFee() : "₱0";
+        String walletBalance = "₱0"; // TODO: Implement wallet feature
+        
+        statsRow.add(UIFactory.statCard("Current Slot",   currentSlot,  C_ACCENT));
+        statsRow.add(UIFactory.statCard("Duration",       durationStr, C_AVAILABLE));
+        statsRow.add(UIFactory.statCard("Estimated Fee",  estimatedFee,   C_RESERVED));
+        statsRow.add(UIFactory.statCard("Wallet Balance", walletBalance,  C_PINK));
 
         // Body
         JPanel body = new JPanel(new GridLayout(1, 2, 14, 0));
@@ -59,22 +82,43 @@ public class UserDashboardScreen {
         JPanel actList = new JPanel();
         actList.setLayout(new BoxLayout(actList, BoxLayout.Y_AXIS));
         actList.setOpaque(false);
-        // TODO (back-end): Load from user's parking history in DB
-        String[][] acts = {
-            {"Entry", "B-12", "Today 09:00 AM"},
-            {"Exit",  "A-05", "Yesterday 06:30 PM"},
-            {"Entry", "C-11", "Apr 9"},
-        };
-        for (String[] a : acts) {
-            JPanel row = new JPanel(new GridLayout(1, 3));
-            row.setOpaque(false);
-            row.setBorder(new EmptyBorder(6, 0, 6, 0));
-            Color ac = a[0].equals("Entry") ? C_AVAILABLE : C_OCCUPIED;
-            row.add(UIFactory.lbl(a[0], Font.BOLD,  12, ac));
-            row.add(UIFactory.lbl(a[1], Font.PLAIN, 12, C_WHITE));
-            row.add(UIFactory.lbl(a[2], Font.PLAIN, 11, C_MUTED));
-            actList.add(row);
+        
+        // Load user's parking history from database
+        try {
+            if (state.getCurrentUserAccount() != null) {
+                ParkingTransactionDAO transDAO = new ParkingTransactionDAO();
+                List<ParkingTransaction> userTransactions = transDAO.findByUserId(state.getCurrentUserAccount().getUserId());
+                
+                for (ParkingTransaction trans : userTransactions) {
+                    String action = trans.getExitTime() == null ? "Entry" : "Exit";
+                    String time = trans.getEntryTime().toString().substring(11, 16);
+                    String transDuration = formatDuration(trans.getDurationMinutes());
+                    
+                    JPanel row = new JPanel(new GridLayout(1, 3));
+                    row.setOpaque(false);
+                    row.setBorder(new EmptyBorder(6, 0, 6, 0));
+                    Color ac = action.equals("Entry") ? C_AVAILABLE : C_OCCUPIED;
+                    row.add(UIFactory.lbl(action, Font.BOLD,  12, ac));
+                    row.add(UIFactory.lbl(time, Font.PLAIN, 12, C_WHITE));
+                    row.add(UIFactory.lbl(transDuration, Font.PLAIN, 11, C_MUTED));
+                    actList.add(row);
+                }
+                
+                if (userTransactions.isEmpty()) {
+                    JPanel empty = new JPanel();
+                    empty.setOpaque(false);
+                    empty.add(UIFactory.lbl("No parking history", Font.PLAIN, 12, C_MUTED));
+                    actList.add(empty);
+                }
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error loading user activity: " + ex.getMessage());
+            JPanel error = new JPanel();
+            error.setOpaque(false);
+            error.add(UIFactory.lbl("Error loading activity", Font.PLAIN, 12, C_MUTED));
+            actList.add(error);
         }
+        
         actCard.add(actList, BorderLayout.CENTER);
         body.add(actCard);
 
@@ -85,5 +129,33 @@ public class UserDashboardScreen {
         content.add(main, BorderLayout.CENTER);
         root.add(content, BorderLayout.CENTER);
         return root;
+    }
+
+    private static ParkingTransaction loadCurrentParking(AppState state) throws SQLException {
+        // Try to find user's vehicle owner record
+        VehicleOwnerDAO ownerDAO = new VehicleOwnerDAO();
+        Optional<VehicleOwner> ownerOpt = ownerDAO.findByUserId(state.getCurrentUserAccount().getUserId());
+        
+        if (ownerOpt.isPresent()) {
+            // Get the user's latest parking transaction
+            ParkingTransactionDAO transDAO = new ParkingTransactionDAO();
+            List<ParkingTransaction> transactions = transDAO.findByUserId(state.getCurrentUserAccount().getUserId());
+            
+            if (!transactions.isEmpty()) {
+                return transactions.get(0); // Most recent
+            }
+        }
+        return null;
+    }
+
+    private static String formatDuration(Integer minutes) {
+        if (minutes == null || minutes <= 0) return "-";
+        int hours = minutes / 60;
+        int mins = minutes % 60;
+        if (hours > 0) {
+            return hours + "h " + mins + "m";
+        } else {
+            return mins + "m";
+        }
     }
 }

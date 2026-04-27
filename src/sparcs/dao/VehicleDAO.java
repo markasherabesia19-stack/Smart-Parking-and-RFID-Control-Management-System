@@ -13,19 +13,16 @@ import java.util.Optional;
 public class VehicleDAO {
 
     public void create(Vehicle vehicle) throws SQLException {
-        String sql = "INSERT INTO vehicle (owner_id, plate_number, rfid_tag_id, vehicle_type, model, color, is_active) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO vehicle (license_plate, vehicle_owner_id, vehicle_type, color) " +
+                "VALUES (?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setInt(1, vehicle.getOwnerId());
-            stmt.setString(2, vehicle.getPlateNumber());
-            stmt.setObject(3, vehicle.getRfidTagId());
-            stmt.setString(4, vehicle.getVehicleType());
-            stmt.setString(5, vehicle.getModel());
-            stmt.setString(6, vehicle.getColor());
-            stmt.setBoolean(7, vehicle.isActive());
+            stmt.setString(1, vehicle.getPlateNumber());
+            stmt.setInt(2, vehicle.getOwnerId());
+            stmt.setString(3, vehicle.getVehicleType());
+            stmt.setString(4, vehicle.getColor());
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -41,7 +38,7 @@ public class VehicleDAO {
     }
 
     public Optional<Vehicle> findById(int vehicleId) throws SQLException {
-        String sql = "SELECT * FROM vehicle WHERE vehicle_id = ? AND is_active = TRUE";
+        String sql = "SELECT * FROM vehicle WHERE vehicle_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -57,7 +54,7 @@ public class VehicleDAO {
     }
 
     public Optional<Vehicle> findByPlateNumber(String plateNumber) throws SQLException {
-        String sql = "SELECT * FROM vehicle WHERE plate_number = ? AND is_active = TRUE";
+        String sql = "SELECT * FROM vehicle WHERE license_plate = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -73,7 +70,7 @@ public class VehicleDAO {
     }
 
     public List<Vehicle> findByOwnerId(int ownerId) throws SQLException {
-        String sql = "SELECT * FROM vehicle WHERE owner_id = ? AND is_active = TRUE ORDER BY registration_date DESC";
+        String sql = "SELECT * FROM vehicle WHERE vehicle_owner_id = ? ORDER BY created_at DESC";
         List<Vehicle> vehicles = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -90,7 +87,7 @@ public class VehicleDAO {
     }
 
     public List<Vehicle> findAll() throws SQLException {
-        String sql = "SELECT * FROM vehicle WHERE is_active = TRUE ORDER BY plate_number";
+        String sql = "SELECT * FROM vehicle ORDER BY license_plate";
         List<Vehicle> vehicles = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -105,27 +102,24 @@ public class VehicleDAO {
     }
 
     public void update(Vehicle vehicle) throws SQLException {
-        String sql = "UPDATE vehicle SET owner_id = ?, plate_number = ?, rfid_tag_id = ?, " +
-                "vehicle_type = ?, model = ?, color = ?, is_active = ? WHERE vehicle_id = ?";
+        String sql = "UPDATE vehicle SET license_plate = ?, vehicle_owner_id = ?, " +
+                "vehicle_type = ?, color = ? WHERE vehicle_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, vehicle.getOwnerId());
-            stmt.setString(2, vehicle.getPlateNumber());
-            stmt.setObject(3, vehicle.getRfidTagId());
-            stmt.setString(4, vehicle.getVehicleType());
-            stmt.setString(5, vehicle.getModel());
-            stmt.setString(6, vehicle.getColor());
-            stmt.setBoolean(7, vehicle.isActive());
-            stmt.setInt(8, vehicle.getVehicleId());
+            stmt.setString(1, vehicle.getPlateNumber());
+            stmt.setInt(2, vehicle.getOwnerId());
+            stmt.setString(3, vehicle.getVehicleType());
+            stmt.setString(4, vehicle.getColor());
+            stmt.setInt(5, vehicle.getVehicleId());
 
             stmt.executeUpdate();
         }
     }
 
     public void delete(int vehicleId) throws SQLException {
-        String sql = "UPDATE vehicle SET is_active = FALSE WHERE vehicle_id = ?";
+        String sql = "DELETE FROM vehicle WHERE vehicle_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -136,7 +130,7 @@ public class VehicleDAO {
     }
 
     public int countActiveVehicles() throws SQLException {
-        String sql = "SELECT COUNT(*) as count FROM vehicle WHERE is_active = TRUE";
+        String sql = "SELECT COUNT(*) as count FROM vehicle";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              Statement stmt = conn.createStatement();
@@ -152,20 +146,14 @@ public class VehicleDAO {
     private Vehicle mapResultSetToVehicle(ResultSet rs) throws SQLException {
         Vehicle vehicle = new Vehicle();
         vehicle.setVehicleId(rs.getInt("vehicle_id"));
-        vehicle.setOwnerId(rs.getInt("owner_id"));
-        vehicle.setPlateNumber(rs.getString("plate_number"));
-
-        Integer rfidTagId = rs.getInt("rfid_tag_id");
-        if (!rs.wasNull()) {
-            vehicle.setRfidTagId(rfidTagId);
-        }
+        vehicle.setOwnerId(rs.getInt("vehicle_owner_id"));
+        vehicle.setPlateNumber(rs.getString("license_plate"));
 
         vehicle.setVehicleType(rs.getString("vehicle_type"));
-        vehicle.setModel(rs.getString("model"));
         vehicle.setColor(rs.getString("color"));
-        vehicle.setActive(rs.getBoolean("is_active"));
+        vehicle.setActive(true);
 
-        Timestamp registrationDate = rs.getTimestamp("registration_date");
+        Timestamp registrationDate = rs.getTimestamp("created_at");
         if (registrationDate != null) {
             vehicle.setRegistrationDate(registrationDate.toLocalDateTime());
         }

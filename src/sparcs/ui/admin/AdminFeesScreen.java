@@ -1,6 +1,10 @@
 package ui.admin;
 
+import dao.FeeScheduleDAO;
+import dao.ParkingTransactionDAO;
 import model.AppState;
+import model.FeeSchedule;
+import model.ParkingTransaction;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
 import static util.UIConstants.*;
@@ -9,10 +13,13 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.*;
 import java.awt.*;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * SPARCS — Admin parking fees screen.
- * TODO (back-end): Load fee schedule from DB; allow live edits and save back.
+ * Displays fee schedule and pending fees from database.
  */
 public class AdminFeesScreen {
 
@@ -39,13 +46,30 @@ public class AdminFeesScreen {
         rateCard.setBorder(new EmptyBorder(16, 16, 16, 16));
         rateCard.add(UIFactory.lbl("RATE SCHEDULE", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
 
+        // Load fee schedule from database
         String[] cols = {"Duration", "Rate (₱)"};
-        Object[][] data = {
-            {"First hour",        "30"},
-            {"Succeeding hours",  "20 / hr"},
-            {"Overnight (8hrs+)", "150"},
-            {"Lost ticket fee",   "500"},
-        };
+        Object[][] data = null;
+        try {
+            FeeScheduleDAO feeDAO = new FeeScheduleDAO();
+            Optional<FeeSchedule> schedule = feeDAO.findCurrentActive();
+            if (schedule.isPresent()) {
+                FeeSchedule s = schedule.get();
+                data = new Object[][] {
+                    {"Per Hour", s.getRatePerHour().toPlainString()},
+                    {"Per Day", s.getRatePerDay().toPlainString()},
+                    {"Grace Period (mins)", String.valueOf(s.getGracePeriodMinutes())}
+                };
+            } else {
+                data = new Object[][] {
+                    {"No active schedule", ""}
+                };
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error loading fee schedule: " + ex.getMessage());
+            data = new Object[][] {
+                {"Error loading", ""}
+            };
+        }
         JTable table = new JTable(data, cols) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -64,12 +88,43 @@ public class AdminFeesScreen {
         JPanel list = new JPanel();
         list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
         list.setOpaque(false);
-        String[][] pending = {
+        
+        // Load pending fees from database
+        try {
+            ParkingTransactionDAO transDAO = new ParkingTransactionDAO();
+            List<ParkingTransaction> pending = transDAO.findPendingPayments();
+            for (ParkingTransaction t : pending) {
+                String plate = "VID-" + t.getVehicleId();
+                String fee = "₱" + (t.getCalculatedFee() != null ? t.getCalculatedFee() : "0");
+                String duration = t.getDurationMinutes() != null ? (t.getDurationMinutes() / 60) + "h" : "?";
+                
+                JPanel row = new JPanel(new GridLayout(1, 3));
+                row.setOpaque(false); row.setBorder(new EmptyBorder(8, 0, 8, 0));
+                row.add(UIFactory.lbl(plate, Font.BOLD,  12, C_WHITE));
+                row.add(UIFactory.lbl(fee, Font.BOLD,  13, C_RESERVED));
+                row.add(UIFactory.lbl(duration, Font.PLAIN, 11, C_MUTED));
+                list.add(row);
+            }
+            if (pending.isEmpty()) {
+                JPanel empty = new JPanel();
+                empty.setOpaque(false);
+                empty.add(UIFactory.lbl("No pending fees", Font.PLAIN, 12, C_MUTED));
+                list.add(empty);
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error loading pending fees: " + ex.getMessage());
+            JPanel error = new JPanel();
+            error.setOpaque(false);
+            error.add(UIFactory.lbl("Error loading fees", Font.PLAIN, 12, C_MUTED));
+            list.add(error);
+        }
+        
+        String[][] pending_old = {
             {"ABC-1234", "₱70",  "2h 20m"},
             {"LMN-9012", "₱50",  "1h 40m"},
             {"TUV-7890", "₱150", "Overnight"},
         };
-        for (String[] p : pending) {
+        for (String[] p : pending_old) {
             JPanel row = new JPanel(new GridLayout(1, 3));
             row.setOpaque(false); row.setBorder(new EmptyBorder(8, 0, 8, 0));
             row.add(UIFactory.lbl(p[0], Font.BOLD,  12, C_WHITE));

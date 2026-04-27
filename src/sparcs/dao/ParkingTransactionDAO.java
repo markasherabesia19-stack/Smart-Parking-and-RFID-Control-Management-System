@@ -210,4 +210,84 @@ public class ParkingTransactionDAO {
 
         return transaction;
     }
+
+    public List<ParkingTransaction> findRecent(int limit) throws SQLException {
+        String sql = "SELECT * FROM parking_transaction ORDER BY entry_time DESC LIMIT ?";
+        List<ParkingTransaction> transactions = new ArrayList<>();
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, limit);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    transactions.add(mapResultSetToTransaction(rs));
+                }
+            }
+        }
+        return transactions;
+    }
+
+    public List<ParkingTransaction> findPendingPayments() throws SQLException {
+        String sql = "SELECT * FROM parking_transaction WHERE payment_status = 'PENDING' ORDER BY exit_time DESC";
+        List<ParkingTransaction> transactions = new ArrayList<>();
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                transactions.add(mapResultSetToTransaction(rs));
+            }
+        }
+        return transactions;
+    }
+
+    public int countPendingPayments() throws SQLException {
+        String sql = "SELECT COUNT(*) as count FROM parking_transaction WHERE payment_status = 'PENDING'";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            if (rs.next()) {
+                return rs.getInt("count");
+            }
+        }
+        return 0;
+    }
+
+    public java.math.BigDecimal calculateTodayRevenue() throws SQLException {
+        String sql = "SELECT COALESCE(SUM(calculated_fee), 0) as total FROM parking_transaction WHERE DATE(entry_time) = CURDATE() AND payment_status = 'PAID'";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            if (rs.next()) {
+                return rs.getBigDecimal("total");
+            }
+        }
+        return java.math.BigDecimal.ZERO;
+    }
+
+    public List<ParkingTransaction> findByUserId(int userId) throws SQLException {
+        String sql = "SELECT pt.* FROM parking_transaction pt " +
+                "JOIN vehicle v ON pt.vehicle_id = v.vehicle_id " +
+                "JOIN vehicle_owner vo ON v.vehicle_owner_id = vo.owner_id " +
+                "WHERE vo.user_id = ? ORDER BY pt.entry_time DESC";
+        List<ParkingTransaction> transactions = new ArrayList<>();
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    transactions.add(mapResultSetToTransaction(rs));
+                }
+            }
+        }
+        return transactions;
+    }
 }

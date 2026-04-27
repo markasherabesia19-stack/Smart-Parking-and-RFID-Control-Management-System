@@ -27,6 +27,10 @@ public class AppState {
     public int occupiedSlots  = 15;
     public int reservedSlots  = 5;
 
+    // ── Dashboard Stats ────────────────────────────────────────────────────
+    public int revenueToday  = 0;
+    public int pendingFees   = 0;
+
     /** 0 = available, 1 = occupied, 2 = reserved */
     public final int[] slotData = new int[TOTAL_SLOTS];
 

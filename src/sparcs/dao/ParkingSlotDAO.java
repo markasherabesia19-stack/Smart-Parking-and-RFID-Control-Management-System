@@ -69,7 +69,7 @@ public class ParkingSlotDAO {
     }
 
     public List<ParkingSlot> findAll() throws SQLException {
-        String sql = "SELECT * FROM parking_slot WHERE is_active = TRUE ORDER BY zone_name, slot_code";
+        String sql = "SELECT * FROM parking_slot ORDER BY zone, slot_code";
         List<ParkingSlot> slots = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -84,7 +84,7 @@ public class ParkingSlotDAO {
     }
 
     public List<ParkingSlot> findByZone(String zoneName) throws SQLException {
-        String sql = "SELECT * FROM parking_slot WHERE zone_name = ? AND is_active = TRUE ORDER BY slot_code";
+        String sql = "SELECT * FROM parking_slot WHERE zone = ? ORDER BY slot_code";
         List<ParkingSlot> slots = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -101,7 +101,7 @@ public class ParkingSlotDAO {
     }
 
     public List<ParkingSlot> findByStatus(String status) throws SQLException {
-        String sql = "SELECT * FROM parking_slot WHERE status = ? AND is_active = TRUE ORDER BY zone_name, slot_code";
+        String sql = "SELECT * FROM parking_slot WHERE status = ? ORDER BY zone, slot_code";
         List<ParkingSlot> slots = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();

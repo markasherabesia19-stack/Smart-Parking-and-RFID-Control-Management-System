@@ -1,6 +1,10 @@
 package ui.admin;
 
+import dao.VehicleDAO;
+import dao.VehicleOwnerDAO;
 import model.AppState;
+import model.Vehicle;
+import model.VehicleOwner;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
 import static util.UIConstants.*;
@@ -9,10 +13,13 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.*;
 import java.awt.*;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * SPARCS — Admin vehicle list screen.
- * TODO (back-end): Replace mock table data with a live DB query.
+ * Displays all vehicles from database with live updates.
  */
 public class AdminVehiclesScreen {
 
@@ -34,15 +41,32 @@ public class AdminVehiclesScreen {
         topBar.add(addBtn, BorderLayout.EAST);
         content.add(topBar, BorderLayout.NORTH);
 
-        // Mock vehicle table
+        // Load vehicles from database
+        VehicleDAO vehicleDAO = new VehicleDAO();
+        VehicleOwnerDAO ownerDAO = new VehicleOwnerDAO();
+        List<Vehicle> vehicles = new java.util.ArrayList<>();
+        try {
+            vehicles = vehicleDAO.findAll();
+        } catch (SQLException ex) {
+            System.err.println("Error loading vehicles: " + ex.getMessage());
+        }
+        
         String[] cols = {"Plate", "Owner", "RFID Tag", "Type", "Status"};
-        Object[][] data = {
-            {"ABC-1234", "Juan dela Cruz",   "RF001", "Sedan",  "Active"},
-            {"XYZ-5678", "Maria Santos",     "RF002", "SUV",    "Active"},
-            {"LMN-9012", "Pedro Reyes",      "RF003", "Pickup", "Suspended"},
-            {"QRS-3456", "Ana Gonzales",     "RF004", "Sedan",  "Active"},
-            {"TUV-7890", "Carlos Villanueva","RF005", "Van",    "Active"},
-        };
+        Object[][] data = new Object[vehicles.size()][5];
+        for (int i = 0; i < vehicles.size(); i++) {
+            Vehicle v = vehicles.get(i);
+            Optional<VehicleOwner> owner = java.util.Optional.empty();
+            try {
+                owner = ownerDAO.findById(v.getOwnerId());
+            } catch (SQLException ex) {
+                System.err.println("Error loading owner for vehicle " + v.getVehicleId());
+            }
+            data[i][0] = v.getPlateNumber();
+            data[i][1] = owner.isPresent() ? owner.get().getOwnerId() : "N/A";
+            data[i][2] = v.getRfidTagId() != null ? v.getRfidTagId() : "";
+            data[i][3] = v.getVehicleType();
+            data[i][4] = "Active";
+        }
 
         JTable table = new JTable(data, cols) {
             @Override public boolean isCellEditable(int r, int c) { return false; }

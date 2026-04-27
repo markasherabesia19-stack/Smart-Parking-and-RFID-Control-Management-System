@@ -168,7 +168,7 @@ public class UIFactory {
         return btn;
     }
 
-    /** Outline / ghost secondary button. */
+   
     public static JButton outlineButton(String text) {
         JButton btn = new JButton(text) {
             @Override

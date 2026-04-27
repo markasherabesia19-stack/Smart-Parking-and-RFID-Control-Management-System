@@ -1,6 +1,8 @@
 package ui.admin;
 
+import dao.ParkingSlotDAO;
 import model.AppState;
+import model.ParkingSlot;
 import ui.shared.SidebarPanel;
 import ui.shared.SlotGridPanel;
 import util.UIFactory;
@@ -9,14 +11,23 @@ import static util.UIConstants.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.sql.SQLException;
+import java.util.List;
 
 /**
  * SPARCS — Admin slot map screen.
- * TODO (back-end): Reload slotData from DB on screen entry.
+ * Displays live slot availability from database.
  */
 public class AdminSlotMapScreen {
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
+        // Load fresh slot data from database
+        try {
+            reloadSlotDataFromDB(state);
+        } catch (SQLException ex) {
+            System.err.println("Error loading slot data: " + ex.getMessage());
+        }
+
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(C_BG_DARK);
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_SLOT_MAP"), BorderLayout.WEST);
@@ -65,5 +76,20 @@ public class AdminSlotMapScreen {
         content.add(main, BorderLayout.CENTER);
         root.add(content, BorderLayout.CENTER);
         return root;
+    }
+
+    private static void reloadSlotDataFromDB(AppState state) throws SQLException {
+        ParkingSlotDAO slotDAO = new ParkingSlotDAO();
+        List<ParkingSlot> availableSlots = slotDAO.findByStatus("AVAILABLE");
+        List<ParkingSlot> occupiedSlots = slotDAO.findByStatus("OCCUPIED");
+        List<ParkingSlot> allSlots = slotDAO.findAll();
+
+        state.availableSlots = availableSlots.size();
+        state.occupiedSlots = occupiedSlots.size();
+        state.reservedSlots = allSlots.size() - state.availableSlots - state.occupiedSlots;
+        state.initSlotData();
+
+        System.out.println("[AdminSlotMapScreen] Loaded: Available=" + state.availableSlots +
+                ", Occupied=" + state.occupiedSlots + ", Reserved=" + state.reservedSlots);
     }
 }

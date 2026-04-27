@@ -52,6 +52,13 @@ public class AuditLog {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
+    public String getChangesLog() {
+        if (oldValue != null || newValue != null) {
+            return (oldValue != null ? oldValue : "") + " → " + (newValue != null ? newValue : "");
+        }
+        return entityType + " ID:" + entityId;
+    }
+
     @Override
     public String toString() {
         return "AuditLog{" +

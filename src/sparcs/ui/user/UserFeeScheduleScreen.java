@@ -1,6 +1,8 @@
 package ui.user;
 
+import dao.FeeScheduleDAO;
 import model.AppState;
+import model.FeeSchedule;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
 import static util.UIConstants.*;
@@ -8,12 +10,16 @@ import static util.UIConstants.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.Optional;
 
 /**
  * SPARCS — User fee schedule screen.
  * Shows the current parking rate schedule for reference.
- * TODO (back-end): Load fee schedule from the fees table in DB.
- */
+ * Loads fee schedule from the database.
+ */ 
+
 public class UserFeeScheduleScreen {
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
@@ -44,13 +50,24 @@ public class UserFeeScheduleScreen {
         rateList.setLayout(new BoxLayout(rateList, BoxLayout.Y_AXIS));
         rateList.setOpaque(false);
 
-        String[][] rates = {
-            {"First hour",           "₱30",  "Minimum charge per session"},
-            {"Succeeding hours",     "₱20",  "Per additional hour"},
-            {"Overnight (8 hrs+)",   "₱150", "Single overnight flat rate"},
-            {"Lost ticket fee",      "₱500", "Charged if ticket is lost"},
-            {"Reservation hold",     "₱20",  "Non-refundable slot hold fee"},
-        };
+        // Load fee schedule from database
+        FeeSchedule schedule = null;
+        try {
+            FeeScheduleDAO feeDAO = new FeeScheduleDAO();
+            Optional<FeeSchedule> activeSchedule = feeDAO.findCurrentActive();
+            if (activeSchedule.isPresent()) {
+                schedule = activeSchedule.get();
+                System.out.println("[UserFeeScheduleScreen] Loaded fee schedule: " + schedule);
+            } else {
+                System.out.println("[UserFeeScheduleScreen] No active fee schedule found in database");
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error loading fee schedule: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+
+        // Build rate display
+        String[][] rates = buildRateArray(schedule);
 
         for (String[] r : rates) {
             JPanel row = new JPanel(new BorderLayout(12, 0));
@@ -94,5 +111,32 @@ public class UserFeeScheduleScreen {
         content.add(center, BorderLayout.CENTER);
         root.add(content, BorderLayout.CENTER);
         return root;
+    }
+
+    /**
+     * Build the rates array from the fee schedule model.
+     * Falls back to default values if no schedule is loaded.
+     */
+    private static String[][] buildRateArray(FeeSchedule schedule) {
+        if (schedule != null) {
+            String ratePerHour = "₱" + schedule.getRatePerHour().setScale(0, java.math.RoundingMode.HALF_UP);
+            String ratePerDay = "₱" + schedule.getRatePerDay().setScale(0, java.math.RoundingMode.HALF_UP);
+            String gracePeriod = schedule.getGracePeriodMinutes() + " min grace period";
+
+            return new String[][] {
+                {"Per Hour",      ratePerHour, "Hourly parking rate"},
+                {"Per Day",       ratePerDay,  "Full day flat rate"},
+                {"Grace Period",  gracePeriod, "No charge period"},
+            };
+        } else {
+            // Fallback to default rates
+            return new String[][] {
+                {"First hour",           "₱30",  "Minimum charge per session"},
+                {"Succeeding hours",     "₱20",  "Per additional hour"},
+                {"Overnight (8 hrs+)",   "₱150", "Single overnight flat rate"},
+                {"Lost ticket fee",      "₱500", "Charged if ticket is lost"},
+                {"Reservation hold",     "₱20",  "Non-refundable slot hold fee"},
+            };
+        }
     }
 }

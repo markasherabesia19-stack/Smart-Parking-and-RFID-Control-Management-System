@@ -1,6 +1,8 @@
 package ui.admin;
 
+import dao.AuditLogDAO;
 import model.AppState;
+import model.AuditLog;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
 import static util.UIConstants.*;
@@ -9,6 +11,8 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.*;
 import java.awt.*;
+import java.sql.SQLException;
+import java.util.List;
 
 public class AdminAuditLogScreen {
 
@@ -27,15 +31,24 @@ public class AdminAuditLogScreen {
         content.add(topBar, BorderLayout.NORTH);
 
         String[] cols = {"Timestamp", "Admin", "Action", "Detail"};
-        Object[][] data = {
-            {"2025-04-10 08:00", "admin1", "ENTRY",    "ABC-1234 -> B-04"},
-            {"2025-04-10 08:15", "admin1", "EXIT",     "XYZ-5678 <- A-12"},
-            {"2025-04-10 09:00", "admin2", "REGISTER", "New vehicle: LMN-9012"},
-            {"2025-04-10 09:30", "admin1", "FEE",      "Collected P70 - ABC-1234"},
-            {"2025-04-10 10:00", "admin2", "RESERVE",  "Slot C-01 reserved"},
-            {"2025-04-10 10:45", "admin1", "LOGIN",    "Admin login"},
-            {"2025-04-10 11:00", "admin2", "LOGOUT",   "Admin logout"},
-        };
+        
+        // Load audit logs from database
+        List<AuditLog> logs = new java.util.ArrayList<>();
+        try {
+            AuditLogDAO auditDAO = new AuditLogDAO();
+            logs = auditDAO.findRecent(50);
+        } catch (SQLException ex) {
+            System.err.println("Error loading audit logs: " + ex.getMessage());
+        }
+        
+        Object[][] data = new Object[logs.size()][4];
+        for (int i = 0; i < logs.size(); i++) {
+            AuditLog log = logs.get(i);
+            data[i][0] = log.getCreatedAt() != null ? log.getCreatedAt().toString() : "";
+            data[i][1] = "Admin";
+            data[i][2] = log.getAction();
+            data[i][3] = log.getChangesLog() != null ? log.getChangesLog().substring(0, Math.min(50, log.getChangesLog().length())) : "";
+        }
 
         JTable table = new JTable(data, cols) {
             @Override public boolean isCellEditable(int r, int c) { return false; }

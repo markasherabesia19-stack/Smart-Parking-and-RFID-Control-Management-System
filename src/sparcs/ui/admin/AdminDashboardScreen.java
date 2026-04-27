@@ -1,6 +1,8 @@
 package ui.admin;
 
+import dao.*;
 import model.AppState;
+import model.ParkingTransaction;
 import ui.shared.SidebarPanel;
 import ui.shared.SlotGridPanel;
 import util.UIFactory;
@@ -9,14 +11,24 @@ import static util.UIConstants.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.List;
 
 /**
  * SPARCS — Admin main dashboard.
- * TODO (back-end): Replace mock stat values and activity rows with live DB queries.
+ * Displays live stats and recent activity from database.
  */
 public class AdminDashboardScreen {
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
+        // Load fresh data from database
+        try {
+            loadDashboardData(state);
+        } catch (SQLException ex) {
+            System.err.println("Error loading dashboard data: " + ex.getMessage());
+        }
+
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(C_BG_DARK);
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_DASHBOARD"), BorderLayout.WEST);
@@ -41,8 +53,8 @@ public class AdminDashboardScreen {
         statsRow.setBorder(new EmptyBorder(20, 20, 10, 20));
         statsRow.add(UIFactory.statCard("Available Slots", String.valueOf(state.availableSlots), C_AVAILABLE));
         statsRow.add(UIFactory.statCard("Occupied",        String.valueOf(state.occupiedSlots),  C_OCCUPIED));
-        statsRow.add(UIFactory.statCard("Revenue Today",   "₱1,000",                            C_ACCENT));
-        statsRow.add(UIFactory.statCard("Pending Fees",    "3",                                  C_RESERVED));
+        statsRow.add(UIFactory.statCard("Revenue Today",   "₱" + state.revenueToday,             C_ACCENT));
+        statsRow.add(UIFactory.statCard("Pending Fees",    String.valueOf(state.pendingFees),   C_RESERVED));
 
         // Body
         JPanel body = new JPanel(new GridLayout(1, 2, 14, 0));
@@ -58,17 +70,28 @@ public class AdminDashboardScreen {
         JPanel actCard = UIFactory.cardPanel(new BorderLayout(0, 10));
         actCard.setBorder(new EmptyBorder(16, 16, 16, 16));
         actCard.add(UIFactory.lbl("RECENT ACTIVITY", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
-        // TODO (back-end): Replace with live entry/exit log from DB
+        
+        // Load recent transactions from database
         JPanel actList = new JPanel();
         actList.setLayout(new BoxLayout(actList, BoxLayout.Y_AXIS));
         actList.setOpaque(false);
-        String[][] acts = {
-            {"ABC-1234", "Entry", "B-04", "Just now"},
-            {"XYZ-5678", "Exit",  "A-12", "2 min ago"},
-            {"LMN-9012", "Entry", "C-07", "5 min ago"},
-            {"QRS-3456", "Exit",  "B-19", "8 min ago"},
-        };
-        for (String[] a : acts) actList.add(activityRow(a[0], a[1], a[2], a[3]));
+        
+        try {
+            ParkingTransactionDAO transDAO = new ParkingTransactionDAO();
+            List<ParkingTransaction> recentTrans = transDAO.findRecent(10);
+            for (ParkingTransaction trans : recentTrans) {
+                String action = trans.getExitTime() == null ? "Entry" : "Exit";
+                String time = trans.getEntryTime().toString().substring(11, 16);
+                actList.add(activityRow(trans.getVehicleId() + "", action, "TX-" + trans.getTransactionId(), time));
+            }
+            if (recentTrans.isEmpty()) {
+                actList.add(UIFactory.lbl("No recent activity", Font.PLAIN, 12, C_MUTED));
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error loading recent activity: " + ex.getMessage());
+            actList.add(UIFactory.lbl("Error loading activity", Font.PLAIN, 12, C_MUTED));
+        }
+        
         JScrollPane actScroll = new JScrollPane(actList);
         actScroll.setBorder(null); actScroll.setOpaque(false); actScroll.getViewport().setOpaque(false);
         actCard.add(actScroll, BorderLayout.CENTER);
@@ -83,14 +106,34 @@ public class AdminDashboardScreen {
         return root;
     }
 
-    private static JPanel activityRow(String plate, String action, String slot, String time) {
+    private static JPanel activityRow(String plate, String action, String ref, String time) {
         JPanel row = new JPanel(new GridLayout(1, 4));
         row.setOpaque(false);
         row.setBorder(new EmptyBorder(6, 0, 6, 0));
         row.add(UIFactory.lbl(plate,  Font.BOLD,  12, C_WHITE));
         row.add(UIFactory.lbl(action, Font.PLAIN, 12, action.equals("Entry") ? C_AVAILABLE : C_OCCUPIED));
-        row.add(UIFactory.lbl(slot,   Font.PLAIN, 12, C_MUTED));
+        row.add(UIFactory.lbl(ref,   Font.PLAIN, 12, C_MUTED));
         row.add(UIFactory.lbl(time,   Font.PLAIN, 11, C_MUTED));
         return row;
+    }
+
+    private static void loadDashboardData(AppState state) throws SQLException {
+        ParkingSlotDAO slotDAO = new ParkingSlotDAO();
+        
+        // Update slot counts
+        state.availableSlots = slotDAO.findByStatus("AVAILABLE").size();
+        state.occupiedSlots = slotDAO.findByStatus("OCCUPIED").size();
+        
+        // Calculate revenue from completed transactions
+        ParkingTransactionDAO transDAO = new ParkingTransactionDAO();
+        BigDecimal totalRevenue = transDAO.calculateTodayRevenue();
+        state.revenueToday = totalRevenue.intValue();
+        
+        // Count pending fees (exits without payment)
+        state.pendingFees = transDAO.countPendingPayments();
+        
+        System.out.println("[AdminDashboardScreen] Loaded: Available=" + state.availableSlots + 
+                         ", Occupied=" + state.occupiedSlots + ", Revenue=" + state.revenueToday + 
+                         ", Pending=" + state.pendingFees);
     }
 }

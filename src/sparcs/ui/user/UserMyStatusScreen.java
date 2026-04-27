@@ -49,12 +49,12 @@ public class UserMyStatusScreen {
 
         // Detail rows
         String[][] details = {
-            {"Slot",          "B-12"},
-            {"Zone",          "Zone B — Level 1"},
-            {"Entry Time",    "09:00 AM"},
-            {"Duration",      "01:45"},
-            {"Estimated Fee", "₱50"},
-            {"Wallet",        "₱250"},
+            {"Slot",          " "},
+            {"Zone",          " "},
+            {"Entry Time",    " "},
+            {"Duration",      " "},
+            {"Estimated Fee", " "},
+            {"Wallet",        " "},
         };
         for (String[] d : details) {
             cc.gridy++;

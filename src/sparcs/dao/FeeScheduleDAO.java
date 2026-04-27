@@ -55,7 +55,7 @@ public class FeeScheduleDAO {
     }
 
     public Optional<FeeSchedule> findCurrentActive() throws SQLException {
-        String sql = "SELECT * FROM fee_schedule WHERE is_active = TRUE ORDER BY effective_date DESC LIMIT 1";
+        String sql = "SELECT * FROM fee_schedule ORDER BY created_at DESC LIMIT 1";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              Statement stmt = conn.createStatement();
@@ -84,7 +84,7 @@ public class FeeScheduleDAO {
     }
 
     public List<FeeSchedule> findActive() throws SQLException {
-        String sql = "SELECT * FROM fee_schedule WHERE is_active = TRUE ORDER BY effective_date DESC";
+        String sql = "SELECT * FROM fee_schedule ORDER BY created_at DESC";
         List<FeeSchedule> schedules = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -129,19 +129,14 @@ public class FeeScheduleDAO {
     private FeeSchedule mapResultSetToFeeSchedule(ResultSet rs) throws SQLException {
         FeeSchedule schedule = new FeeSchedule();
         schedule.setFeeId(rs.getInt("fee_id"));
-        schedule.setRatePerHour(rs.getBigDecimal("rate_per_hour"));
-        schedule.setRatePerDay(rs.getBigDecimal("rate_per_day"));
+        schedule.setRatePerHour(rs.getBigDecimal("fee_per_hour"));
+        schedule.setRatePerDay(rs.getBigDecimal("daily_rate"));
         schedule.setGracePeriodMinutes(rs.getInt("grace_period_minutes"));
-        schedule.setActive(rs.getBoolean("is_active"));
+        schedule.setActive(true);
 
-        Integer createdBy = rs.getInt("created_by");
-        if (!rs.wasNull()) {
-            schedule.setCreatedBy(createdBy);
-        }
-
-        Timestamp effectiveDate = rs.getTimestamp("effective_date");
-        if (effectiveDate != null) {
-            schedule.setEffectiveDate(effectiveDate.toLocalDateTime());
+        Timestamp createdAt = rs.getTimestamp("created_at");
+        if (createdAt != null) {
+            schedule.setEffectiveDate(createdAt.toLocalDateTime());
         }
 
         return schedule;
