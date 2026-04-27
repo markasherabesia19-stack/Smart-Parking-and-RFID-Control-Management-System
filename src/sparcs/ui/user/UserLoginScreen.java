@@ -89,7 +89,8 @@ public class UserLoginScreen {
                             state.setCurrentUser(user);
                             state.currentUsername = username;
                             state.currentRole = "USER";
-                            // Rebuild RFID card screen now that session is loaded
+                            // Rebuild screens now that session is loaded
+                            rootPanel.add(UserDashboardScreen.build(cardLayout, rootPanel, state), "USER_DASHBOARD");
                             rootPanel.add(UserRFIDCardScreen.build(cardLayout, rootPanel, state), "USER_RFID_CARD");
                             cardLayout.show(rootPanel, "USER_DASHBOARD");
                         } else if ("ADMIN".equals(user.getRole())) {
