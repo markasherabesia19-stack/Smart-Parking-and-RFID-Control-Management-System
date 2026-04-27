@@ -9,16 +9,6 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
  
-/**
- * SPARCS - Reusable sidebar navigation panel.
- *
- * Pass role = "ADMIN" or "USER" and the activeScreen card key.
- * Navigation items that have no target screen are shown as disabled
- * section headers or placeholder entries.
- *
- * The sidebar is fully transparent so the shared DASHBOARD.png background
- * image (painted by the root panel) shows through everywhere.
- */
 public class SidebarPanel {
  
     private static final String[][] ADMIN_ITEMS = {
@@ -43,6 +33,7 @@ public class SidebarPanel {
         {"Records",               ""},
         {"  History",             "USER_HISTORY"},
         {"  Fee Schedule",        "USER_FEE_SCHEDULE"},
+        {"  RFID Card",           "USER_RFID_CARD"},
     };
  
     // Fix 1: Define solid, visible colors as constants so alpha issues don't occur
