@@ -39,6 +39,9 @@ public class ParkingSlot {
     public String getZoneName() { return zoneName; }
     public void setZoneName(String zoneName) { this.zoneName = zoneName; }
 
+    public String getZone() { return zoneName; }
+    public void setZone(String zone) { this.zoneName = zone; }
+
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
