@@ -89,11 +89,16 @@ public class UserRFIDCardScreen {
 
         // User info
         model.UserAccount currentUser = state.getCurrentUserAccount();
-        String username  = currentUser != null ? currentUser.getUsername() : state.currentUsername;
-        String email     = owner != null ? owner.getEmail()
-                         : currentUser != null ? currentUser.getEmail()
-                         : "N/A";
-        String fullName  = owner != null ? owner.getFullName() : username;
+        String username = currentUser != null ? currentUser.getUsername() : state.currentUsername;
+        String email    = currentUser != null && currentUser.getEmail() != null
+                          ? currentUser.getEmail() : "N/A";
+
+        // Full name: prefer user_account.full_name, fallback to username
+        String fullName = (currentUser != null
+                          && currentUser.getFullName() != null
+                          && !currentUser.getFullName().isBlank())
+                          ? currentUser.getFullName()
+                          : username;
 
         cc.insets = new Insets(4, 0, 4, 0);
 
@@ -112,7 +117,6 @@ public class UserRFIDCardScreen {
 
         // Barcode — encodes: SPARCS - <username>
         cc.gridy = 7; cc.insets = new Insets(0, 0, 8, 0);
-        // CODE_128 only supports ASCII 0-127 — strip anything outside that range
         String rawData = "SPARCS - " + username;
         String barcodeData = rawData.replaceAll("[^\\x00-\\x7F]", "");
         JLabel barcodeLbl = new JLabel();
@@ -166,7 +170,6 @@ public class UserRFIDCardScreen {
         for (int x = 0; x < raw.getWidth(); x++) {
             for (int y = 0; y < raw.getHeight(); y++) {
                 int rgb = raw.getRGB(x, y);
-                // black (0xFF000000) -> white, white (0xFFFFFFFF) -> dark bg color
                 inverted.setRGB(x, y, rgb == 0xFF000000 ? 0xFFFFFFFF : 0xFF1A1040);
             }
         }

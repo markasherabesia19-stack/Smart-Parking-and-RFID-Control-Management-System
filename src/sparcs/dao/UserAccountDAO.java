@@ -11,8 +11,8 @@ import java.util.Optional;
 public class UserAccountDAO {
 
     public void create(UserAccount userAccount) throws SQLException {
-        String sql = "INSERT INTO user_account (username, password_hash, role, email, is_active) " +
-                "VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO user_account (username, password_hash, role, email, full_name, is_active) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -21,7 +21,8 @@ public class UserAccountDAO {
             stmt.setString(2, userAccount.getPasswordHash());
             stmt.setString(3, userAccount.getRole());
             stmt.setString(4, userAccount.getEmail());
-            stmt.setBoolean(5, userAccount.isActive());
+            stmt.setString(5, userAccount.getFullName());
+            stmt.setBoolean(6, userAccount.isActive());
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -116,7 +117,7 @@ public class UserAccountDAO {
     }
 
     public void update(UserAccount userAccount) throws SQLException {
-        String sql = "UPDATE user_account SET username = ?, role = ?, email = ?, is_active = ? " +
+        String sql = "UPDATE user_account SET username = ?, role = ?, email = ?, full_name = ?, is_active = ? " +
                 "WHERE user_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -125,8 +126,9 @@ public class UserAccountDAO {
             stmt.setString(1, userAccount.getUsername());
             stmt.setString(2, userAccount.getRole());
             stmt.setString(3, userAccount.getEmail());
-            stmt.setBoolean(4, userAccount.isActive());
-            stmt.setInt(5, userAccount.getUserId());
+            stmt.setString(4, userAccount.getFullName());
+            stmt.setBoolean(5, userAccount.isActive());
+            stmt.setInt(6, userAccount.getUserId());
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -184,6 +186,7 @@ public class UserAccountDAO {
         account.setPasswordHash(rs.getString("password_hash"));
         account.setRole(rs.getString("role"));
         account.setEmail(rs.getString("email"));
+        account.setFullName(rs.getString("full_name"));
         account.setActive(rs.getBoolean("is_active"));
 
         Timestamp createdAt = rs.getTimestamp("created_at");

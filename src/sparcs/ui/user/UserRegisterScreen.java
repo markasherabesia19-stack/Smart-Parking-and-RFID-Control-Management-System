@@ -136,6 +136,7 @@ public class UserRegisterScreen {
                 newUser.setUsername(username);
                 newUser.setPasswordHash(PasswordUtil.hashPassword(password));
                 newUser.setEmail(email);
+                newUser.setFullName(firstName + " " + lastName); // ← SAVE FULL NAME
                 newUser.setRole("USER");
                 newUser.setActive(true);
 

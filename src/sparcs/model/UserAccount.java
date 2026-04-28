@@ -11,6 +11,7 @@ public class UserAccount {
     private String passwordHash;
     private String role; // ADMIN, USER
     private String email;
+    private String fullName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isActive;
@@ -40,6 +41,9 @@ public class UserAccount {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
@@ -54,6 +58,7 @@ public class UserAccount {
         return "UserAccount{" +
                 "userId=" + userId +
                 ", username='" + username + '\'' +
+                ", fullName='" + fullName + '\'' +
                 ", role='" + role + '\'' +
                 ", email='" + email + '\'' +
                 ", isActive=" + isActive +
