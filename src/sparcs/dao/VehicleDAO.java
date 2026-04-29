@@ -13,8 +13,8 @@ import java.util.Optional;
 public class VehicleDAO {
 
     public void create(Vehicle vehicle) throws SQLException {
-        String sql = "INSERT INTO vehicle (owner_id, plate_number, rfid_tag_id, vehicle_type, model, color, is_active) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO vehicle (owner_id, plate_number, rfid_tag_id, vehicle_type, model, color, is_active, parking_status) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -26,6 +26,7 @@ public class VehicleDAO {
             stmt.setString(5, vehicle.getModel());
             stmt.setString(6, vehicle.getColor());
             stmt.setBoolean(7, vehicle.isActive());
+            stmt.setString(8, vehicle.getParkingStatus() != null ? vehicle.getParkingStatus() : "Not Parked");
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -106,7 +107,7 @@ public class VehicleDAO {
 
     public void update(Vehicle vehicle) throws SQLException {
         String sql = "UPDATE vehicle SET owner_id = ?, plate_number = ?, rfid_tag_id = ?, " +
-                "vehicle_type = ?, model = ?, color = ?, is_active = ? WHERE vehicle_id = ?";
+                "vehicle_type = ?, model = ?, color = ?, is_active = ?, parking_status = ? WHERE vehicle_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -118,7 +119,8 @@ public class VehicleDAO {
             stmt.setString(5, vehicle.getModel());
             stmt.setString(6, vehicle.getColor());
             stmt.setBoolean(7, vehicle.isActive());
-            stmt.setInt(8, vehicle.getVehicleId());
+            stmt.setString(8, vehicle.getParkingStatus());
+            stmt.setInt(9, vehicle.getVehicleId());
 
             stmt.executeUpdate();
         }
@@ -135,8 +137,34 @@ public class VehicleDAO {
         }
     }
 
+    public void updateParkingStatus(int vehicleId, String parkingStatus) throws SQLException {
+        String sql = "UPDATE vehicle SET parking_status = ? WHERE vehicle_id = ?";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, parkingStatus);
+            stmt.setInt(2, vehicleId);
+            stmt.executeUpdate();
+        }
+    }
+
     public int countActiveVehicles() throws SQLException {
         String sql = "SELECT COUNT(*) as count FROM vehicle WHERE is_active = TRUE";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            if (rs.next()) {
+                return rs.getInt("count");
+            }
+        }
+        return 0;
+    }
+
+    public int countParkedVehicles() throws SQLException {
+        String sql = "SELECT COUNT(*) as count FROM vehicle WHERE is_active = TRUE AND parking_status = 'Parked'";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              Statement stmt = conn.createStatement();
@@ -164,6 +192,7 @@ public class VehicleDAO {
         vehicle.setModel(rs.getString("model"));
         vehicle.setColor(rs.getString("color"));
         vehicle.setActive(rs.getBoolean("is_active"));
+        vehicle.setParkingStatus(rs.getString("parking_status"));
 
         Timestamp registrationDate = rs.getTimestamp("registration_date");
         if (registrationDate != null) {

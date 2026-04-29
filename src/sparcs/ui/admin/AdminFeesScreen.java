@@ -39,13 +39,9 @@ public class AdminFeesScreen {
         rateCard.setBorder(new EmptyBorder(16, 16, 16, 16));
         rateCard.add(UIFactory.lbl("RATE SCHEDULE", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
 
+        // TODO (back-end): Load fee schedule from DB via FeeScheduleDAO
         String[] cols = {"Duration", "Rate (₱)"};
-        Object[][] data = {
-            {"First hour",        "30"},
-            {"Succeeding hours",  "20 / hr"},
-            {"Overnight (8hrs+)", "150"},
-            {"Lost ticket fee",   "500"},
-        };
+        Object[][] data = {}; // Fee schedule data will be populated from database
         JTable table = new JTable(data, cols) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -61,22 +57,11 @@ public class AdminFeesScreen {
         pendingCard.setBorder(new EmptyBorder(16, 16, 16, 16));
         pendingCard.add(UIFactory.lbl("PENDING FEES", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
 
+        // TODO (back-end): Load pending fees from DB via ParkingTransactionDAO
         JPanel list = new JPanel();
         list.setLayout(new BoxLayout(list, BoxLayout.Y_AXIS));
         list.setOpaque(false);
-        String[][] pending = {
-            {"ABC-1234", "₱70",  "2h 20m"},
-            {"LMN-9012", "₱50",  "1h 40m"},
-            {"TUV-7890", "₱150", "Overnight"},
-        };
-        for (String[] p : pending) {
-            JPanel row = new JPanel(new GridLayout(1, 3));
-            row.setOpaque(false); row.setBorder(new EmptyBorder(8, 0, 8, 0));
-            row.add(UIFactory.lbl(p[0], Font.BOLD,  12, C_WHITE));
-            row.add(UIFactory.lbl(p[1], Font.BOLD,  13, C_RESERVED));
-            row.add(UIFactory.lbl(p[2], Font.PLAIN, 11, C_MUTED));
-            list.add(row);
-        }
+        // Pending fees will be populated from database
         pendingCard.add(list, BorderLayout.CENTER);
         JButton collectBtn = UIFactory.gradientButton("COLLECT ALL FEES");
         collectBtn.addActionListener(e ->

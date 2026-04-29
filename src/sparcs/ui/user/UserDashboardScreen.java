@@ -26,20 +26,16 @@ public class UserDashboardScreen {
         topBar.setBorder(new EmptyBorder(14, 24, 14, 24));
         String greeting = "HELLO, " + (state.currentUsername.isEmpty() ? "USER" : state.currentUsername.toUpperCase()) + "!";
         topBar.add(UIFactory.lbl(greeting, Font.BOLD, 20, C_WHITE), BorderLayout.WEST);
-        JButton signOutBtn = new JButton("SIGN OUT");
-        UIFactory.styleSmallBtn(signOutBtn);
-        signOutBtn.addActionListener(e -> { state.clearSession(); cardLayout.show(rootPanel, "ROLE_PICKER"); });
-        topBar.add(signOutBtn, BorderLayout.EAST);
-        content.add(topBar, BorderLayout.NORTH);
-
+        
         // Stats row
         JPanel statsRow = new JPanel(new GridLayout(1, 4, 12, 0));
         statsRow.setOpaque(false);
         statsRow.setBorder(new EmptyBorder(20, 20, 10, 20));
-        statsRow.add(UIFactory.statCard("Current Slot",   "B-12",  C_ACCENT));
-        statsRow.add(UIFactory.statCard("Duration",       "01:45", C_AVAILABLE));
-        statsRow.add(UIFactory.statCard("Estimated Fee",  "₱50",   C_RESERVED));
-        statsRow.add(UIFactory.statCard("Wallet Balance", "₱250",  C_PINK));
+        // TODO (back-end): Load current parking session from DB via ParkingTransactionDAO
+        statsRow.add(UIFactory.statCard("Current Slot",   "-",    C_ACCENT));
+        statsRow.add(UIFactory.statCard("Duration",       "-",    C_AVAILABLE));
+        statsRow.add(UIFactory.statCard("Estimated Fee",  "-",    C_RESERVED));
+        statsRow.add(UIFactory.statCard("Wallet Balance", "-",    C_PINK));
 
         // Body
         JPanel body = new JPanel(new GridLayout(1, 2, 14, 0));
@@ -59,22 +55,8 @@ public class UserDashboardScreen {
         JPanel actList = new JPanel();
         actList.setLayout(new BoxLayout(actList, BoxLayout.Y_AXIS));
         actList.setOpaque(false);
-        // TODO (back-end): Load from user's parking history in DB
-        String[][] acts = {
-            {"Entry", "B-12", "Today 09:00 AM"},
-            {"Exit",  "A-05", "Yesterday 06:30 PM"},
-            {"Entry", "C-11", "Apr 9"},
-        };
-        for (String[] a : acts) {
-            JPanel row = new JPanel(new GridLayout(1, 3));
-            row.setOpaque(false);
-            row.setBorder(new EmptyBorder(6, 0, 6, 0));
-            Color ac = a[0].equals("Entry") ? C_AVAILABLE : C_OCCUPIED;
-            row.add(UIFactory.lbl(a[0], Font.BOLD,  12, ac));
-            row.add(UIFactory.lbl(a[1], Font.PLAIN, 12, C_WHITE));
-            row.add(UIFactory.lbl(a[2], Font.PLAIN, 11, C_MUTED));
-            actList.add(row);
-        }
+        // TODO (back-end): Load from user's parking history in DB via ParkingTransactionDAO
+        // Activity rows will be populated dynamically from database
         actCard.add(actList, BorderLayout.CENTER);
         body.add(actCard);
 

@@ -33,10 +33,11 @@ public class AdminReportsScreen {
         body.setOpaque(false);
         body.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        body.add(reportCard("Daily Revenue",  "₱1,000", "vs ₱850 yesterday", C_ACCENT));
-        body.add(reportCard("Weekly Revenue", "₱6,800", "↑ 12% vs last week", C_AVAILABLE));
-        body.add(reportCard("Total Vehicles", "147",    "registered in system", C_PURPLE));
-        body.add(reportCard("Avg. Duration",  "2h 15m", "per parking session", C_RESERVED));
+        // TODO (back-end): Load report metrics from DB aggregated queries
+        body.add(reportCard("Daily Revenue",  "0", "from database", C_ACCENT));
+        body.add(reportCard("Weekly Revenue", "0", "from database", C_AVAILABLE));
+        body.add(reportCard("Total Vehicles", "0", "registered in system", C_PURPLE));
+        body.add(reportCard("Avg. Duration",  "-", "per parking session", C_RESERVED));
 
         JPanel exportRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 0));
         exportRow.setOpaque(false);

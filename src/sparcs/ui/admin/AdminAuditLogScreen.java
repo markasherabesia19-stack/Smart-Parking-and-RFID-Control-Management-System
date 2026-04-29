@@ -28,13 +28,8 @@ public class AdminAuditLogScreen {
 
         String[] cols = {"Timestamp", "Admin", "Action", "Detail"};
         Object[][] data = {
-            {"2025-04-10 08:00", "admin1", "ENTRY",    "ABC-1234 -> B-04"},
-            {"2025-04-10 08:15", "admin1", "EXIT",     "XYZ-5678 <- A-12"},
-            {"2025-04-10 09:00", "admin2", "REGISTER", "New vehicle: LMN-9012"},
-            {"2025-04-10 09:30", "admin1", "FEE",      "Collected P70 - ABC-1234"},
-            {"2025-04-10 10:00", "admin2", "RESERVE",  "Slot C-01 reserved"},
-            {"2025-04-10 10:45", "admin1", "LOGIN",    "Admin login"},
-            {"2025-04-10 11:00", "admin2", "LOGOUT",   "Admin logout"},
+            {" ", " ", " ",    " "},
+
         };
 
         JTable table = new JTable(data, cols) {

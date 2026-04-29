@@ -16,7 +16,7 @@ public class ParkingTransactionDAO {
 
     public void create(ParkingTransaction transaction) throws SQLException {
         String sql = "INSERT INTO parking_transaction (vehicle_id, slot_id, entry_time, " +
-                "transaction_status, payment_status) VALUES (?, ?, ?, ?, ?)";
+                "status, payment_status) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -107,7 +107,7 @@ public class ParkingTransactionDAO {
     }
 
     public List<ParkingTransaction> findInProgress() throws SQLException {
-        String sql = "SELECT * FROM parking_transaction WHERE transaction_status = 'IN_PROGRESS' ORDER BY entry_time DESC";
+        String sql = "SELECT * FROM parking_transaction WHERE status = 'IN_PROGRESS' ORDER BY entry_time DESC";
         List<ParkingTransaction> transactions = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -124,7 +124,7 @@ public class ParkingTransactionDAO {
     public void update(ParkingTransaction transaction) throws SQLException {
         String sql = "UPDATE parking_transaction SET vehicle_id = ?, slot_id = ?, entry_time = ?, " +
                 "exit_time = ?, duration_minutes = ?, calculated_fee = ?, payment_status = ?, " +
-                "transaction_status = ? WHERE transaction_id = ?";
+                "status = ? WHERE transaction_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -196,17 +196,14 @@ public class ParkingTransactionDAO {
 
         transaction.setCalculatedFee(rs.getBigDecimal("calculated_fee"));
         transaction.setPaymentStatus(rs.getString("payment_status"));
-        transaction.setTransactionStatus(rs.getString("transaction_status"));
+        transaction.setTransactionStatus(rs.getString("status"));
 
         Timestamp createdAt = rs.getTimestamp("created_at");
         if (createdAt != null) {
             transaction.setCreatedAt(createdAt.toLocalDateTime());
         }
 
-        Timestamp updatedAt = rs.getTimestamp("updated_at");
-        if (updatedAt != null) {
-            transaction.setUpdatedAt(updatedAt.toLocalDateTime());
-        }
+        // updated_at column does not exist in this schema
 
         return transaction;
     }

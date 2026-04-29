@@ -59,17 +59,12 @@ public class SidebarPanel {
         sidebar.setPreferredSize(new Dimension(185, 0));
         sidebar.setOpaque(false);
  
-        // Logo + brand
+        // Logo 
         JPanel logoRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         logoRow.setOpaque(false);
-        logoRow.setBorder(new EmptyBorder(18, 0, 4, 0));
-        logoRow.add(UIFactory.logoPanel(36));
+        logoRow.setBorder(new EmptyBorder(25, 0, 4, 0));
+        logoRow.add(UIFactory.logoPanel(40));
         sidebar.add(logoRow);
- 
-        JLabel brand = UIFactory.lbl("SPARCS", Font.BOLD, 15, C_WHITE);
-        brand.setAlignmentX(Component.CENTER_ALIGNMENT);
-        brand.setBorder(new EmptyBorder(0, 0, 20, 0));
-        sidebar.add(brand);
  
         // Nav items
         String[][] items = role.equals("ADMIN") ? ADMIN_ITEMS : USER_ITEMS;

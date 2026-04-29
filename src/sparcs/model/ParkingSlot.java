@@ -1,77 +1,73 @@
 package model;
 
-import java.time.LocalDateTime;
-
 /**
- * Parking Slot Model
+ * Represents a single parking slot.
+ *
+ * status: "AVAILABLE" | "OCCUPIED" | "RESERVED"
+ *
+ * slotCode format: "A-01" … "E-08"  (5 zones × 8 slots = 40 total)
+ * slotIndex: 0-based position in AppState.slotData[]
+ *   Index = (zone row × 8) + (slot number - 1)
+ *   e.g. A-01 → 0, A-08 → 7, B-01 → 8, E-08 → 39
  */
 public class ParkingSlot {
-    private int slotId;
-    private String slotCode;
-    private String zoneName;
-    private String status; // AVAILABLE, OCCUPIED, RESERVED, MAINTENANCE
-    private Integer currentVehicleId;
-    private LocalDateTime entryTime;
-    private LocalDateTime updatedAt;
-    private String locationDetails;
-    private boolean isActive;
 
-    public enum SlotStatus {
-        AVAILABLE, OCCUPIED, RESERVED, MAINTENANCE
-    }
+    public static final String AVAILABLE = "AVAILABLE";
+    public static final String OCCUPIED  = "OCCUPIED";
+    public static final String RESERVED  = "RESERVED";
+
+    private int    slotId;
+    private String slotCode;   // e.g. "B-04"
+    private String status;     // "AVAILABLE" | "OCCUPIED" | "RESERVED"
+    private String zone;       // "A" … "E"
 
     public ParkingSlot() {}
 
-    public ParkingSlot(String slotCode, String zoneName) {
+    public ParkingSlot(int slotId, String slotCode, String status, String zone) {
+        this.slotId   = slotId;
         this.slotCode = slotCode;
-        this.zoneName = zoneName;
-        this.status = SlotStatus.AVAILABLE.toString();
-        this.isActive = true;
+        this.status   = status;
+        this.zone     = zone;
     }
 
-    // Getters and Setters
-    public int getSlotId() { return slotId; }
-    public void setSlotId(int slotId) { this.slotId = slotId; }
+    public int    getSlotId()           { return slotId; }
+    public void   setSlotId(int slotId) { this.slotId = slotId; }
 
-    public String getSlotCode() { return slotCode; }
-    public void setSlotCode(String slotCode) { this.slotCode = slotCode; }
+    public String getSlotCode()                { return slotCode; }
+    public void   setSlotCode(String slotCode) { this.slotCode = slotCode; }
 
-    public String getZoneName() { return zoneName; }
-    public void setZoneName(String zoneName) { this.zoneName = zoneName; }
+    public String getStatus()                  { return status; }
+    public void   setStatus(String status)     { this.status = status; }
 
-    public String getZone() { return zoneName; }
-    public void setZone(String zone) { this.zoneName = zone; }
+    public String getZone()                    { return zone; }
+    public void   setZone(String zone)         { this.zone = zone; }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public boolean isAvailable() { return AVAILABLE.equals(status); }
+    public boolean isOccupied()  { return OCCUPIED.equals(status);  }
+    public boolean isReserved()  { return RESERVED.equals(status);  }
 
-    public Integer getCurrentVehicleId() { return currentVehicleId; }
-    public void setCurrentVehicleId(Integer currentVehicleId) { this.currentVehicleId = currentVehicleId; }
-
-    public LocalDateTime getEntryTime() { return entryTime; }
-    public void setEntryTime(LocalDateTime entryTime) { this.entryTime = entryTime; }
-
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-
-    public String getLocationDetails() { return locationDetails; }
-    public void setLocationDetails(String locationDetails) { this.locationDetails = locationDetails; }
-
-    public boolean isActive() { return isActive; }
-    public void setActive(boolean active) { isActive = active; }
-
-    public boolean isAvailable() {
-        return SlotStatus.AVAILABLE.toString().equals(this.status);
+    /**
+     * Converts slotCode (e.g. "B-04") to a 0-based index into AppState.slotData[].
+     * Zone A=0, B=1, C=2, D=3, E=4. Slot numbers are 1-based.
+     */
+    public int getSlotIndex() {
+        if (slotCode == null || slotCode.length() < 4) return -1;
+        char zoneChar = Character.toUpperCase(slotCode.charAt(0));
+        int  zoneRow  = zoneChar - 'A';
+        int  slotNum;
+        try {
+            slotNum = Integer.parseInt(slotCode.substring(2));
+        } catch (NumberFormatException ex) {
+            return -1;
+        }
+        return zoneRow * 8 + (slotNum - 1);
     }
 
     @Override
     public String toString() {
-        return "ParkingSlot{" +
-                "slotId=" + slotId +
-                ", slotCode='" + slotCode + '\'' +
-                ", zoneName='" + zoneName + '\'' +
-                ", status='" + status + '\'' +
-                ", isActive=" + isActive +
-                '}';
+        return "ParkingSlot{slotId=" + slotId +
+               ", slotCode='" + slotCode + '\'' +
+               ", status='" + status + '\'' +
+               ", zone='" + zone + '\'' + '}';
     }
 }

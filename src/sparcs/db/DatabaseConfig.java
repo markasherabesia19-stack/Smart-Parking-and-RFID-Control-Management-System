@@ -60,9 +60,9 @@ public class DatabaseConfig {
         System.err.println("[DatabaseConfig] db.properties not found!");
         System.err.println("  → Create a file called 'db.properties' in your project root.");
         System.err.println("  → Contents should be:");
-        System.err.println("       db.url=jdbc:mysql://localhost:3306/sparcs_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true");
+        System.err.println("       db.url=jdbc:mysql://localhost:3306/sparcs_db");
         System.err.println("       db.username=root");
-        System.err.println("       db.password=YourMySQLPasswordHere");
+        System.err.println("       db.password=NewPass2026!");
         throw new RuntimeException("db.properties not found. See instructions above.");
     }
 

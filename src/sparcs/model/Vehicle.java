@@ -10,11 +10,12 @@ public class Vehicle {
     private int ownerId;
     private String plateNumber;
     private Integer rfidTagId;
-    private String vehicleType; // SEDAN, SUV, TRUCK, MOTORCYCLE, OTHER
+    private String vehicleType;
     private String model;
     private String color;
     private LocalDateTime registrationDate;
     private boolean isActive;
+    private String parkingStatus; // "Parked", "Not Parked", "Suspended"
 
     public enum VehicleType {
         SEDAN, SUV, TRUCK, MOTORCYCLE, OTHER
@@ -27,9 +28,9 @@ public class Vehicle {
         this.plateNumber = plateNumber;
         this.vehicleType = vehicleType;
         this.isActive = true;
+        this.parkingStatus = "Not Parked";
     }
 
-    // Getters and Setters
     public int getVehicleId() { return vehicleId; }
     public void setVehicleId(int vehicleId) { this.vehicleId = vehicleId; }
 
@@ -57,6 +58,9 @@ public class Vehicle {
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
 
+    public String getParkingStatus() { return parkingStatus; }
+    public void setParkingStatus(String parkingStatus) { this.parkingStatus = parkingStatus; }
+
     @Override
     public String toString() {
         return "Vehicle{" +
@@ -66,6 +70,7 @@ public class Vehicle {
                 ", model='" + model + '\'' +
                 ", color='" + color + '\'' +
                 ", isActive=" + isActive +
+                ", parkingStatus='" + parkingStatus + '\'' +
                 '}';
     }
 }

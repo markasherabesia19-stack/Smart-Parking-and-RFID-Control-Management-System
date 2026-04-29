@@ -1,6 +1,12 @@
 package ui.admin;
 
 import model.AppState;
+import model.UserAccount;
+import model.Vehicle;
+import model.VehicleOwner;
+import dao.UserAccountDAO;
+import dao.VehicleDAO;
+import dao.VehicleOwnerDAO;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
 import static util.UIConstants.*;
@@ -8,11 +14,9 @@ import static util.UIConstants.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.math.BigDecimal;
+import java.util.Optional;
 
-/**
- * SPARCS — Admin register vehicle screen.
- * TODO (back-end): INSERT new vehicle + owner record into DB on form submit.
- */
 public class AdminRegisterScreen {
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
@@ -33,21 +37,21 @@ public class AdminRegisterScreen {
         center.setOpaque(false);
 
         JPanel card = UIFactory.cardPanel(new GridBagLayout());
-        card.setPreferredSize(new Dimension(420, 480));
+        card.setPreferredSize(new Dimension(420, 540));
         card.setBorder(new EmptyBorder(28, 32, 28, 32));
 
         GridBagConstraints cc = new GridBagConstraints();
         cc.gridx = 0; cc.fill = GridBagConstraints.HORIZONTAL;
         cc.insets = new Insets(6, 0, 2, 0);
 
-        String[] labels = {"OWNER FULL NAME", "PLATE NUMBER", "RFID TAG ID", "VEHICLE TYPE", "CONTACT NUMBER"};
+        String[] labels = {"USERNAME", "FIRST NAME", "LAST NAME", "LICENSE PLATE", "VEHICLE TYPE", "COLOR", "CONTACT NUMBER"};
         JTextField[] fields = new JTextField[labels.length];
 
         for (int i = 0; i < labels.length; i++) {
             cc.gridy = i * 2;
             card.add(UIFactory.lbl(labels[i], Font.BOLD, 10, C_MUTED), cc);
             cc.gridy = i * 2 + 1; cc.insets = new Insets(0, 0, 4, 0);
-            fields[i] = UIFactory.styledField("");
+            fields[i] = UIFactory.styledField(i == 0 ? "Existing username" : "");
             card.add(fields[i], cc);
             cc.insets = new Insets(6, 0, 2, 0);
         }
@@ -61,9 +65,79 @@ public class AdminRegisterScreen {
         card.add(backBtn, cc);
 
         registerBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(null, "Vehicle registered successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
-            cardLayout.show(rootPanel, "ADMIN_VEHICLES");
+            String username    = fields[0].getText().trim();
+            String firstName   = fields[1].getText().trim();
+            String lastName    = fields[2].getText().trim();
+            String plate       = fields[3].getText().trim();
+            String vehicleType = fields[4].getText().trim();
+            String color       = fields[5].getText().trim();
+            String contactNum  = fields[6].getText().trim();
+
+            if (username.isEmpty() || firstName.isEmpty() || lastName.isEmpty()
+                    || plate.isEmpty() || vehicleType.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Please fill in all required fields.",
+                        "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            try {
+                // 1. Verify user exists
+                UserAccountDAO userDAO = new UserAccountDAO();
+                Optional<UserAccount> userOpt = userDAO.findByUsername(username);
+                if (userOpt.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "User '" + username + "' not found!",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                UserAccount user = userOpt.get();
+
+                // 2. Check if plate already exists
+                VehicleDAO vehicleDAO = new VehicleDAO();
+                if (vehicleDAO.findByPlateNumber(plate).isPresent()) {
+                    JOptionPane.showMessageDialog(null, "License plate '" + plate + "' is already registered!",
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // 3. Create Vehicle Owner
+                VehicleOwner owner = new VehicleOwner();
+                owner.setUserId(user.getUserId());
+                owner.setFirstName(firstName);
+                owner.setLastName(lastName);
+                owner.setContactNumber(contactNum);
+                owner.setEmail(user.getEmail());
+                owner.setAddress("");
+                owner.setWalletBalance(BigDecimal.ZERO);
+                owner.setActive(true);
+
+                VehicleOwnerDAO ownerDAO = new VehicleOwnerDAO();
+                ownerDAO.create(owner);
+
+                // 4. Create Vehicle linked to owner
+                Vehicle vehicle = new Vehicle();
+                vehicle.setOwnerId(owner.getOwnerId());
+                vehicle.setPlateNumber(plate);
+                vehicle.setVehicleType(vehicleType);
+                vehicle.setColor(color);
+                vehicle.setActive(true);
+
+                vehicleDAO.create(vehicle);
+
+                JOptionPane.showMessageDialog(null,
+                        "Vehicle '" + plate + "' registered successfully for " + firstName + " " + lastName + "!",
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
+
+                for (JTextField field : fields) field.setText("");
+                rootPanel.add(AdminVehiclesScreen.build(cardLayout, rootPanel, state), "ADMIN_VEHICLES");
+                cardLayout.show(rootPanel, "ADMIN_VEHICLES");
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
         });
+
         backBtn.addActionListener(e -> cardLayout.show(rootPanel, "ADMIN_VEHICLES"));
 
         center.add(card, new GridBagConstraints());
