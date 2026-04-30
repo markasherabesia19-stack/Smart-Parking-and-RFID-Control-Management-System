@@ -177,14 +177,14 @@ public class UserLoginScreen {
         // Username
         cc.gridy = 0; cc.insets = new Insets(0, 0, 5, 0);
         card.add(makeLabel("USERNAME"), cc);
-        cc.gridy = 1; cc.insets = new Insets(0, 0, 16, 0);
+        cc.gridy = 1; cc.insets = new Insets(0, 0, 10, 0);
         JTextField usernameField = makeField("Enter your username", false);
         card.add(usernameField, cc);
 
         // Password
         cc.gridy = 2; cc.insets = new Insets(0, 0, 5, 0);
         card.add(makeLabel("PASSWORD"), cc);
-        cc.gridy = 3; cc.insets = new Insets(0, 0, 24, 0);
+        cc.gridy = 3; cc.insets = new Insets(0, 0, 14, 0);
         JPasswordField passwordField = (JPasswordField) makeField("Enter your password", true);
         card.add(passwordField, cc);
 
