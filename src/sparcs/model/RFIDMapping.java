@@ -4,19 +4,20 @@ import java.time.LocalDateTime;
 
 /**
  * RFID Mapping Model
+ * Each RFID tag maps to a unique Vehicle, not an owner.
  */
 public class RFIDMapping {
     private int rfidId;
     private String rfidTag;
-    private int ownerId;
+    private int vehicleId;
     private LocalDateTime assignedDate;
     private boolean isActive;
 
     public RFIDMapping() {}
 
-    public RFIDMapping(String rfidTag, int ownerId) {
+    public RFIDMapping(String rfidTag, int vehicleId) {
         this.rfidTag = rfidTag;
-        this.ownerId = ownerId;
+        this.vehicleId = vehicleId;
         this.isActive = true;
     }
 
@@ -27,8 +28,8 @@ public class RFIDMapping {
     public String getRfidTag() { return rfidTag; }
     public void setRfidTag(String rfidTag) { this.rfidTag = rfidTag; }
 
-    public int getOwnerId() { return ownerId; }
-    public void setOwnerId(int ownerId) { this.ownerId = ownerId; }
+    public int getVehicleId() { return vehicleId; }
+    public void setVehicleId(int vehicleId) { this.vehicleId = vehicleId; }
 
     public LocalDateTime getAssignedDate() { return assignedDate; }
     public void setAssignedDate(LocalDateTime assignedDate) { this.assignedDate = assignedDate; }
@@ -41,7 +42,7 @@ public class RFIDMapping {
         return "RFIDMapping{" +
                 "rfidId=" + rfidId +
                 ", rfidTag='" + rfidTag + '\'' +
-                ", ownerId=" + ownerId +
+                ", vehicleId=" + vehicleId +
                 ", isActive=" + isActive +
                 '}';
     }

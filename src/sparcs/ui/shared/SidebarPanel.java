@@ -1,6 +1,8 @@
 package ui.shared;
  
 import model.AppState;
+import model.AuditLog;
+import dao.AuditLogDAO;
 import util.UIFactory;
 import static util.UIConstants.*;
  
@@ -147,6 +149,21 @@ public class SidebarPanel {
         signOut.setMaximumSize(new Dimension(185, 40));
         signOut.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         signOut.addActionListener(e -> {
+            // Log logout to audit log before clearing session
+            try {
+                if (state.getCurrentUserAccount() != null) {
+                    AuditLog logoutLog = new AuditLog();
+                    logoutLog.setUserId(state.getCurrentUserAccount().getUserId());
+                    logoutLog.setAction("LOGOUT");
+                    logoutLog.setEntityType("USER");
+                    logoutLog.setEntityId(state.getCurrentUserAccount().getUserId());
+                    logoutLog.setNewValue(state.currentUsername);
+                    new AuditLogDAO().create(logoutLog);
+                }
+            } catch (Exception auditEx) {
+                auditEx.printStackTrace();
+            }
+            
             state.clearSession();
             cardLayout.show(rootPanel, "ROLE_PICKER");
         });

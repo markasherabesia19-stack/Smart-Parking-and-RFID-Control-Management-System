@@ -1,7 +1,6 @@
 package service;
 
 import dao.FeeScheduleDAO;
-import dao.ParkingTransactionDAO;
 import model.FeeSchedule;
 import model.ParkingTransaction;
 import java.math.BigDecimal;
@@ -17,11 +16,9 @@ import java.util.Optional;
  */
 public class FeeCalculationService {
     private FeeScheduleDAO feeScheduleDAO;
-    private ParkingTransactionDAO transactionDAO;
 
     public FeeCalculationService() {
         this.feeScheduleDAO = new FeeScheduleDAO();
-        this.transactionDAO = new ParkingTransactionDAO();
     }
 
     /**

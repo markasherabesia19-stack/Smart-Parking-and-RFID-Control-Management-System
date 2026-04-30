@@ -97,8 +97,11 @@ public class AdminSlotMapScreen {
         });
 
         // Path 2: notifySlotChange() fired from AdminEntryExitScreen —
-        // slotData[] is already reloaded, just redraw immediately
-        state.addSlotChangeListener(() -> SwingUtilities.invokeLater(redraw));
+        // reload fresh data from DB first, then redraw
+        state.addSlotChangeListener(() -> SwingUtilities.invokeLater(() -> {
+            state.loadSlotDataFromDB();
+            redraw.run();
+        }));
 
         return root;
     }

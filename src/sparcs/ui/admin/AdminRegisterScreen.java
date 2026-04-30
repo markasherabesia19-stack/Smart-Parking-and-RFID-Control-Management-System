@@ -1,9 +1,11 @@
 package ui.admin;
 
 import model.AppState;
+import model.RFIDMapping;
 import model.UserAccount;
 import model.Vehicle;
 import model.VehicleOwner;
+import dao.RFIDMappingDAO;
 import dao.UserAccountDAO;
 import dao.VehicleDAO;
 import dao.VehicleOwnerDAO;
@@ -14,7 +16,6 @@ import static util.UIConstants.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.math.BigDecimal;
 import java.util.Optional;
 
 public class AdminRegisterScreen {
@@ -99,19 +100,16 @@ public class AdminRegisterScreen {
                     return;
                 }
 
-                // 3. Create Vehicle Owner
+                // 3. Create VehicleOwner
                 VehicleOwner owner = new VehicleOwner();
                 owner.setUserId(user.getUserId());
                 owner.setFirstName(firstName);
                 owner.setLastName(lastName);
                 owner.setContactNumber(contactNum);
-                owner.setEmail(user.getEmail());
                 owner.setAddress("");
-                owner.setWalletBalance(BigDecimal.ZERO);
-                owner.setActive(true);
 
                 VehicleOwnerDAO ownerDAO = new VehicleOwnerDAO();
-                ownerDAO.create(owner);
+                ownerDAO.createOrFind(owner);
 
                 // 4. Create Vehicle linked to owner
                 Vehicle vehicle = new Vehicle();
@@ -123,13 +121,34 @@ public class AdminRegisterScreen {
 
                 vehicleDAO.create(vehicle);
 
-                JOptionPane.showMessageDialog(null,
-                        "Vehicle '" + plate + "' registered successfully for " + firstName + " " + lastName + "!",
-                        "Success", JOptionPane.INFORMATION_MESSAGE);
+                // 5. Auto-generate and persist a unique RFID mapping for this vehicle.
+                //    Tag format: "SPARCS-<PLATE>" — unique because plate numbers are unique.
+                String rfidTag = "SPARCS-" + plate.replaceAll("[^\\x00-\\x7F]", "");
+
+                RFIDMapping mapping = new RFIDMapping();
+                mapping.setRfidTag(rfidTag);
+                mapping.setVehicleId(vehicle.getVehicleId());
+                mapping.setActive(true);
+
+                RFIDMappingDAO rfidDAO = new RFIDMappingDAO();
+                rfidDAO.create(mapping);
+
+                // 6. Offer to view the RFID card immediately
+                int choice = JOptionPane.showConfirmDialog(null,
+                        "Vehicle '" + plate + "' registered successfully for "
+                                + firstName + " " + lastName + "!\n\nView RFID card for this vehicle?",
+                        "Success", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
 
                 for (JTextField field : fields) field.setText("");
-                rootPanel.add(AdminVehiclesScreen.build(cardLayout, rootPanel, state), "ADMIN_VEHICLES");
-                cardLayout.show(rootPanel, "ADMIN_VEHICLES");
+
+                if (choice == JOptionPane.YES_OPTION) {
+                    String panelKey = "VEHICLE_RFID_" + plate;
+                    rootPanel.add(VehicleRFIDCardScreen.build(cardLayout, rootPanel, state, vehicle, mapping), panelKey);
+                    cardLayout.show(rootPanel, panelKey);
+                } else {
+                    rootPanel.add(AdminVehiclesScreen.build(cardLayout, rootPanel, state), "ADMIN_VEHICLES");
+                    cardLayout.show(rootPanel, "ADMIN_VEHICLES");
+                }
 
             } catch (Exception ex) {
                 ex.printStackTrace();

@@ -9,18 +9,19 @@ import java.util.Optional;
 
 /**
  * RFID Mapping Data Access Object
+ * Each RFID tag maps to a unique Vehicle (vehicle_id), not an owner.
  */
 public class RFIDMappingDAO {
 
     public void create(RFIDMapping mapping) throws SQLException {
-        String sql = "INSERT INTO rfid_mapping (rfid_tag, owner_id, is_active) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO rfid_mapping (rfid_tag, vehicle_id, status) VALUES (?, ?, ?)";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, mapping.getRfidTag());
-            stmt.setInt(2, mapping.getOwnerId());
-            stmt.setBoolean(3, mapping.isActive());
+            stmt.setInt(2, mapping.getVehicleId());
+            stmt.setString(3, mapping.isActive() ? "Active" : "Inactive");
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -36,7 +37,7 @@ public class RFIDMappingDAO {
     }
 
     public Optional<RFIDMapping> findById(int rfidId) throws SQLException {
-        String sql = "SELECT * FROM rfid_mapping WHERE rfid_id = ? AND is_active = TRUE";
+        String sql = "SELECT * FROM rfid_mapping WHERE rfid_id = ? AND status = 'Active'";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -44,7 +45,7 @@ public class RFIDMappingDAO {
             stmt.setInt(1, rfidId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(mapResultSetToRFIDMapping(rs));
+                    return Optional.of(mapRow(rs));
                 }
             }
         }
@@ -52,7 +53,7 @@ public class RFIDMappingDAO {
     }
 
     public Optional<RFIDMapping> findByRFIDTag(String rfidTag) throws SQLException {
-        String sql = "SELECT * FROM rfid_mapping WHERE rfid_tag = ? AND is_active = TRUE";
+        String sql = "SELECT * FROM rfid_mapping WHERE rfid_tag = ? AND status = 'Active'";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -60,15 +61,38 @@ public class RFIDMappingDAO {
             stmt.setString(1, rfidTag);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(mapResultSetToRFIDMapping(rs));
+                    return Optional.of(mapRow(rs));
                 }
             }
         }
         return Optional.empty();
     }
 
+    /** Returns the RFID mapping for a specific vehicle (one-to-one). */
+    public Optional<RFIDMapping> findByVehicleId(int vehicleId) throws SQLException {
+        String sql = "SELECT * FROM rfid_mapping WHERE vehicle_id = ? AND status = 'Active'";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, vehicleId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapRow(rs));
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /** Returns all RFID mappings for vehicles belonging to an owner (via JOIN). */
     public List<RFIDMapping> findByOwnerId(int ownerId) throws SQLException {
-        String sql = "SELECT * FROM rfid_mapping WHERE owner_id = ? AND is_active = TRUE";
+        String sql = """
+                SELECT rm.*
+                FROM rfid_mapping rm
+                JOIN vehicle v ON rm.vehicle_id = v.vehicle_id
+                WHERE v.owner_id = ? AND rm.status = 'Active'
+                """;
         List<RFIDMapping> mappings = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -77,7 +101,7 @@ public class RFIDMappingDAO {
             stmt.setInt(1, ownerId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    mappings.add(mapResultSetToRFIDMapping(rs));
+                    mappings.add(mapRow(rs));
                 }
             }
         }
@@ -85,7 +109,7 @@ public class RFIDMappingDAO {
     }
 
     public List<RFIDMapping> findAll() throws SQLException {
-        String sql = "SELECT * FROM rfid_mapping WHERE is_active = TRUE ORDER BY assigned_date DESC";
+        String sql = "SELECT * FROM rfid_mapping WHERE status = 'Active' ORDER BY created_at DESC";
         List<RFIDMapping> mappings = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -93,21 +117,21 @@ public class RFIDMappingDAO {
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                mappings.add(mapResultSetToRFIDMapping(rs));
+                mappings.add(mapRow(rs));
             }
         }
         return mappings;
     }
 
     public void update(RFIDMapping mapping) throws SQLException {
-        String sql = "UPDATE rfid_mapping SET rfid_tag = ?, owner_id = ?, is_active = ? WHERE rfid_id = ?";
+        String sql = "UPDATE rfid_mapping SET rfid_tag = ?, vehicle_id = ?, status = ? WHERE rfid_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, mapping.getRfidTag());
-            stmt.setInt(2, mapping.getOwnerId());
-            stmt.setBoolean(3, mapping.isActive());
+            stmt.setInt(2, mapping.getVehicleId());
+            stmt.setString(3, mapping.isActive() ? "Active" : "Inactive");
             stmt.setInt(4, mapping.getRfidId());
 
             stmt.executeUpdate();
@@ -115,7 +139,7 @@ public class RFIDMappingDAO {
     }
 
     public void delete(int rfidId) throws SQLException {
-        String sql = "UPDATE rfid_mapping SET is_active = FALSE WHERE rfid_id = ?";
+        String sql = "UPDATE rfid_mapping SET status = 'Inactive' WHERE rfid_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -125,16 +149,16 @@ public class RFIDMappingDAO {
         }
     }
 
-    private RFIDMapping mapResultSetToRFIDMapping(ResultSet rs) throws SQLException {
+    private RFIDMapping mapRow(ResultSet rs) throws SQLException {
         RFIDMapping mapping = new RFIDMapping();
         mapping.setRfidId(rs.getInt("rfid_id"));
         mapping.setRfidTag(rs.getString("rfid_tag"));
-        mapping.setOwnerId(rs.getInt("owner_id"));
-        mapping.setActive(rs.getBoolean("is_active"));
+        mapping.setVehicleId(rs.getInt("vehicle_id"));
+        mapping.setActive("Active".equalsIgnoreCase(rs.getString("status")));
 
-        Timestamp assignedDate = rs.getTimestamp("assigned_date");
-        if (assignedDate != null) {
-            mapping.setAssignedDate(assignedDate.toLocalDateTime());
+        Timestamp createdAt = rs.getTimestamp("created_at");
+        if (createdAt != null) {
+            mapping.setAssignedDate(createdAt.toLocalDateTime());
         }
 
         return mapping;

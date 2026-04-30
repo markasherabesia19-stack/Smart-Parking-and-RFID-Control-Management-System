@@ -102,11 +102,6 @@ public class AppState {
             occupiedSlots  = occupied;
             reservedSlots  = reserved;
 
-            System.out.println("[AppState] Slot data loaded — "
-                + available + " available, "
-                + occupied  + " occupied, "
-                + reserved  + " reserved.");
-
         } catch (Exception e) {
             System.err.println("[AppState] Failed to load slot data from DB: " + e.getMessage());
             e.printStackTrace();

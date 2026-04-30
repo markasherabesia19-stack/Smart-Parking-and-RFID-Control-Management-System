@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 public class UserSessionManager {
     private static UserSessionManager instance;
     private UserAccount currentUser;
-    private LocalDateTime loginTime;
     private LocalDateTime lastActivityTime;
     private static final long SESSION_TIMEOUT_MINUTES = 30;
 
@@ -28,7 +27,6 @@ public class UserSessionManager {
      */
     public void setCurrentUser(UserAccount user) {
         this.currentUser = user;
-        this.loginTime = LocalDateTime.now();
         this.lastActivityTime = LocalDateTime.now();
     }
 
@@ -74,7 +72,6 @@ public class UserSessionManager {
      */
     public void clearSession() {
         this.currentUser = null;
-        this.loginTime = null;
         this.lastActivityTime = null;
     }
 

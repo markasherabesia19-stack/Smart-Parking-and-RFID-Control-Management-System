@@ -51,26 +51,30 @@ public class LoginDiagnostic {
         
         System.out.println("  Enter the password you used: ");
         java.util.Scanner scanner = new java.util.Scanner(System.in);
-        String testPassword = scanner.nextLine();
-        
-        UserAccount user = adminUser.get();
-        boolean passwordMatches = PasswordUtil.verifyPassword(testPassword, user.getPasswordHash());
-        
-        if (passwordMatches) {
-            System.out.println("✓ Password verification successful!");
-            System.out.println("  The password matches the hash in the database.");
-        } else {
-            System.out.println("✗ Password verification FAILED!");
-            System.out.println("  The password does NOT match the hash in the database.");
-            System.out.println("\n  This could mean:");
-            System.out.println("  1. Password is incorrect");
-            System.out.println("  2. Password hash was not properly generated");
+        try {
+            String testPassword = scanner.nextLine();
             
-            System.out.println("\n  Correct hash for this password:");
-            String correctHash = PasswordUtil.hashPassword(testPassword);
-            System.out.println("  " + correctHash);
-        }
+            UserAccount user = adminUser.get();
+            boolean passwordMatches = PasswordUtil.verifyPassword(testPassword, user.getPasswordHash());
+            
+            if (passwordMatches) {
+                System.out.println("✓ Password verification successful!");
+                System.out.println("  The password matches the hash in the database.");
+            } else {
+                System.out.println("✗ Password verification FAILED!");
+                System.out.println("  The password does NOT match the hash in the database.");
+                System.out.println("\n  This could mean:");
+                System.out.println("  1. Password is incorrect");
+                System.out.println("  2. Password hash was not properly generated");
+                
+                System.out.println("\n  Correct hash for this password:");
+                String correctHash = PasswordUtil.hashPassword(testPassword);
+                System.out.println("  " + correctHash);
+            }
 
-        System.out.println("\n=== End of Diagnostic ===");
+            System.out.println("\n=== End of Diagnostic ===");
+        } finally {
+            scanner.close();
+        }
     }
 }

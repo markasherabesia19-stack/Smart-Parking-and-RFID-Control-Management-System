@@ -4,7 +4,6 @@ import db.DatabaseConfig;
 import model.ParkingTransaction;
 import java.sql.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -116,6 +115,23 @@ public class ParkingTransactionDAO {
 
             while (rs.next()) {
                 transactions.add(mapResultSetToTransaction(rs));
+            }
+        }
+        return transactions;
+    }
+
+    public List<ParkingTransaction> findByPaymentStatus(String paymentStatus) throws SQLException {
+        String sql = "SELECT * FROM parking_transaction WHERE payment_status = ? ORDER BY entry_time DESC";
+        List<ParkingTransaction> transactions = new ArrayList<>();
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, paymentStatus);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    transactions.add(mapResultSetToTransaction(rs));
+                }
             }
         }
         return transactions;

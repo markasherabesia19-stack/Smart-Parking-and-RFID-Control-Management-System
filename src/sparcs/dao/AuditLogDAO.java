@@ -10,8 +10,8 @@ import java.util.List;
 public class AuditLogDAO {
 
     public void create(AuditLog log) throws SQLException {
-        String sql = "INSERT INTO audit_log (user_id, action, entity_type, entity_id, old_value, new_value, ip_address) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO audit_log (user_id, action, resource_type, resource_id, changes_log, ip_address) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -20,9 +20,13 @@ public class AuditLogDAO {
             stmt.setString(2, log.getAction());
             stmt.setString(3, log.getEntityType());
             stmt.setObject(4, log.getEntityId());
-            stmt.setString(5, log.getOldValue());
-            stmt.setString(6, log.getNewValue());
-            stmt.setString(7, log.getIpAddress());
+            // Combine old/new values into changes_log since schema uses single column
+            String changesLog = null;
+            if (log.getOldValue() != null || log.getNewValue() != null) {
+                changesLog = "plate=" + log.getNewValue() + " slot=" + log.getOldValue();
+            }
+            stmt.setString(5, changesLog);
+            stmt.setString(6, log.getIpAddress());
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -31,7 +35,7 @@ public class AuditLogDAO {
 
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
-                    log.setAuditId(generatedKeys.getInt(1));
+                    log.setAuditId(generatedKeys.getInt(1)); // DB column is log_id but getInt(1) works by position
                 }
             }
         }
@@ -88,7 +92,7 @@ public class AuditLogDAO {
     }
 
     public List<AuditLog> findByEntityType(String entityType) throws SQLException {
-        String sql = "SELECT * FROM audit_log WHERE entity_type = ? ORDER BY created_at DESC";
+        String sql = "SELECT * FROM audit_log WHERE resource_type = ? ORDER BY created_at DESC";
         List<AuditLog> logs = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -137,7 +141,7 @@ public class AuditLogDAO {
 
     private AuditLog mapResultSetToAuditLog(ResultSet rs) throws SQLException {
         AuditLog log = new AuditLog();
-        log.setAuditId(rs.getInt("audit_id"));
+        log.setAuditId(rs.getInt("log_id"));
 
         Integer userId = rs.getInt("user_id");
         if (!rs.wasNull()) {
@@ -145,15 +149,16 @@ public class AuditLogDAO {
         }
 
         log.setAction(rs.getString("action"));
-        log.setEntityType(rs.getString("entity_type"));
+        log.setEntityType(rs.getString("resource_type"));
 
-        Integer entityId = rs.getInt("entity_id");
+        Integer entityId = rs.getInt("resource_id");
         if (!rs.wasNull()) {
             log.setEntityId(entityId);
         }
 
-        log.setOldValue(rs.getString("old_value"));
-        log.setNewValue(rs.getString("new_value"));
+        // changes_log stores combined info; map back into oldValue for display
+        log.setOldValue(rs.getString("changes_log"));
+        log.setNewValue(null);
         log.setIpAddress(rs.getString("ip_address"));
 
         Timestamp createdAt = rs.getTimestamp("created_at");

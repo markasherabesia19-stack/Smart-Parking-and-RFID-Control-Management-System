@@ -4,11 +4,15 @@ import dao.VehicleDAO;
 import dao.VehicleOwnerDAO;
 import dao.UserAccountDAO;
 import dao.ParkingSlotDAO;
+import dao.AuditLogDAO;
+import dao.ParkingTransactionDAO;
 import model.AppState;
 import model.Vehicle;
 import model.VehicleOwner;
 import model.UserAccount;
 import model.ParkingSlot;
+import model.AuditLog;
+import java.time.format.DateTimeFormatter;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
 import static util.UIConstants.*;
@@ -19,14 +23,10 @@ import javax.swing.table.*;
 import java.awt.*;
 import java.util.List;
 import java.util.Optional;
+import model.ParkingTransaction;
 
-/**
- * SPARCS — Admin main dashboard.
- * TODO (back-end): Replace mock stat values and activity rows with live DB queries.
- */
 public class AdminDashboardScreen {
 
-    // Persisted across navigations — created once, never rebuilt
     private static DefaultTableModel vehiclesModel;
     private static Runnable registeredListener = null;
 
@@ -49,24 +49,17 @@ public class AdminDashboardScreen {
         JPanel statsRow = new JPanel(new GridLayout(1, 4, 12, 0));
         statsRow.setOpaque(false);
         statsRow.setBorder(new EmptyBorder(20, 20, 10, 20));
-        statsRow.add(UIFactory.statCard("Available Slots", String.valueOf(state.availableSlots), C_AVAILABLE));
-        statsRow.add(UIFactory.statCard("Occupied",        String.valueOf(state.occupiedSlots),  C_OCCUPIED));
-        // TODO (back-end): Load revenue and pending fees from DB
-        statsRow.add(UIFactory.statCard("Revenue Today",   "0",                                  C_ACCENT));
-        statsRow.add(UIFactory.statCard("Pending Fees",    "0",                                  C_RESERVED));
+        buildStatsRow(statsRow, state);
 
         // Body
         JPanel body = new JPanel(new GridLayout(1, 2, 14, 0));
         body.setOpaque(false);
         body.setBorder(new EmptyBorder(10, 20, 20, 20));
 
-        // ── Vehicles Overview (currently parked) ──────────────────────────────
+        // Vehicles Overview 
         JPanel vehiclesCard = UIFactory.cardPanel(new BorderLayout(0, 10));
         vehiclesCard.setBorder(new EmptyBorder(16, 16, 16, 16));
         vehiclesCard.add(UIFactory.lbl("VEHICLES OVERVIEW", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
-
-        // Create the model only once; reuse it on subsequent navigations so
-        // the table data persists while the user is on other screens.
         if (vehiclesModel == null) {
             String[] vCols = {"Plate", "Username", "Slot"};
             vehiclesModel = new DefaultTableModel(new Object[0][3], vCols) {
@@ -84,12 +77,8 @@ public class AdminDashboardScreen {
 
         vehiclesCard.add(vehiclesScroll, BorderLayout.CENTER);
         body.add(vehiclesCard);
-
-        // Always do a fresh load when build() is called (every navigation).
         reloadParkedVehicles(vehiclesModel, state);
-
-        // Register slot-change listener once. If a previous one exists, remove
-        // it first so we never stack duplicate listeners across navigations.
+        
         if (registeredListener != null) {
             state.removeSlotChangeListener(registeredListener);
         }
@@ -100,15 +89,37 @@ public class AdminDashboardScreen {
         JPanel actCard = UIFactory.cardPanel(new BorderLayout(0, 10));
         actCard.setBorder(new EmptyBorder(16, 16, 16, 16));
         actCard.add(UIFactory.lbl("RECENT ACTIVITY", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
-        // TODO (back-end): Load live entry/exit log from DB via AuditLogDAO
-        JPanel actList = new JPanel();
-        actList.setLayout(new BoxLayout(actList, BoxLayout.Y_AXIS));
-        actList.setOpaque(false);
-        // Activity rows will be populated dynamically from database
-        JScrollPane actScroll = new JScrollPane(actList);
-        actScroll.setBorder(null); actScroll.setOpaque(false); actScroll.getViewport().setOpaque(false);
+
+        // Use a JTable for proper column/row structure
+        String[] actCols = {"Plate", "Action", "Slot", "Time"};
+        DefaultTableModel actModel = new DefaultTableModel(new Object[0][4], actCols) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        JTable actTable = new JTable(actModel) {
+            @Override
+            public Component prepareRenderer(TableCellRenderer renderer, int row, int col) {
+                Component c = super.prepareRenderer(renderer, row, col);
+                String action = (String) getModel().getValueAt(row, 1);
+                if (col == 1) {
+                    c.setForeground("ENTRY".equals(action) ? C_AVAILABLE : C_OCCUPIED);
+                } else {
+                    c.setForeground(C_WHITE);
+                }
+                c.setBackground(C_BG_CARD);
+                return c;
+            }
+        };
+        styleOverviewTable(actTable);
+
+        JScrollPane actScroll = new JScrollPane(actTable);
+        actScroll.setBorder(null);
+        actScroll.setOpaque(false);
+        actScroll.getViewport().setBackground(C_BG_CARD);
         actCard.add(actScroll, BorderLayout.CENTER);
         body.add(actCard);
+
+        // Initial load of recent activity
+        reloadRecentActivity(actModel);
 
         JPanel main = new JPanel(new BorderLayout());
         main.setOpaque(false);
@@ -116,7 +127,69 @@ public class AdminDashboardScreen {
         main.add(body, BorderLayout.CENTER);
         content.add(main, BorderLayout.CENTER);
         root.add(content, BorderLayout.CENTER);
+
+        // ── Auto-refresh stats (mirrors AdminSlotMapScreen pattern) ──────────
+        Runnable refreshStats = () -> {
+            statsRow.removeAll();
+            buildStatsRow(statsRow, state);
+            statsRow.revalidate();
+            statsRow.repaint();
+        };
+
+        // Path 1: user navigates to this screen
+        root.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentShown(java.awt.event.ComponentEvent e) {
+                state.loadSlotDataFromDB();
+                refreshStats.run();
+                reloadParkedVehicles(vehiclesModel, state);
+                reloadRecentActivity(actModel);
+            }
+        });
+
+        // Path 2: entry/exit fires notifySlotChange()
+        state.addSlotChangeListener(() -> SwingUtilities.invokeLater(() -> {
+            state.loadSlotDataFromDB();
+            refreshStats.run();
+            reloadRecentActivity(actModel);
+        }));
+
         return root;
+    }
+
+    private static void buildStatsRow(JPanel statsRow, AppState state) {
+        statsRow.add(UIFactory.statCard("Available Slots", String.valueOf(state.availableSlots), C_AVAILABLE));
+        statsRow.add(UIFactory.statCard("Occupied",        String.valueOf(state.occupiedSlots),  C_OCCUPIED));
+        statsRow.add(UIFactory.statCard("Revenue Today",   calculateRevenue(),                    C_ACCENT));
+        statsRow.add(UIFactory.statCard("Pending Fees",    calculatePendingFees(),                C_RESERVED));
+    }
+
+    private static String calculateRevenue() {
+        try {
+            ParkingTransactionDAO txDAO = new ParkingTransactionDAO();
+            List<ParkingTransaction> paidTxs = txDAO.findByPaymentStatus("PAID");
+            int totalRevenue = 0;
+            for (ParkingTransaction tx : paidTxs) {
+                if (tx.getCalculatedFee() != null) {
+                    totalRevenue += tx.getCalculatedFee().intValue();
+                }
+            }
+            return "P" + totalRevenue;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+
+    private static String calculatePendingFees() {
+        try {
+            ParkingTransactionDAO txDAO = new ParkingTransactionDAO();
+            List<ParkingTransaction> pendingTxs = txDAO.findInProgress();
+            return String.valueOf(pendingTxs.size());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
     }
 
     private static void reloadParkedVehicles(DefaultTableModel model, AppState state) {
@@ -170,14 +243,34 @@ public class AdminDashboardScreen {
         header.setBorder(BorderFactory.createLineBorder(C_INPUT_BD));
     }
 
-    private static JPanel activityRow(String plate, String action, String slot, String time) {
-        JPanel row = new JPanel(new GridLayout(1, 4));
-        row.setOpaque(false);
-        row.setBorder(new EmptyBorder(6, 0, 6, 0));
-        row.add(UIFactory.lbl(plate,  Font.BOLD,  12, C_WHITE));
-        row.add(UIFactory.lbl(action, Font.PLAIN, 12, action.equals("Entry") ? C_AVAILABLE : C_OCCUPIED));
-        row.add(UIFactory.lbl(slot,   Font.PLAIN, 12, C_MUTED));
-        row.add(UIFactory.lbl(time,   Font.PLAIN, 11, C_MUTED));
-        return row;
+    private static void reloadRecentActivity(DefaultTableModel model) {
+        model.setRowCount(0);
+        try {
+            AuditLogDAO auditDAO = new AuditLogDAO();
+            List<AuditLog> logs = auditDAO.findAll();
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MM/dd HH:mm");
+            int count = 0;
+            for (AuditLog log : logs) {
+                if (!"ENTRY".equals(log.getAction()) && !"EXIT".equals(log.getAction())) continue;
+                if (count++ >= 10) break;
+
+                // changes_log format: "plate=X slot=Y"
+                String plate = "—", slot = "—";
+                String raw = log.getOldValue(); // mapped from changes_log in DAO
+                if (raw != null) {
+                    for (String part : raw.split(" ")) {
+                        if (part.startsWith("plate=")) plate = part.substring(6);
+                        if (part.startsWith("slot="))  slot  = part.substring(5);
+                    }
+                }
+
+                String time = log.getCreatedAt() != null ? log.getCreatedAt().format(fmt) : "—";
+                model.addRow(new Object[]{ plate, log.getAction(), slot, time });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
+
 }

@@ -1,7 +1,9 @@
 package ui.admin;
 import model.AppState;
 import model.UserAccount;
+import model.AuditLog;
 import service.AuthenticationService;
+import dao.AuditLogDAO;
 import util.UIFactory;
 import static util.UIConstants.*;
 import javax.swing.*;
@@ -71,6 +73,20 @@ public class AdminLoginScreen {
                             state.setCurrentUser(user);
                             state.currentUsername = username;
                             state.currentRole = "ADMIN";
+                            
+                            // Log admin login to audit log
+                            try {
+                                AuditLog loginLog = new AuditLog();
+                                loginLog.setUserId(user.getUserId());
+                                loginLog.setAction("LOGIN");
+                                loginLog.setEntityType("USER");
+                                loginLog.setEntityId(user.getUserId());
+                                loginLog.setNewValue(username);
+                                new AuditLogDAO().create(loginLog);
+                            } catch (Exception auditEx) {
+                                auditEx.printStackTrace();
+                            }
+                            
                             cardLayout.show(rootPanel, "ADMIN_DASHBOARD");
                         } else {
                             JOptionPane.showMessageDialog(null, "Access denied. Admin role required.",

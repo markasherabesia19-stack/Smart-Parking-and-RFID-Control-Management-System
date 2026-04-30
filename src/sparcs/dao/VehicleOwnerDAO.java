@@ -13,6 +13,19 @@ import java.util.Optional;
  */
 public class VehicleOwnerDAO {
 
+    /**
+     * Creates a new owner row only if no owner exists for the given user_id.
+     * Returns the existing or newly created VehicleOwner.
+     */
+    public VehicleOwner createOrFind(VehicleOwner owner) throws SQLException {
+        List<VehicleOwner> existing = findAllByUserId(owner.getUserId());
+        if (!existing.isEmpty()) {
+            return existing.get(0);
+        }
+        create(owner);
+        return owner;
+    }
+
     public void create(VehicleOwner owner) throws SQLException {
         String sql = "INSERT INTO vehicle_owner (user_id, full_name, phone_number, address) " +
                 "VALUES (?, ?, ?, ?)";
@@ -21,9 +34,7 @@ public class VehicleOwnerDAO {
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             stmt.setObject(1, owner.getUserId());
-            // DB has full_name, model has firstName + lastName
             stmt.setString(2, owner.getFirstName() + " " + owner.getLastName());
-            // DB has phone_number, model has contactNumber
             stmt.setString(3, owner.getContactNumber());
             stmt.setString(4, owner.getAddress());
 
@@ -56,20 +67,34 @@ public class VehicleOwnerDAO {
         return Optional.empty();
     }
 
+    /**
+     * Returns the first owner row for a user_id.
+     * Prefer findAllByUserId() when fetching vehicles to avoid missing registrations.
+     */
     public Optional<VehicleOwner> findByUserId(int userId) throws SQLException {
+        List<VehicleOwner> owners = findAllByUserId(userId);
+        return owners.isEmpty() ? Optional.empty() : Optional.of(owners.get(0));
+    }
+
+    /**
+     * Returns ALL owner rows for a given user_id.
+     * Use this when collecting vehicles across all registrations for a user.
+     */
+    public List<VehicleOwner> findAllByUserId(int userId) throws SQLException {
         String sql = "SELECT * FROM vehicle_owner WHERE user_id = ?";
+        List<VehicleOwner> owners = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of(mapResultSetToVehicleOwner(rs));
+                while (rs.next()) {
+                    owners.add(mapResultSetToVehicleOwner(rs));
                 }
             }
         }
-        return Optional.empty();
+        return owners;
     }
 
     public List<VehicleOwner> findAll() throws SQLException {
@@ -119,7 +144,6 @@ public class VehicleOwnerDAO {
         owner.setOwnerId(rs.getInt("owner_id"));
         owner.setUserId(rs.getInt("user_id"));
 
-        // DB stores full_name, split into firstName and lastName for the model
         String fullName = rs.getString("full_name");
         if (fullName != null && fullName.contains(" ")) {
             owner.setFirstName(fullName.substring(0, fullName.indexOf(" ")));
@@ -129,7 +153,6 @@ public class VehicleOwnerDAO {
             owner.setLastName("");
         }
 
-        // DB stores phone_number, map to contactNumber in model
         owner.setContactNumber(rs.getString("phone_number"));
         owner.setAddress(rs.getString("address"));
 

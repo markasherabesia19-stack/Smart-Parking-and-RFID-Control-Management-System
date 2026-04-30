@@ -7,9 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Fee Schedule Data Access Object
- */
 public class FeeScheduleDAO {
 
     public void create(FeeSchedule schedule) throws SQLException {

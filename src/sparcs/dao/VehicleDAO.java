@@ -90,6 +90,30 @@ public class VehicleDAO {
         return vehicles;
     }
 
+    /**
+     * Fetches all active vehicles for a given user_id by joining across all owner rows.
+     * Use this instead of chaining findAllByUserId + findByOwnerId when you only need vehicles.
+     */
+    public List<Vehicle> findAllByUserId(int userId) throws SQLException {
+        String sql = "SELECT v.* FROM vehicle v " +
+                "INNER JOIN vehicle_owner vo ON v.owner_id = vo.owner_id " +
+                "WHERE vo.user_id = ? AND v.is_active = TRUE " +
+                "ORDER BY v.registration_date DESC";
+        List<Vehicle> vehicles = new ArrayList<>();
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    vehicles.add(mapResultSetToVehicle(rs));
+                }
+            }
+        }
+        return vehicles;
+    }
+
     public List<Vehicle> findAll() throws SQLException {
         String sql = "SELECT * FROM vehicle WHERE is_active = TRUE ORDER BY plate_number";
         List<Vehicle> vehicles = new ArrayList<>();

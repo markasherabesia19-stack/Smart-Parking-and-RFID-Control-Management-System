@@ -1,5 +1,6 @@
 package model;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -12,6 +13,7 @@ public class UserAccount {
     private String role; // ADMIN, USER
     private String email;
     private String fullName;
+    private BigDecimal walletBalance;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isActive;
@@ -23,6 +25,7 @@ public class UserAccount {
         this.passwordHash = passwordHash;
         this.role = role;
         this.isActive = true;
+        this.walletBalance = BigDecimal.ZERO;
     }
 
     // Getters and Setters
@@ -44,6 +47,9 @@ public class UserAccount {
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
 
+    public BigDecimal getWalletBalance() { return walletBalance != null ? walletBalance : BigDecimal.ZERO; }
+    public void setWalletBalance(BigDecimal walletBalance) { this.walletBalance = walletBalance; }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
@@ -61,6 +67,7 @@ public class UserAccount {
                 ", fullName='" + fullName + '\'' +
                 ", role='" + role + '\'' +
                 ", email='" + email + '\'' +
+                ", walletBalance=" + walletBalance +
                 ", isActive=" + isActive +
                 '}';
     }

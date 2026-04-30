@@ -1,11 +1,7 @@
 package service;
 
-import dao.AuditLogDAO;
 import dao.ParkingSlotDAO;
 import dao.ParkingTransactionDAO;
-import dao.RFIDMappingDAO;
-import dao.VehicleDAO;
-import dao.VehicleOwnerDAO;
 import model.ParkingSlot;
 import model.ParkingTransaction;
 
@@ -21,20 +17,10 @@ public class ParkingService {
 
     private final ParkingTransactionDAO transactionDAO;
     private final ParkingSlotDAO        slotDAO;
-    private final VehicleDAO            vehicleDAO;
-    private final VehicleOwnerDAO       ownerDAO;
-    private final RFIDMappingDAO        rfidDAO;
-    private final FeeCalculationService feeCalculationService;
-    private final AuditLogDAO           auditLogDAO;
 
     public ParkingService() {
         this.transactionDAO        = new ParkingTransactionDAO();
         this.slotDAO               = new ParkingSlotDAO();
-        this.vehicleDAO            = new VehicleDAO();
-        this.ownerDAO              = new VehicleOwnerDAO();
-        this.rfidDAO               = new RFIDMappingDAO();
-        this.feeCalculationService = new FeeCalculationService();
-        this.auditLogDAO           = new AuditLogDAO();
     }
 
     // ── Slot queries ──────────────────────────────────────────────────────────

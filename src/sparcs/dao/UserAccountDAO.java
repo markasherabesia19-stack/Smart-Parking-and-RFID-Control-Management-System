@@ -2,8 +2,8 @@ package dao;
 
 import db.DatabaseConfig;
 import model.UserAccount;
+import java.math.BigDecimal;
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -69,9 +69,6 @@ public class UserAccountDAO {
         return Optional.empty();
     }
 
-    /**
-     * Checks if a username is already taken (case-insensitive).
-     */
     public boolean existsByUsername(String username) throws SQLException {
         String sql = "SELECT 1 FROM user_account WHERE LOWER(username) = LOWER(?) AND is_active = TRUE";
 
@@ -85,9 +82,6 @@ public class UserAccountDAO {
         }
     }
 
-    /**
-     * Checks if an email is already registered (case-insensitive).
-     */
     public boolean existsByEmail(String email) throws SQLException {
         String sql = "SELECT 1 FROM user_account WHERE LOWER(email) = LOWER(?) AND is_active = TRUE";
 
@@ -135,6 +129,45 @@ public class UserAccountDAO {
                 throw new SQLException("Updating user account failed, no rows affected.");
             }
         }
+    }
+
+    /**
+     * Adds amount to the user's wallet balance (cash-in).
+     * Uses a direct SQL increment to avoid race conditions.
+     */
+    public void addWalletBalance(int userId, BigDecimal amount) throws SQLException {
+        String sql = "UPDATE user_account SET wallet_balance = wallet_balance + ? WHERE user_id = ?";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setBigDecimal(1, amount);
+            stmt.setInt(2, userId);
+
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("User not found: " + userId);
+            }
+        }
+    }
+
+    /**
+     * Returns the current wallet balance for a user.
+     */
+    public BigDecimal getWalletBalance(int userId) throws SQLException {
+        String sql = "SELECT wallet_balance FROM user_account WHERE user_id = ?";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBigDecimal("wallet_balance");
+                }
+            }
+        }
+        return BigDecimal.ZERO;
     }
 
     public void delete(int userId) throws SQLException {
@@ -188,16 +221,13 @@ public class UserAccountDAO {
         account.setEmail(rs.getString("email"));
         account.setFullName(rs.getString("full_name"));
         account.setActive(rs.getBoolean("is_active"));
+        account.setWalletBalance(rs.getBigDecimal("wallet_balance"));
 
         Timestamp createdAt = rs.getTimestamp("created_at");
-        if (createdAt != null) {
-            account.setCreatedAt(createdAt.toLocalDateTime());
-        }
+        if (createdAt != null) account.setCreatedAt(createdAt.toLocalDateTime());
 
         Timestamp updatedAt = rs.getTimestamp("updated_at");
-        if (updatedAt != null) {
-            account.setUpdatedAt(updatedAt.toLocalDateTime());
-        }
+        if (updatedAt != null) account.setUpdatedAt(updatedAt.toLocalDateTime());
 
         return account;
     }
