@@ -9,7 +9,6 @@ import com.google.zxing.oned.Code128Writer;
 import model.AppState;
 import model.RFIDMapping;
 import model.Vehicle;
-import ui.shared.PanelRegistry;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
 import static util.UIConstants.*;
@@ -115,8 +114,7 @@ public class VehicleRFIDCardScreen {
         cc.gridy = 10; cc.insets = new Insets(0, 0, 0, 0);
         JButton backBtn = UIFactory.outlineButton("BACK TO VEHICLES");
         backBtn.addActionListener(e ->
-            PanelRegistry.swap(cardLayout, rootPanel,
-                AdminVehiclesScreen.build(cardLayout, rootPanel, state), "ADMIN_VEHICLES")
+            cardLayout.show(rootPanel, "ADMIN_VEHICLES")
         );
         card.add(backBtn, cc);
 
