@@ -9,8 +9,15 @@ import static util.UIConstants.*;
 
 public class SPARCS extends JFrame {
     private final CardLayout cardLayout = new CardLayout();
-    private final JPanel     rootPanel  = new JPanel(cardLayout);
-    private final AppState   state      = new AppState();
+    private final JPanel     rootPanel  = new JPanel(cardLayout) {
+        @Override
+        protected void paintComponent(Graphics g) {
+            g.setColor(new Color(13, 7, 36));
+            g.fillRect(0, 0, getWidth(), getHeight());
+            super.paintComponent(g);
+        }
+    };
+    private final AppState state = new AppState();
 
     public SPARCS() {
         super("SPARCS - Smart Parking & RFID Control Management System");
@@ -19,7 +26,9 @@ public class SPARCS extends JFrame {
         setMinimumSize(new Dimension(900, 600));
         setLocationRelativeTo(null);
         getContentPane().setBackground(C_BG_DARK);
-    
+        rootPanel.setOpaque(true);
+        rootPanel.setBackground(new Color(13, 7, 36));
+
         registerScreens();
 
         add(rootPanel);
@@ -51,7 +60,7 @@ public class SPARCS extends JFrame {
         rootPanel.add(UserSlotViewScreen.build(cardLayout, rootPanel, state),           "USER_SLOT_VIEW");
         rootPanel.add(UserHistoryScreen.build(cardLayout, rootPanel, state),            "USER_HISTORY");
         rootPanel.add(UserFeeScheduleScreen.build(cardLayout, rootPanel, state),        "USER_FEE_SCHEDULE");
-        rootPanel.add(UserRFIDCardScreen.build(cardLayout, rootPanel, state), "USER_RFID_CARD");
+        rootPanel.add(UserRFIDCardScreen.build(cardLayout, rootPanel, state),           "USER_RFID_CARD");
     }
 
     public static void main(String[] args) {

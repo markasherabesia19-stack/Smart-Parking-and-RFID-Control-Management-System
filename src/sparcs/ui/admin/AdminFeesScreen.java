@@ -36,10 +36,12 @@ public class AdminFeesScreen {
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(C_BG_DARK);
+        root.setOpaque(true);
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_FEES"), BorderLayout.WEST);
 
         JPanel content = new JPanel(new BorderLayout());
         content.setBackground(C_BG_DARK);
+        content.setOpaque(true);
 
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBackground(C_BG_PANEL);
@@ -49,7 +51,8 @@ public class AdminFeesScreen {
 
         // ── Main body: left column (rate + cash-in), right column (pending) ──
         JPanel body = new JPanel(new GridBagLayout());
-        body.setOpaque(false);
+        body.setOpaque(true);
+        body.setBackground(C_BG_DARK);
         body.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -61,7 +64,8 @@ public class AdminFeesScreen {
 
         // ── Left column: rate card + cash-in card stacked ─────────────────────
         JPanel leftCol = new JPanel(new GridBagLayout());
-        leftCol.setOpaque(false);
+        leftCol.setOpaque(true);
+        leftCol.setBackground(C_BG_DARK);
 
         GridBagConstraints lc = new GridBagConstraints();
         lc.fill = GridBagConstraints.BOTH;

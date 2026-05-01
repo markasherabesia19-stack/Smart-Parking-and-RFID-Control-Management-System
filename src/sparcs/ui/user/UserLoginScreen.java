@@ -275,6 +275,17 @@ public class UserLoginScreen {
         });
         backBtn.addActionListener(e -> cardLayout.show(rootPanel, "ROLE_PICKER"));
 
+        // Clear fields every time this screen becomes visible (e.g. after logout)
+        p.addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0 && p.isShowing()) {
+                usernameField.setText("Enter your username");
+                usernameField.setForeground(new Color(185, 175, 255, 145));
+                passwordField.setText("Enter your password");
+                passwordField.setForeground(new Color(185, 175, 255, 145));
+                ((JPasswordField) passwordField).setEchoChar((char) 0);
+            }
+        });
+
         p.add(center, gc);
         return p;
     }

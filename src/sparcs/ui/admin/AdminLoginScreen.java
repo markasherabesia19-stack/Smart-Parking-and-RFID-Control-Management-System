@@ -263,6 +263,11 @@ public class AdminLoginScreen {
             }
         });
 
+        // ── Enter key triggers sign-in from either field ─────────────────────
+        java.awt.event.ActionListener enterAction = e -> signInBtn.doClick();
+        usernameField.addActionListener(enterAction);
+        passwordField.addActionListener(enterAction);
+
         backBtn.addActionListener(e -> cardLayout.show(rootPanel, "ROLE_PICKER"));
 
         p.add(center, gc);

@@ -31,10 +31,13 @@ public class AdminVehiclesScreen {
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(C_BG_DARK);
+        root.setOpaque(true);
+        root.setName("ADMIN_VEHICLES");
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_VEHICLES"), BorderLayout.WEST);
 
         JPanel content = new JPanel(new BorderLayout());
         content.setBackground(C_BG_DARK);
+        content.setOpaque(true);
 
         // ── Top Bar ──────────────────────────────────────────────────────────
         JPanel topBar = new JPanel(new BorderLayout());
@@ -144,20 +147,26 @@ public class AdminVehiclesScreen {
         noResultsLabel.setVisible(false);
 
         JScrollPane scroll = new JScrollPane(table);
-        scroll.setOpaque(false);
+        scroll.setOpaque(true);
+        scroll.getViewport().setOpaque(true);
         scroll.getViewport().setBackground(C_BG_CARD);
         scroll.setBorder(BorderFactory.createLineBorder(C_INPUT_BD));
 
-        JLayeredPane tableLayer = new JLayeredPane() {
-            @Override
-            public void doLayout() {
-                for (Component comp : getComponents()) {
-                    comp.setBounds(0, 0, getWidth(), getHeight());
-                }
+        JPanel tableLayer = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                g.setColor(C_BG_CARD);
+                g.fillRect(0, 0, getWidth(), getHeight());
+                super.paintComponent(g);
             }
         };
-        tableLayer.add(scroll, JLayeredPane.DEFAULT_LAYER);
-        tableLayer.add(noResultsLabel, JLayeredPane.PALETTE_LAYER);
+        tableLayer.setLayout(new OverlayLayout(tableLayer));
+        tableLayer.setOpaque(true);
+        tableLayer.setBackground(C_BG_CARD);
+        noResultsLabel.setOpaque(false);
+        noResultsLabel.setAlignmentX(0.5f);
+        noResultsLabel.setAlignmentY(0.5f);
+        tableLayer.add(noResultsLabel);
+        tableLayer.add(scroll);
 
         // ── Search + filter logic ─────────────────────────────────────────────
         Runnable applyFilter = () -> {
@@ -204,7 +213,7 @@ public class AdminVehiclesScreen {
         // Trigger on dropdown change
         filterBox.addActionListener(e -> applyFilter.run());
 
-        // ── Reload on navigation ──────────────────────────────────────────────
+        // Reload data when navigating to this screen — no rebuild needed
         root.addComponentListener(new java.awt.event.ComponentAdapter() {
             @Override
             public void componentShown(java.awt.event.ComponentEvent e) {
@@ -224,7 +233,8 @@ public class AdminVehiclesScreen {
 
         // ── Layout Assembly ───────────────────────────────────────────────────
         JPanel body = new JPanel(new BorderLayout());
-        body.setOpaque(false);
+        body.setBackground(C_BG_DARK);
+        body.setOpaque(true);
         body.setBorder(new EmptyBorder(20, 20, 20, 20));
         body.add(tableLayer, BorderLayout.CENTER);
 
@@ -299,5 +309,6 @@ public class AdminVehiclesScreen {
         header.setForeground(C_MUTED);
         header.setFont(new Font("SansSerif", Font.BOLD, 11));
         header.setBorder(BorderFactory.createLineBorder(C_INPUT_BD));
+        table.setFillsViewportHeight(true);
     }
 }

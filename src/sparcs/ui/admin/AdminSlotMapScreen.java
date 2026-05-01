@@ -23,10 +23,13 @@ public class AdminSlotMapScreen {
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(C_BG_DARK);
+        root.setOpaque(true);
+        root.setName("ADMIN_SLOT_MAP");
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_SLOT_MAP"), BorderLayout.WEST);
 
         JPanel content = new JPanel(new BorderLayout());
         content.setBackground(C_BG_DARK);
+        content.setOpaque(true);
 
         // ── Top Bar ───────────────────────────────────────────────────────────
         JPanel topBar = new JPanel(new BorderLayout());

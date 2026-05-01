@@ -33,10 +33,13 @@ public class AdminDashboardScreen {
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(C_BG_DARK);
+        root.setOpaque(true);
+        root.setName("ADMIN_DASHBOARD");
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_DASHBOARD"), BorderLayout.WEST);
 
         JPanel content = new JPanel(new BorderLayout());
         content.setBackground(C_BG_DARK);
+        content.setOpaque(true);
 
         // Top bar
         JPanel topBar = new JPanel(new BorderLayout());

@@ -25,10 +25,13 @@ public class AdminEntryExitScreen {
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(C_BG_DARK);
+        root.setOpaque(true);
+        root.setName("ADMIN_ENTRY_EXIT");
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_ENTRY_EXIT"), BorderLayout.WEST);
 
         JPanel content = new JPanel(new BorderLayout());
         content.setBackground(C_BG_DARK);
+        content.setOpaque(true);
 
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBackground(C_BG_PANEL);

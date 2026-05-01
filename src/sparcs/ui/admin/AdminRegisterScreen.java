@@ -23,10 +23,12 @@ public class AdminRegisterScreen {
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(C_BG_DARK);
+        root.setOpaque(true);
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_REGISTER"), BorderLayout.WEST);
 
         JPanel content = new JPanel(new BorderLayout());
         content.setBackground(C_BG_DARK);
+        content.setOpaque(true);
 
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBackground(C_BG_PANEL);
@@ -142,11 +144,17 @@ public class AdminRegisterScreen {
                 for (JTextField field : fields) field.setText("");
 
                 if (choice == JOptionPane.YES_OPTION) {
+                    // VEHICLE_RFID panels are per-vehicle so not pre-registered — remove stale then add fresh
                     String panelKey = "VEHICLE_RFID_" + plate;
-                    rootPanel.add(VehicleRFIDCardScreen.build(cardLayout, rootPanel, state, vehicle, mapping), panelKey);
+                    for (Component c : rootPanel.getComponents()) {
+                        if (panelKey.equals(c.getName())) { rootPanel.remove(c); break; }
+                    }
+                    JPanel rfidPanel = VehicleRFIDCardScreen.build(cardLayout, rootPanel, state, vehicle, mapping);
+                    rfidPanel.setName(panelKey);
+                    rootPanel.add(rfidPanel, panelKey);
                     cardLayout.show(rootPanel, panelKey);
                 } else {
-                    rootPanel.add(AdminVehiclesScreen.build(cardLayout, rootPanel, state), "ADMIN_VEHICLES");
+                    // ADMIN_VEHICLES is pre-registered at startup — just show it
                     cardLayout.show(rootPanel, "ADMIN_VEHICLES");
                 }
 

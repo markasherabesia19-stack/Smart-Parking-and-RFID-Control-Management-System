@@ -11,7 +11,7 @@ public class UIConstants {
     // ── Background Colors ────────────────────────────────────────────────────
     public static final Color C_BG_DARK   = new Color(26, 16, 64);      // outer gradient dark
     public static final Color C_BG_PANEL  = new Color(45, 27, 110);     // outer gradient mid
-    public static final Color C_BG_CARD   = new Color(30, 22, 70, 200); // frosted card (with alpha)
+    public static final Color C_BG_CARD   = new Color(30, 22, 70, 255); // frosted card (with alpha)
     public static final Color C_SIDEBAR   = new Color(14, 11, 38);
 
     // ── Accent Colors ────────────────────────────────────────────────────────

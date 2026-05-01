@@ -24,10 +24,13 @@ public class AdminAuditLogScreen {
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(C_BG_DARK);
+        root.setOpaque(true);
+        root.setName("ADMIN_AUDIT_LOG");
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_AUDIT_LOG"), BorderLayout.WEST);
 
         JPanel content = new JPanel(new BorderLayout());
         content.setBackground(C_BG_DARK);
+        content.setOpaque(true);
 
         // Top bar
         JPanel topBar = new JPanel(new BorderLayout());
@@ -71,12 +74,13 @@ public class AdminAuditLogScreen {
         table.getColumnModel().getColumn(5).setPreferredWidth(110); // IP Address
 
         JScrollPane scroll = new JScrollPane(table);
-        scroll.setOpaque(false);
+        scroll.setOpaque(true);
         scroll.getViewport().setBackground(C_BG_CARD);
         scroll.setBorder(BorderFactory.createLineBorder(C_INPUT_BD));
 
         JPanel body = new JPanel(new BorderLayout());
-        body.setOpaque(false);
+        body.setOpaque(true);
+        body.setBackground(C_BG_DARK);
         body.setBorder(new EmptyBorder(20, 20, 20, 20));
         body.add(scroll, BorderLayout.CENTER);
 

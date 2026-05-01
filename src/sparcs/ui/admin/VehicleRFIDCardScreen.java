@@ -9,6 +9,7 @@ import com.google.zxing.oned.Code128Writer;
 import model.AppState;
 import model.RFIDMapping;
 import model.Vehicle;
+import ui.shared.PanelRegistry;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
 import static util.UIConstants.*;
@@ -31,6 +32,7 @@ public class VehicleRFIDCardScreen {
                                Vehicle vehicle, RFIDMapping mapping) {
         JPanel root = new JPanel(new BorderLayout());
         root.setBackground(C_BG_DARK);
+        root.setName("VEHICLE_RFID");
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_REGISTER"), BorderLayout.WEST);
 
         JPanel content = new JPanel(new BorderLayout());
@@ -112,10 +114,10 @@ public class VehicleRFIDCardScreen {
 
         cc.gridy = 10; cc.insets = new Insets(0, 0, 0, 0);
         JButton backBtn = UIFactory.outlineButton("BACK TO VEHICLES");
-        backBtn.addActionListener(e -> {
-            rootPanel.add(AdminVehiclesScreen.build(cardLayout, rootPanel, state), "ADMIN_VEHICLES");
-            cardLayout.show(rootPanel, "ADMIN_VEHICLES");
-        });
+        backBtn.addActionListener(e ->
+            PanelRegistry.swap(cardLayout, rootPanel,
+                AdminVehiclesScreen.build(cardLayout, rootPanel, state), "ADMIN_VEHICLES")
+        );
         card.add(backBtn, cc);
 
         center.add(card);
