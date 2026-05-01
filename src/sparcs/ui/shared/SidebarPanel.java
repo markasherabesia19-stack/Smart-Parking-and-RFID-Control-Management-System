@@ -96,58 +96,78 @@ public class SidebarPanel {
         JPanel zone = new JPanel();
         zone.setLayout(new BoxLayout(zone, BoxLayout.Y_AXIS));
         zone.setOpaque(false);
-        zone.setBorder(new EmptyBorder(22, 0, 16, 0));
-        zone.setMaximumSize(new Dimension(190, 115));
+        zone.setBorder(new EmptyBorder(16, 0, 16, 0));
+        zone.setMaximumSize(new Dimension(190, 130));
+
+        // Load logo.png using ImageIO — fully loaded, no async issues
+        java.awt.image.BufferedImage logoToDraw = null;
+        try {
+            java.net.URL logoUrl = SidebarPanel.class.getClassLoader().getResource("assets/logo.png");
+            java.awt.image.BufferedImage src = null;
+            if (logoUrl != null) {
+                src = javax.imageio.ImageIO.read(logoUrl);
+            } else {
+                java.io.File logoFile = new java.io.File("assets/logo.png");
+                if (logoFile.exists()) {
+                    src = javax.imageio.ImageIO.read(logoFile);
+                }
+            }
+            if (src != null) {
+                int origW = src.getWidth(), origH = src.getHeight();
+                int maxW = 160, maxH = 100;
+                double scale = Math.min((double) maxW / origW, (double) maxH / origH);
+                int scaledW = Math.max(1, (int) (origW * scale));
+                int scaledH = Math.max(1, (int) (origH * scale));
+                java.awt.image.BufferedImage scaled = new java.awt.image.BufferedImage(scaledW, scaledH, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                Graphics2D sg = scaled.createGraphics();
+                sg.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                sg.setRenderingHint(RenderingHints.KEY_RENDERING,     RenderingHints.VALUE_RENDER_QUALITY);
+                sg.setRenderingHint(RenderingHints.KEY_ANTIALIASING,  RenderingHints.VALUE_ANTIALIAS_ON);
+                sg.drawImage(src, 0, 0, scaledW, scaledH, null);
+                sg.dispose();
+                logoToDraw = scaled;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        final java.awt.image.BufferedImage finalLogo = logoToDraw;
 
         JPanel badge = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                int cx = getWidth() / 2, cy = getHeight() / 2, s = 52;
+                g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                int cx = getWidth() / 2, cy = getHeight() / 2;
 
-                // glow ring
-                g2.setColor(new Color(140, 90, 255, 50));
-                g2.setStroke(new BasicStroke(1.5f));
-                g2.drawRoundRect(cx-s/2-6, cy-s/2-6, s+12, s+12, 22, 22);
-
-                // badge gradient fill
-                g2.setPaint(new GradientPaint(
-                    cx-s/2, cy-s/2, new Color(120, 60, 210),
-                    cx+s/2, cy+s/2, new Color(88, 32, 170)));
-                g2.fillRoundRect(cx-s/2, cy-s/2, s, s, 16, 16);
-
-                // "S"
-                g2.setColor(Color.WHITE);
-                g2.setFont(new Font("Georgia", Font.BOLD, 24));
-                FontMetrics fm = g2.getFontMetrics();
-                g2.drawString("S",
-                    cx - fm.stringWidth("S") / 2,
-                    cy + (fm.getAscent() - fm.getDescent()) / 2);
+                if (finalLogo != null) {
+                    int imgW = finalLogo.getWidth();
+                    int imgH = finalLogo.getHeight();
+                    g2.drawImage(finalLogo, cx - imgW / 2, cy - imgH / 2, imgW, imgH, null);
+                } else {
+                    // Fallback: purple badge with "S"
+                    int s = 52;
+                    g2.setColor(new Color(140, 90, 255, 50));
+                    g2.setStroke(new BasicStroke(1.5f));
+                    g2.drawRoundRect(cx-s/2-6, cy-s/2-6, s+12, s+12, 22, 22);
+                    g2.setPaint(new GradientPaint(
+                        cx-s/2, cy-s/2, new Color(120, 60, 210),
+                        cx+s/2, cy+s/2, new Color(88, 32, 170)));
+                    g2.fillRoundRect(cx-s/2, cy-s/2, s, s, 16, 16);
+                    g2.setColor(Color.WHITE);
+                    g2.setFont(new Font("Georgia", Font.BOLD, 24));
+                    FontMetrics fm = g2.getFontMetrics();
+                    g2.drawString("S", cx - fm.stringWidth("S") / 2,
+                        cy + (fm.getAscent() - fm.getDescent()) / 2);
+                }
                 g2.dispose();
             }
         };
         badge.setOpaque(false);
-        badge.setPreferredSize(new Dimension(190, 68));
-        badge.setMaximumSize(new Dimension(190, 68));
+        badge.setPreferredSize(new Dimension(190, 110));
+        badge.setMaximumSize(new Dimension(190, 110));
         badge.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel name = new JLabel("SPARCS", SwingConstants.CENTER);
-        name.setFont(new Font(FONT, Font.BOLD, 12));
-        name.setForeground(new Color(224, 216, 255));
-        name.setAlignmentX(Component.CENTER_ALIGNMENT);
-        name.setMaximumSize(new Dimension(190, 18));
-
-        JLabel sub = new JLabel("Parking & RFID System", SwingConstants.CENTER);
-        sub.setFont(new Font(FONT, Font.PLAIN, 10));
-        sub.setForeground(new Color(195, 180, 255, 130));
-        sub.setAlignmentX(Component.CENTER_ALIGNMENT);
-        sub.setMaximumSize(new Dimension(190, 16));
-
         zone.add(badge);
-        zone.add(Box.createVerticalStrut(3));
-        zone.add(name);
-        zone.add(Box.createVerticalStrut(1));
-        zone.add(sub);
         return zone;
     }
 
