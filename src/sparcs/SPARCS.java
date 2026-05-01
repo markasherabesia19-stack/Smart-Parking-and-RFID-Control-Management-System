@@ -30,6 +30,7 @@ public class SPARCS extends JFrame {
     private void registerScreens() {
         //Shared/Auth
         rootPanel.add(SplashPanel.build(cardLayout, rootPanel),                        "SPLASH");
+        rootPanel.add(AnimationPanel.build(cardLayout, rootPanel),                     "ANIMATION");
         rootPanel.add(RolePickerScreen.build(cardLayout, rootPanel, state),             "ROLE_PICKER");
 
         //Admin 
