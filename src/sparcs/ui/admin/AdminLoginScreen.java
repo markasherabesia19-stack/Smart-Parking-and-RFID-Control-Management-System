@@ -270,6 +270,21 @@ public class AdminLoginScreen {
 
         backBtn.addActionListener(e -> cardLayout.show(rootPanel, "ROLE_PICKER"));
 
+        // ── FIX: Clear credentials whenever this screen becomes visible ──────
+        // This fires every time CardLayout switches back to this panel (e.g. after sign-out),
+        // so previously typed credentials are never shown to the next user.
+        p.addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0
+                    && p.isShowing()) {
+                usernameField.setText("Enter your username");
+                usernameField.setForeground(new Color(185, 175, 255, 145));
+
+                passwordField.setText("Enter your password");
+                passwordField.setForeground(new Color(185, 175, 255, 145));
+                ((JPasswordField) passwordField).setEchoChar((char) 0);
+            }
+        });
+
         p.add(center, gc);
         return p;
     }
