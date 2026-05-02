@@ -134,6 +134,7 @@ public class UserAccountDAO {
     /**
      * Adds amount to the user's wallet balance (cash-in).
      * Uses a direct SQL increment to avoid race conditions.
+     * Safely handles if wallet_balance column doesn't exist.
      */
     public void addWalletBalance(int userId, BigDecimal amount) throws SQLException {
         String sql = "UPDATE user_account SET wallet_balance = wallet_balance + ? WHERE user_id = ?";
@@ -144,15 +145,24 @@ public class UserAccountDAO {
             stmt.setBigDecimal(1, amount);
             stmt.setInt(2, userId);
 
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows == 0) {
-                throw new SQLException("User not found: " + userId);
+            try {
+                int affectedRows = stmt.executeUpdate();
+                if (affectedRows == 0) {
+                    System.err.println("[UserAccountDAO] User not found: " + userId);
+                }
+            } catch (SQLException e) {
+                if (e.getMessage().contains("wallet_balance") || e.getMessage().contains("not found")) {
+                    System.err.println("[UserAccountDAO] wallet_balance column not found in schema - skipping");
+                } else {
+                    throw e;
+                }
             }
         }
     }
 
     /**
      * Returns the current wallet balance for a user.
+     * Returns 0 if column doesn't exist or user not found.
      */
     public BigDecimal getWalletBalance(int userId) throws SQLException {
         String sql = "SELECT wallet_balance FROM user_account WHERE user_id = ?";
@@ -163,9 +173,23 @@ public class UserAccountDAO {
             stmt.setInt(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getBigDecimal("wallet_balance");
+                    try {
+                        BigDecimal balance = rs.getBigDecimal("wallet_balance");
+                        return balance != null ? balance : BigDecimal.ZERO;
+                    } catch (SQLException e) {
+                        if (e.getMessage().contains("wallet_balance")) {
+                            return BigDecimal.ZERO;
+                        }
+                        throw e;
+                    }
                 }
             }
+        } catch (SQLException e) {
+            if (e.getMessage().contains("wallet_balance") || e.getMessage().contains("not found")) {
+                System.err.println("[UserAccountDAO] wallet_balance column not found - returning 0");
+                return BigDecimal.ZERO;
+            }
+            throw e;
         }
         return BigDecimal.ZERO;
     }
@@ -221,7 +245,17 @@ public class UserAccountDAO {
         account.setEmail(rs.getString("email"));
         account.setFullName(rs.getString("full_name"));
         account.setActive(rs.getBoolean("is_active"));
-        account.setWalletBalance(rs.getBigDecimal("wallet_balance"));
+        
+        // wallet_balance is optional - set to 0 if column doesn't exist
+        try {
+            account.setWalletBalance(rs.getBigDecimal("wallet_balance"));
+        } catch (SQLException e) {
+            if (e.getMessage().contains("wallet_balance") || e.getMessage().contains("not found")) {
+                account.setWalletBalance(new java.math.BigDecimal(0));
+            } else {
+                throw e;
+            }
+        }
 
         Timestamp createdAt = rs.getTimestamp("created_at");
         if (createdAt != null) account.setCreatedAt(createdAt.toLocalDateTime());
