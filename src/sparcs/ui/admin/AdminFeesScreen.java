@@ -28,9 +28,9 @@ import java.util.Optional;
 
 public class AdminFeesScreen {
 
-    private static final int FIRST_HOUR_RATE = 50;
-    private static final int SUCCEEDING_RATE = 30;
-    private static final int OVERNIGHT_FLAT  = 300;
+    private static final int FIRST_HOUR_RATE = 30;
+    private static final int SUCCEEDING_RATE = 20;
+    private static final int OVERNIGHT_FLAT  = 150;
     private static final int OVERNIGHT_HOURS = 12;
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
@@ -94,7 +94,7 @@ public class AdminFeesScreen {
         rateScroll.setBorder(BorderFactory.createLineBorder(C_INPUT_BD));
         rateCard.add(rateScroll, BorderLayout.CENTER);
 
-        JLabel note = UIFactory.lbl("P50 first hr + P30/hr after · P300 flat if 12 hrs+", Font.ITALIC, 10, C_MUTED);
+        JLabel note = UIFactory.lbl("P30 first hr + P20/hr after · P150 flat if 12 hrs+", Font.ITALIC, 10, C_MUTED);
         note.setBorder(new EmptyBorder(6, 0, 0, 0));
         rateCard.add(note, BorderLayout.SOUTH);
         leftCol.add(rateCard, lc);
