@@ -25,6 +25,7 @@ public class UIFactory {
     // ── Resource paths (single place to change if files move) ────────────────
     private static final String RES_BG   = "/gradientbg.png";
     private static final String RES_LOGO = "/logo.png";
+    private static final String RES_ANIM = "/animation.gif";
 
     // ── Cached images ─────────────────────────────────────────────────────────
     private static Image bgImage   = null;
@@ -47,9 +48,20 @@ public class UIFactory {
     }
 
     /**
-     * Loads an image from the classpath. Works both in IDEs (running from
-     * source) and from a packaged JAR, for any developer on any machine.
+     * Loads the animated GIF from classpath as an ImageIcon.
+     * ImageIcon automatically plays the GIF animation.
      */
+    public static ImageIcon getAnimationGif() {
+        URL url = UIFactory.class.getResource(RES_ANIM);
+        if (url != null) {
+            return new ImageIcon(url);
+        } else {
+            System.err.println("[UIFactory] Animation GIF not found on classpath: " + RES_ANIM);
+            return null;
+        }
+    }
+
+    
     private static Image loadResource(String path) {
         URL url = UIFactory.class.getResource(path);
         if (url != null) {
