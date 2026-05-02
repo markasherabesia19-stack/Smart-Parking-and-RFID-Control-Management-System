@@ -31,13 +31,13 @@ public class SplashPanel {
         bar.setOpaque(true);
         p.add(bar, gc);
 
-        // Animate progress bar then switch screen
+        // Animate progress bar then switch to animation screen
         Timer fill = new Timer(10, null);
         fill.addActionListener(e -> {
             bar.setValue(bar.getValue() + 1);
             if (bar.getValue() >= 100) {
                 fill.stop();
-                cardLayout.show(rootPanel, "ROLE_PICKER");
+                cardLayout.show(rootPanel, "ANIMATION");
             }
         });
         fill.start();
