@@ -13,6 +13,7 @@ import model.UserAccount;
 import model.Vehicle;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
+import util.DialogUtil;
 import static util.UIConstants.*;
 
 import javax.swing.*;
@@ -195,7 +196,7 @@ public class AdminFeesScreen {
         checkBtn.addActionListener(e -> {
             String username = usernameField.getText().trim();
             if (username.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Enter a username first.", "Validation", JOptionPane.WARNING_MESSAGE);
+                DialogUtil.showMessageDialog(null, "Enter a username first.", "Validation", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             try {
@@ -211,7 +212,7 @@ public class AdminFeesScreen {
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                DialogUtil.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
@@ -221,7 +222,7 @@ public class AdminFeesScreen {
             String amountStr = amountField.getText().trim();
 
             if (username.isEmpty() || amountStr.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Please fill in all fields.", "Validation", JOptionPane.WARNING_MESSAGE);
+                DialogUtil.showMessageDialog(null, "Please fill in all fields.", "Validation", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -230,7 +231,7 @@ public class AdminFeesScreen {
                 amount = new BigDecimal(amountStr);
                 if (amount.compareTo(BigDecimal.ZERO) <= 0) throw new NumberFormatException();
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(null, "Enter a valid positive amount.", "Validation", JOptionPane.WARNING_MESSAGE);
+                DialogUtil.showMessageDialog(null, "Enter a valid positive amount.", "Validation", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -238,7 +239,7 @@ public class AdminFeesScreen {
                 UserAccountDAO userDAO = new UserAccountDAO();
                 Optional<UserAccount> userOpt = userDAO.findByUsername(username);
                 if (userOpt.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "User '" + username + "' not found.", "Error", JOptionPane.ERROR_MESSAGE);
+                    DialogUtil.showMessageDialog(null, "User '" + username + "' not found.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
@@ -266,14 +267,14 @@ public class AdminFeesScreen {
                 }
 
                 amountField.setText("");
-                JOptionPane.showMessageDialog(null,
+                DialogUtil.showMessageDialog(null,
                         "Successfully added P" + amount.toPlainString() +
                         " to " + username + "'s wallet.\nNew balance: P" + newBal.toPlainString(),
                         "Cash In Successful", JOptionPane.INFORMATION_MESSAGE);
 
             } catch (Exception ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                DialogUtil.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
@@ -344,10 +345,10 @@ public class AdminFeesScreen {
 
     private static void collectAll(DefaultTableModel model, AppState state) {
         if (model.getRowCount() == 0) {
-            JOptionPane.showMessageDialog(null, "No pending fees.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            DialogUtil.showMessageDialog(null, "No pending fees.", "Info", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        if (JOptionPane.showConfirmDialog(null, "Mark all pending fees as PAID?",
+        if (DialogUtil.showConfirmDialog(null, "Mark all pending fees as PAID?",
                 "Confirm", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
         try {
             ParkingTransactionDAO txDAO = new ParkingTransactionDAO();
@@ -357,12 +358,12 @@ public class AdminFeesScreen {
                 tx.setCalculatedFee(new java.math.BigDecimal(computeFee(mins)));
                 txDAO.update(tx);
             }
-            JOptionPane.showMessageDialog(null, "All fees collected.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            DialogUtil.showMessageDialog(null, "All fees collected.", "Success", JOptionPane.INFORMATION_MESSAGE);
             reloadPending(model);
             state.notifySlotChange();
         } catch (Exception ex) {
             ex.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            DialogUtil.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -472,7 +473,7 @@ public class AdminFeesScreen {
 
                 Optional<Vehicle> vOpt = vDAO.findByPlateNumber(plate);
                 if (vOpt.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "Vehicle not found: " + plate,
+                    DialogUtil.showMessageDialog(null, "Vehicle not found: " + plate,
                         "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -501,7 +502,7 @@ public class AdminFeesScreen {
                     auditEx.printStackTrace();
                 }
                 
-                JOptionPane.showMessageDialog(null,
+                DialogUtil.showMessageDialog(null,
                     "Fee of P" + fee + " collected for " + plate + ".",
                     "Collected", JOptionPane.INFORMATION_MESSAGE);
                 model.setValueAt("COLLECTED", row, 4);
@@ -509,7 +510,7 @@ public class AdminFeesScreen {
                 state.notifySlotChange();
             } catch (Exception ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(),
+                DialogUtil.showMessageDialog(null, "Error: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
             }
         }

@@ -5,6 +5,7 @@ import model.UserAccount;
 import model.AuditLog;
 import service.AuthenticationService;
 import dao.AuditLogDAO;
+import util.DialogUtil;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -217,7 +218,7 @@ public class AdminLoginScreen {
             if (password.equals("Enter your password")) password = "";
 
             if (username.isEmpty() || password.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Please enter both username and password.",
+                DialogUtil.showMessageDialog(null, "Please enter both username and password.",
                         "Login Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -244,11 +245,11 @@ public class AdminLoginScreen {
 
                         cardLayout.show(rootPanel, "ADMIN_DASHBOARD");
                     } else {
-                        JOptionPane.showMessageDialog(null, "Access denied. Admin role required.",
+                        DialogUtil.showMessageDialog(null, "Access denied. Admin role required.",
                                 "Authorization Error", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
-                    JOptionPane.showMessageDialog(null, "Invalid username or password.",
+                    DialogUtil.showMessageDialog(null, "Invalid username or password.",
                             "Authentication Failed", JOptionPane.ERROR_MESSAGE);
                     usernameField.setText("Enter your username");
                     usernameField.setForeground(new Color(185, 175, 255, 145));
@@ -257,7 +258,7 @@ public class AdminLoginScreen {
                     ((JPasswordField) passwordField).setEchoChar((char) 0);
                 }
             } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(null, "Database error: " + ex.getMessage(),
+                DialogUtil.showMessageDialog(null, "Database error: " + ex.getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
                 ex.printStackTrace();
             }

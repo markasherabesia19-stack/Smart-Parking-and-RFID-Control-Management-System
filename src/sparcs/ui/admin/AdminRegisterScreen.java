@@ -11,6 +11,7 @@ import dao.VehicleDAO;
 import dao.VehicleOwnerDAO;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
+import util.DialogUtil;
 import static util.UIConstants.*;
 
 import javax.swing.*;
@@ -78,7 +79,7 @@ public class AdminRegisterScreen {
 
             if (username.isEmpty() || firstName.isEmpty() || lastName.isEmpty()
                     || plate.isEmpty() || vehicleType.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Please fill in all required fields.",
+                DialogUtil.showMessageDialog(null, "Please fill in all required fields.",
                         "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -88,7 +89,7 @@ public class AdminRegisterScreen {
                 UserAccountDAO userDAO = new UserAccountDAO();
                 Optional<UserAccount> userOpt = userDAO.findByUsername(username);
                 if (userOpt.isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "User '" + username + "' not found!",
+                    DialogUtil.showMessageDialog(null, "User '" + username + "' not found!",
                             "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -97,7 +98,7 @@ public class AdminRegisterScreen {
                 // 2. Check if plate already exists
                 VehicleDAO vehicleDAO = new VehicleDAO();
                 if (vehicleDAO.findByPlateNumber(plate).isPresent()) {
-                    JOptionPane.showMessageDialog(null, "License plate '" + plate + "' is already registered!",
+                    DialogUtil.showMessageDialog(null, "License plate '" + plate + "' is already registered!",
                             "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -136,10 +137,10 @@ public class AdminRegisterScreen {
                 rfidDAO.create(mapping);
 
                 // 6. Offer to view the RFID card immediately
-                int choice = JOptionPane.showConfirmDialog(null,
+                int choice = DialogUtil.showConfirmDialog(null,
                         "Vehicle '" + plate + "' registered successfully for "
                                 + firstName + " " + lastName + "!\n\nView RFID card for this vehicle?",
-                        "Success", JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
+                        "Success", JOptionPane.YES_NO_OPTION);
 
                 for (JTextField field : fields) field.setText("");
 
@@ -160,7 +161,7 @@ public class AdminRegisterScreen {
 
             } catch (Exception ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(),
+                DialogUtil.showMessageDialog(null, "Error: " + ex.getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
             }
         });

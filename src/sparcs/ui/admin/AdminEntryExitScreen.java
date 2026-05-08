@@ -11,6 +11,7 @@ import model.ParkingTransaction;
 import model.Vehicle;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
+import util.DialogUtil;
 import static util.UIConstants.*;
 
 import javax.swing.*;
@@ -69,7 +70,7 @@ public class AdminEntryExitScreen {
             String slotInput  = slotEntry.getText().trim().toUpperCase();
 
             if (plateInput.isEmpty() || slotInput.isEmpty()) {
-                JOptionPane.showMessageDialog(null,
+                DialogUtil.showMessageDialog(null,
                     "Please enter both a plate number and a slot number.",
                     "Input Required", JOptionPane.WARNING_MESSAGE);
                 return;
@@ -79,7 +80,7 @@ public class AdminEntryExitScreen {
                 // 1. Look up the vehicle
                 Optional<Vehicle> found = vehicleDAO.findByPlateNumber(plateInput);
                 if (found.isEmpty()) {
-                    JOptionPane.showMessageDialog(null,
+                    DialogUtil.showMessageDialog(null,
                         "No active vehicle found for: " + plateInput,
                         "Not Found", JOptionPane.WARNING_MESSAGE);
                     return;
@@ -93,7 +94,7 @@ public class AdminEntryExitScreen {
                 if (alreadyParked) {
                     Optional<ParkingSlot> currentSlot = slotDAO.findByVehicleId(vehicle.getVehicleId());
                     String currentSlotCode = currentSlot.map(ParkingSlot::getSlotCode).orElse("unknown slot");
-                    JOptionPane.showMessageDialog(null,
+                    DialogUtil.showMessageDialog(null,
                         "Vehicle " + plateInput + " is already parked at slot " + currentSlotCode + ".\n"
                         + "Please record an exit first before recording a new entry.",
                         "Already Parked", JOptionPane.WARNING_MESSAGE);
@@ -103,14 +104,14 @@ public class AdminEntryExitScreen {
                 // 2. Look up the slot
                 Optional<ParkingSlot> slotOpt = slotDAO.findBySlotCode(slotInput);
                 if (slotOpt.isEmpty()) {
-                    JOptionPane.showMessageDialog(null,
+                    DialogUtil.showMessageDialog(null,
                         "Slot \"" + slotInput + "\" not found. Check the slot code (e.g. B-04).",
                         "Slot Not Found", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
                 ParkingSlot slot = slotOpt.get();
                 if (slot.isOccupied()) {
-                    JOptionPane.showMessageDialog(null,
+                    DialogUtil.showMessageDialog(null,
                         "Slot " + slotInput + " is already Occupied.",
                         "Slot Unavailable", JOptionPane.WARNING_MESSAGE);
                     return;
@@ -144,13 +145,13 @@ public class AdminEntryExitScreen {
 
                 rfidEntry.setText("");
                 slotEntry.setText("");
-                JOptionPane.showMessageDialog(null,
+                DialogUtil.showMessageDialog(null,
                     "Entry recorded — " + plateInput + " assigned to slot " + slotInput + ".",
                     "Success", JOptionPane.INFORMATION_MESSAGE);
 
             } catch (Exception ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(null,
+                DialogUtil.showMessageDialog(null,
                     "Database error: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -176,7 +177,7 @@ public class AdminEntryExitScreen {
             String plateInput = rfidExit.getText().trim();
 
             if (plateInput.isEmpty()) {
-                JOptionPane.showMessageDialog(null,
+                DialogUtil.showMessageDialog(null,
                     "Please enter a plate number.",
                     "Input Required", JOptionPane.WARNING_MESSAGE);
                 return;
@@ -186,7 +187,7 @@ public class AdminEntryExitScreen {
                 // 1. Look up the vehicle
                 Optional<Vehicle> found = vehicleDAO.findByPlateNumber(plateInput);
                 if (found.isEmpty()) {
-                    JOptionPane.showMessageDialog(null,
+                    DialogUtil.showMessageDialog(null,
                         "No vehicle found for: " + plateInput,
                         "Not Found", JOptionPane.WARNING_MESSAGE);
                     return;
@@ -196,7 +197,7 @@ public class AdminEntryExitScreen {
                 // 2. Resolve slot from DB
                 Optional<ParkingSlot> slotOpt = slotDAO.findByVehicleId(vehicle.getVehicleId());
                 if (slotOpt.isEmpty()) {
-                    JOptionPane.showMessageDialog(null,
+                    DialogUtil.showMessageDialog(null,
                         "Vehicle " + plateInput + " is not currently occupying any slot.\n"
                         + "It may have already exited.",
                         "Not Parked", JOptionPane.WARNING_MESSAGE);
@@ -242,13 +243,13 @@ public class AdminEntryExitScreen {
 
                 rfidExit.setText("");
                 slotExit.setText("");
-                JOptionPane.showMessageDialog(null,
+                DialogUtil.showMessageDialog(null,
                     "Exit recorded — " + plateInput + " has left slot " + resolvedSlotCode + ".",
                     "Success", JOptionPane.INFORMATION_MESSAGE);
 
             } catch (Exception ex) {
                 ex.printStackTrace();
-                JOptionPane.showMessageDialog(null,
+                DialogUtil.showMessageDialog(null,
                     "Database error: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
             }

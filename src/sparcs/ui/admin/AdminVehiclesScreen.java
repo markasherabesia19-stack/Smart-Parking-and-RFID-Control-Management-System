@@ -9,6 +9,7 @@ import model.UserAccount;
 import model.VehicleOwner;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
+import util.DialogUtil;
 import static util.UIConstants.*;
 
 import javax.swing.*;
@@ -289,7 +290,7 @@ public class AdminVehiclesScreen {
 
         } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(null,
+            DialogUtil.showMessageDialog(null,
                 "Error loading vehicles: " + e.getMessage(),
                 "Database Error", JOptionPane.ERROR_MESSAGE);
         }

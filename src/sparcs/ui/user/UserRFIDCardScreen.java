@@ -13,6 +13,7 @@ import model.RFIDMapping;
 import model.Vehicle;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
+import util.DialogUtil;
 import static util.UIConstants.*;
 
 import javax.imageio.ImageIO;
@@ -228,9 +229,9 @@ public class UserRFIDCardScreen {
         if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
             try {
                 ImageIO.write(img, "PNG", chooser.getSelectedFile());
-                JOptionPane.showMessageDialog(null, "RFID card saved!", "Saved", JOptionPane.INFORMATION_MESSAGE);
+                DialogUtil.showMessageDialog(null, "RFID card saved!", "Saved", JOptionPane.INFORMATION_MESSAGE);
             } catch (IOException ex) {
-                JOptionPane.showMessageDialog(null, "Failed to save: " + ex.getMessage(),
+                DialogUtil.showMessageDialog(null, "Failed to save: " + ex.getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
             }
         }

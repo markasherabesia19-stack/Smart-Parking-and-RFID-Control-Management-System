@@ -70,7 +70,6 @@ public class UserDashboardScreen {
         JPanel actList = new JPanel();
         actList.setLayout(new BoxLayout(actList, BoxLayout.Y_AXIS));
         actList.setOpaque(false);
-        // TODO (back-end): Load from user's parking history in DB via ParkingTransactionDAO
         // Activity rows will be populated dynamically from database
         actCard.add(actList, BorderLayout.CENTER);
         body.add(actCard);
@@ -100,10 +99,7 @@ public class UserDashboardScreen {
         return root;
     }
 
-    /**
-     * Queries the DB for the current user's wallet balance.
-     * Returns a formatted string like "P100.00", or "-" on failure.
-     */
+    //Queries the DB for the current user's wallet balance.
     private static String fetchWalletBalance(AppState state) {
         if (state.currentUsername == null || state.currentUsername.isEmpty()) {
             return "-";

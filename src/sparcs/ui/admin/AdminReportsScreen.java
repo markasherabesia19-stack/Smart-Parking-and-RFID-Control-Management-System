@@ -5,6 +5,7 @@ import model.ParkingTransaction;
 import model.Vehicle;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
+import util.DialogUtil;
 import static util.UIConstants.*;
 import dao.ParkingTransactionDAO;
 import dao.VehicleDAO;
@@ -217,12 +218,12 @@ public class AdminReportsScreen {
                     System.err.println("Error reading transactions: " + e.getMessage());
                 }
                 
-                JOptionPane.showMessageDialog(null, 
+                DialogUtil.showMessageDialog(null, 
                     "Report exported successfully to:\n" + fileChooser.getSelectedFile().getAbsolutePath(), 
                     "Export Success", JOptionPane.INFORMATION_MESSAGE);
                     
             } catch (IOException e) {
-                JOptionPane.showMessageDialog(null, 
+                DialogUtil.showMessageDialog(null, 
                     "Error exporting report: " + e.getMessage(), 
                     "Export Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -269,12 +270,12 @@ public class AdminReportsScreen {
                 writer.println("END OF REPORT");
                 writer.println("─────────────────────────────────────────────────────────────────");
                 
-                JOptionPane.showMessageDialog(null, 
+                DialogUtil.showMessageDialog(null, 
                     "Report exported successfully to:\n" + fileChooser.getSelectedFile().getAbsolutePath(), 
                     "Export Success", JOptionPane.INFORMATION_MESSAGE);
                     
             } catch (IOException e) {
-                JOptionPane.showMessageDialog(null, 
+                DialogUtil.showMessageDialog(null, 
                     "Error exporting report: " + e.getMessage(), 
                     "Export Error", JOptionPane.ERROR_MESSAGE);
             }

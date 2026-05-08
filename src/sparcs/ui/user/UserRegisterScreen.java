@@ -4,6 +4,7 @@ import dao.UserAccountDAO;
 import model.UserAccount;
 import util.PasswordUtil;
 import util.UIFactory;
+import util.DialogUtil;
 import static util.UIConstants.*;
 
 import javax.swing.*;
@@ -233,30 +234,30 @@ public class UserRegisterScreen {
 
             if (firstName.isEmpty() || lastName.isEmpty() || username.isEmpty()
                     || email.isEmpty() || password.isEmpty() || confirmPass.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Please fill in all fields.",
+                DialogUtil.showMessageDialog(null, "Please fill in all fields.",
                         "Registration Error", JOptionPane.ERROR_MESSAGE); return;
             }
             if (!EMAIL_PATTERN.matcher(email).matches()) {
-                JOptionPane.showMessageDialog(null,
+                DialogUtil.showMessageDialog(null,
                         "Please enter a valid email address.\nExample: john.doe@example.com",
                         "Invalid Email", JOptionPane.ERROR_MESSAGE); return;
             }
             if (!password.equals(confirmPass)) {
-                JOptionPane.showMessageDialog(null, "Passwords do not match.",
+                DialogUtil.showMessageDialog(null, "Passwords do not match.",
                         "Registration Error", JOptionPane.ERROR_MESSAGE); return;
             }
             if (password.length() < 5) {
-                JOptionPane.showMessageDialog(null, "Password must be at least 5 characters.",
+                DialogUtil.showMessageDialog(null, "Password must be at least 5 characters.",
                         "Registration Error", JOptionPane.ERROR_MESSAGE); return;
             }
             try {
                 UserAccountDAO dao = new UserAccountDAO();
                 if (dao.existsByUsername(username)) {
-                    JOptionPane.showMessageDialog(null, "Username is already taken.",
+                    DialogUtil.showMessageDialog(null, "Username is already taken.",
                             "Registration Error", JOptionPane.ERROR_MESSAGE); return;
                 }
                 if (dao.existsByEmail(email)) {
-                    JOptionPane.showMessageDialog(null, "Email is already registered.",
+                    DialogUtil.showMessageDialog(null, "Email is already registered.",
                             "Registration Error", JOptionPane.ERROR_MESSAGE); return;
                 }
                 UserAccount newUser = new UserAccount();
@@ -267,7 +268,7 @@ public class UserRegisterScreen {
                 newUser.setRole("USER");
                 newUser.setActive(true);
                 dao.create(newUser);
-                JOptionPane.showMessageDialog(null,
+                DialogUtil.showMessageDialog(null,
                         "Account created successfully! Please sign in.",
                         "Success", JOptionPane.INFORMATION_MESSAGE);
                 Color ph = new Color(185, 175, 255, 145);
@@ -278,7 +279,7 @@ public class UserRegisterScreen {
                 passwordField.setText(""); confirmField.setText("");
                 cardLayout.show(rootPanel, "USER_LOGIN");
             } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(null, "Database error: " + ex.getMessage(),
+                DialogUtil.showMessageDialog(null, "Database error: " + ex.getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
                 ex.printStackTrace();
             }

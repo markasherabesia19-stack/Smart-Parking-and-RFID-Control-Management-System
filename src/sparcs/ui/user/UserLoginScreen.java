@@ -4,6 +4,7 @@ import model.AppState;
 import model.UserAccount;
 import service.AuthenticationService;
 import util.UIFactory;
+import util.DialogUtil;
 import static util.UIConstants.*;
 
 import javax.imageio.ImageIO;
@@ -225,7 +226,7 @@ public class UserLoginScreen {
             String username = usernameField.getText().trim();
             String password = new String(passwordField.getPassword());
             if (username.isEmpty() || password.isEmpty()) {
-                JOptionPane.showMessageDialog(null,
+                DialogUtil.showMessageDialog(null,
                         "Please enter both username and password.",
                         "Login Error", JOptionPane.ERROR_MESSAGE);
                 return;
@@ -244,24 +245,24 @@ public class UserLoginScreen {
                                 "USER_RFID_CARD");
                         cardLayout.show(rootPanel, "USER_DASHBOARD");
                     } else if ("ADMIN".equals(user.getRole())) {
-                        JOptionPane.showMessageDialog(null,
+                        DialogUtil.showMessageDialog(null,
                                 "Please use the Admin portal to login.",
                                 "Access Denied", JOptionPane.ERROR_MESSAGE);
                         usernameField.setText(""); passwordField.setText("");
                     } else {
-                        JOptionPane.showMessageDialog(null, "Unknown user role.",
+                        DialogUtil.showMessageDialog(null, "Unknown user role.",
                                 "Authorization Error", JOptionPane.ERROR_MESSAGE);
                         usernameField.setText(""); passwordField.setText("");
                     }
                 } else {
-                    JOptionPane.showMessageDialog(null,
+                    DialogUtil.showMessageDialog(null,
                             "Invalid username or password.",
                             "Authentication Failed", JOptionPane.ERROR_MESSAGE);
                     usernameField.setText(""); passwordField.setText("");
                     usernameField.requestFocus();
                 }
             } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(null, "Database error: " + ex.getMessage(),
+                DialogUtil.showMessageDialog(null, "Database error: " + ex.getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
                 usernameField.setText(""); passwordField.setText("");
                 ex.printStackTrace();
