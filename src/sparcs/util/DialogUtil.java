@@ -5,9 +5,8 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import static util.UIConstants.*;
 
-/**
- * SPARCS — Styled dialog utility. Drop-in replacement for JOptionPane.
- */
+//SPARCS — Styled dialog utility. Drop-in replacement for JOptionPane.
+
 public class DialogUtil {
 
     public static void showMessageDialog(Component parent, String message, String title, int messageType) {

@@ -194,14 +194,10 @@ public class UserLoginScreen {
         JButton signInBtn = makePrimaryButton("Sign in");
         card.add(signInBtn, cc);
 
-        // Create account + Guest
+        // Create account
         cc.gridy = 5; cc.insets = new Insets(0, 0, 8, 0);
-        JPanel twoCol = new JPanel(new GridLayout(1, 2, 8, 0));
-        twoCol.setOpaque(false);
         JButton registerBtn = makeSecondaryButton("Create account");
-        JButton guestBtn    = makeSecondaryButton("Continue as guest");
-        twoCol.add(registerBtn); twoCol.add(guestBtn);
-        card.add(twoCol, cc);
+        card.add(registerBtn, cc);
 
         // Back
         cc.gridy = 6; cc.insets = new Insets(0, 0, 0, 0);
@@ -270,10 +266,6 @@ public class UserLoginScreen {
         });
 
         registerBtn.addActionListener(e -> cardLayout.show(rootPanel, "USER_REGISTER"));
-        guestBtn.addActionListener(e -> {
-            state.currentUsername = "Guest";
-            cardLayout.show(rootPanel, "USER_DASHBOARD");
-        });
         backBtn.addActionListener(e -> cardLayout.show(rootPanel, "ROLE_PICKER"));
 
         // Clear fields every time this screen becomes visible (e.g. after logout)

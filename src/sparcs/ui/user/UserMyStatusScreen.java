@@ -3,6 +3,8 @@ package ui.user;
 import dao.ParkingSlotDAO;
 import dao.ParkingTransactionDAO;
 import dao.VehicleDAO;
+import service.FeeCalculationService;
+import java.math.BigDecimal;
 import model.AppState;
 import model.ParkingSlot;
 import model.ParkingTransaction;
@@ -12,8 +14,12 @@ import util.UIFactory;
 import static util.UIConstants.*;
 
 import javax.swing.*;
+import javax.swing.border.AbstractBorder;
+import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.MatteBorder;
 import java.awt.*;
+import java.awt.geom.RoundRectangle2D;
 import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -22,174 +28,485 @@ import java.util.Optional;
 
 public class UserMyStatusScreen {
 
+    // ── Palette ────────────────────────────────────────────────────────────────
+    private static final Color BG_BASE        = C_BG_DARK;                        // purple-dark base
+    private static final Color BG_SURFACE     = C_BG_PANEL;                       // purple panel surface
+    private static final Color BG_SURFACE_ALT = new Color(0x2A2340);              // lighter purple surface
+    private static final Color BORDER_LINE    = new Color(0x3D3060);              // purple-tinted border
+    private static final Color TEXT_PRIMARY   = C_WHITE;                          // main text
+    private static final Color TEXT_SECONDARY = C_MUTED;                          // muted label
+    private static final Color ACCENT_ACTIVE  = C_ACCENT;                         // accent — currently parked
+    private static final Color ACCENT_WARN    = new Color(0xF59E0B);              // amber — elapsed time highlight
+    private static final Color TAG_ACTIVE_BG  = new Color(0x251A45);              // purple accent tint
+
+    private static final Font FONT_MONO   = new Font("Monospaced", Font.PLAIN, 11);
+    private static final Font FONT_LABEL  = new Font("SansSerif", Font.BOLD, 10);
+    private static final Font FONT_VALUE  = new Font("SansSerif", Font.PLAIN, 13);
+    private static final Font FONT_TITLE  = new Font("SansSerif", Font.BOLD, 20);
+    private static final Font FONT_SECTION= new Font("SansSerif", Font.BOLD, 11);
+
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
+    // ── Build ──────────────────────────────────────────────────────────────────
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
         JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(C_BG_DARK);
+        root.setBackground(BG_BASE);
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "USER", "USER_MY_STATUS"), BorderLayout.WEST);
 
         JPanel content = new JPanel(new BorderLayout());
-        content.setBackground(C_BG_DARK);
+        content.setBackground(BG_BASE);
 
-        JPanel topBar = new JPanel(new BorderLayout());
-        topBar.setBackground(C_BG_PANEL);
-        topBar.setBorder(new EmptyBorder(14, 24, 14, 24));
-        topBar.add(UIFactory.lbl("MY PARKING STATUS", Font.BOLD, 20, C_WHITE), BorderLayout.WEST);
+        content.add(buildTopBar(), BorderLayout.NORTH);
 
-        JButton refreshBtn = UIFactory.gradientButton("REFRESH");
-        refreshBtn.setPreferredSize(new Dimension(100, 36));
-        topBar.add(refreshBtn, BorderLayout.EAST);
-        content.add(topBar, BorderLayout.NORTH);
-
-        // Vertical container that holds section groups
+        // ── Scroll area ──────────────────────────────────────────────────────
         JPanel sectionsWrapper = new JPanel();
         sectionsWrapper.setLayout(new BoxLayout(sectionsWrapper, BoxLayout.Y_AXIS));
-        sectionsWrapper.setBackground(C_BG_DARK);
-        sectionsWrapper.setBorder(new EmptyBorder(28, 28, 28, 28));
+        sectionsWrapper.setBackground(BG_BASE);
+        sectionsWrapper.setBorder(new EmptyBorder(24, 24, 24, 24));
 
         JScrollPane scroll = new JScrollPane(sectionsWrapper);
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
         scroll.setBorder(BorderFactory.createEmptyBorder());
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        scroll.getVerticalScrollBar().setUnitIncrement(18);
+        scroll.getVerticalScrollBar().setPreferredSize(new Dimension(6, 0));
         content.add(scroll, BorderLayout.CENTER);
 
-        // Refresh action — reload and rebuild grouped sections
-        refreshBtn.addActionListener(e -> {
-            sectionsWrapper.removeAll();
+        // ── Refresh button (grabbed from topBar via name) ─────────────────────
+        JButton refreshBtn = (JButton) ((JPanel) content.getComponent(0))
+                .getClientProperty("refreshBtn");
 
-            List<TransactionWithDetails> all = loadUserTransactions(state);
+        // Re-wire: build topbar with callback
+        content.remove(content.getComponent(0));
+        JPanel topBar = buildTopBarWithRef();
+        JButton btnRef = (JButton) topBar.getClientProperty("refreshBtn");
+        content.add(topBar, BorderLayout.NORTH);
 
-            // Partition into three groups
-            List<TransactionWithDetails> current   = new ArrayList<>();
-            List<TransactionWithDetails> pending   = new ArrayList<>();
-            List<TransactionWithDetails> completed = new ArrayList<>();
+        btnRef.addActionListener(e -> reloadSections(sectionsWrapper, state));
 
-            for (TransactionWithDetails txn : all) {
-                if (isCurrentTransaction(txn.transaction())) {
-                    current.add(txn);
-                } else if (isPendingTransaction(txn.transaction())) {
-                    pending.add(txn);
-                } else {
-                    completed.add(txn);
-                }
+        root.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override public void componentShown(java.awt.event.ComponentEvent e) {
+                btnRef.doClick();
             }
-
-            if (all.isEmpty()) {
-                JPanel emptyPanel = new JPanel(new GridBagLayout());
-                emptyPanel.setBackground(C_BG_DARK);
-                emptyPanel.add(UIFactory.lbl("No Parking Transactions", Font.PLAIN, 14, C_MUTED));
-                sectionsWrapper.add(emptyPanel);
-            } else {
-                addSection(sectionsWrapper, "🅿 CURRENT PARKING", current,   C_ACCENT);
-                addSection(sectionsWrapper, "⏳ PENDING PAYMENT", pending,   new Color(255, 193, 7));
-                addSection(sectionsWrapper, "✓ COMPLETED",        completed, C_AVAILABLE);
-            }
-
-            sectionsWrapper.revalidate();
-            sectionsWrapper.repaint();
         });
 
-        // Initial load
-        refreshBtn.doClick();
+        btnRef.doClick();
 
         root.add(content, BorderLayout.CENTER);
         return root;
     }
 
-    // =========================================================================
-    // Transaction classification helpers
-    // =========================================================================
+    // ── Top bar ────────────────────────────────────────────────────────────────
+    private static JPanel buildTopBar() { return buildTopBarWithRef(); }
 
-    /**
-     * Currently parked: transaction not completed and vehicle has not yet exited.
-     */
-    private static boolean isCurrentTransaction(ParkingTransaction txn) {
-        return !txn.isCompleted() && txn.getExitTime() == null;
+    private static JPanel buildTopBarWithRef() {
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.setBackground(BG_SURFACE);
+        bar.setBorder(new CompoundBorder(
+                new MatteBorder(0, 0, 1, 0, BORDER_LINE),
+                new EmptyBorder(14, 24, 14, 24)
+        ));
+
+        // Left: icon dot + title
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        left.setOpaque(false);
+
+        JLabel dot = new JLabel("●");
+        dot.setForeground(ACCENT_ACTIVE);
+        dot.setFont(new Font("SansSerif", Font.PLAIN, 10));
+
+        JLabel title = new JLabel("MY PARKING STATUS");
+        title.setFont(FONT_TITLE);
+        title.setForeground(TEXT_PRIMARY);
+
+        left.add(dot);
+        left.add(title);
+        bar.add(left, BorderLayout.WEST);
+
+        // Right: refresh button — flat outlined style
+        JButton refreshBtn = new JButton("↻  REFRESH") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (getModel().isRollover()) {
+                    g2.setColor(new Color(ACCENT_ACTIVE.getRed(), ACCENT_ACTIVE.getGreen(),
+                            ACCENT_ACTIVE.getBlue(), 20));
+                    g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 6, 6));
+                }
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        refreshBtn.setFont(new Font("SansSerif", Font.BOLD, 11));
+        refreshBtn.setForeground(ACCENT_ACTIVE);
+        refreshBtn.setBackground(new Color(0, 0, 0, 0));
+        refreshBtn.setOpaque(false);
+        refreshBtn.setContentAreaFilled(false);
+        refreshBtn.setBorder(new CompoundBorder(
+                new RoundedLineBorder(ACCENT_ACTIVE, 1, 6),
+                new EmptyBorder(6, 14, 6, 14)
+        ));
+        refreshBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        refreshBtn.setFocusPainted(false);
+        refreshBtn.setPreferredSize(new Dimension(120, 34));
+
+        bar.add(refreshBtn, BorderLayout.EAST);
+        bar.putClientProperty("refreshBtn", refreshBtn);
+        return bar;
     }
 
-    /**
-     * Pending payment: vehicle has exited (exit time recorded) but transaction
-     * is not yet marked completed / payment is not PAID.
-     */
-    private static boolean isPendingTransaction(ParkingTransaction txn) {
-        String paymentStatus = txn.getPaymentStatus() != null ? txn.getPaymentStatus() : "PENDING";
-        return !txn.isCompleted()
-                && txn.getExitTime() != null
-                && !paymentStatus.equalsIgnoreCase("PAID");
+    // ── Section reload ─────────────────────────────────────────────────────────
+    private static void reloadSections(JPanel sectionsWrapper, AppState state) {
+        sectionsWrapper.removeAll();
+
+        List<TransactionWithDetails> all = loadUserTransactions(state);
+
+        List<TransactionWithDetails> active = new ArrayList<>();
+        for (TransactionWithDetails txn : all) {
+            if (isCurrentTransaction(txn.transaction())) active.add(txn);
+        }
+
+        if (active.isEmpty()) {
+            sectionsWrapper.add(buildEmptyState());
+        } else {
+            addSection(sectionsWrapper, "ACTIVE SESSIONS", active, ACCENT_ACTIVE, TAG_ACTIVE_BG);
+        }
+
+        sectionsWrapper.revalidate();
+        sectionsWrapper.repaint();
     }
 
-    // =========================================================================
-    // Section builder
-    // =========================================================================
+    // ── Empty state ────────────────────────────────────────────────────────────
+    private static JPanel buildEmptyState() {
+        JPanel outer = new JPanel(new GridBagLayout());
+        outer.setOpaque(false);
+        outer.setPreferredSize(new Dimension(0, 340));
 
-    /**
-     * Adds a labelled section heading followed by a 2-column card grid to the
-     * given parent. When the group is empty a subtle "None" placeholder is shown
-     * instead of leaving the section blank.
-     */
+        // Card container
+        JPanel card = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(BG_SURFACE);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
+                g2.setColor(BORDER_LINE);
+                g2.setStroke(new BasicStroke(1f));
+                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 16, 16);
+                g2.dispose();
+            }
+        };
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setOpaque(false);
+        card.setBorder(new EmptyBorder(40, 60, 40, 60));
+        card.setMaximumSize(new Dimension(460, Integer.MAX_VALUE));
+
+        // Icon circle
+        JLabel icon = new JLabel("P", SwingConstants.CENTER) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(TAG_ACTIVE_BG);
+                g2.fillOval(0, 0, getWidth(), getHeight());
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        icon.setFont(new Font("SansSerif", Font.BOLD, 24));
+        icon.setForeground(ACCENT_ACTIVE);
+        icon.setPreferredSize(new Dimension(64, 64));
+        icon.setMaximumSize(new Dimension(64, 64));
+        icon.setOpaque(false);
+        icon.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Heading
+        JLabel heading = new JLabel("No Active Sessions");
+        heading.setFont(new Font("SansSerif", Font.BOLD, 16));
+        heading.setForeground(TEXT_PRIMARY);
+        heading.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Sub-text
+        JLabel sub = new JLabel("You are not currently parked anywhere.");
+        sub.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        sub.setForeground(TEXT_SECONDARY);
+        sub.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel sub2 = new JLabel("Check your history for past transactions.");
+        sub2.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        sub2.setForeground(TEXT_SECONDARY);
+        sub2.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        card.add(icon);
+        card.add(Box.createVerticalStrut(16));
+        card.add(heading);
+        card.add(Box.createVerticalStrut(8));
+        card.add(sub);
+        card.add(Box.createVerticalStrut(4));
+        card.add(sub2);
+
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0; c.gridy = 0; c.fill = GridBagConstraints.HORIZONTAL; c.weightx = 1;
+        outer.add(card, c);
+        return outer;
+    }
+
+    // ── Section builder ────────────────────────────────────────────────────────
     private static void addSection(JPanel parent,
                                    String title,
                                    List<TransactionWithDetails> group,
-                                   Color accentColor) {
-        // Section header
+                                   Color accent,
+                                   Color tagBg) {
+
+        // Summary bar above cards: pulsing dot + title + count pill
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
         header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        header.setBorder(new EmptyBorder(0, 0, 10, 0));
+        header.setBorder(new CompoundBorder(
+                new MatteBorder(0, 3, 0, 0, accent),
+                new EmptyBorder(0, 10, 0, 0)
+        ));
 
-        JLabel sectionLabel = UIFactory.lbl(title, Font.BOLD, 13, accentColor);
-        header.add(sectionLabel, BorderLayout.WEST);
+        // Left: dot + title
+        JPanel leftSide = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        leftSide.setOpaque(false);
 
-        // Count badge
-        JLabel countBadge = UIFactory.lbl(String.valueOf(group.size()), Font.BOLD, 11, accentColor);
-        countBadge.setHorizontalAlignment(SwingConstants.RIGHT);
-        header.add(countBadge, BorderLayout.EAST);
+        JLabel dot = new JLabel("●");
+        dot.setFont(new Font("SansSerif", Font.PLAIN, 9));
+        dot.setForeground(accent);
+
+        JLabel sectionLabel = new JLabel(title);
+        sectionLabel.setFont(FONT_SECTION);
+        sectionLabel.setForeground(TEXT_PRIMARY);
+
+        leftSide.add(dot);
+        leftSide.add(sectionLabel);
+        header.add(leftSide, BorderLayout.WEST);
+
+        // Count pill
+        JLabel pill = new JLabel(group.size() + " vehicle" + (group.size() == 1 ? "" : "s")) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(tagBg);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), getHeight(), getHeight());
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        pill.setFont(new Font("SansSerif", Font.BOLD, 10));
+        pill.setForeground(accent);
+        pill.setBorder(new EmptyBorder(3, 10, 3, 10));
+        pill.setHorizontalAlignment(SwingConstants.CENTER);
+        header.add(pill, BorderLayout.EAST);
 
         parent.add(header);
+        parent.add(Box.createVerticalStrut(16));
 
-        // Thin accent line under header
-        JSeparator accentLine = new JSeparator();
-        accentLine.setForeground(new Color(accentColor.getRed(), accentColor.getGreen(), accentColor.getBlue(), 80));
-        accentLine.setMaximumSize(new Dimension(Integer.MAX_VALUE, 2));
-        parent.add(accentLine);
-        parent.add(Box.createVerticalStrut(12));
+        // Single-column layout — cards span full width for richer detail
+        JPanel col = new JPanel();
+        col.setLayout(new BoxLayout(col, BoxLayout.Y_AXIS));
+        col.setOpaque(false);
+        col.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
-        if (group.isEmpty()) {
-            JPanel emptyRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-            emptyRow.setOpaque(false);
-            emptyRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
-            emptyRow.add(UIFactory.lbl("None", Font.PLAIN, 12, C_MUTED));
-            parent.add(emptyRow);
-        } else {
-            // 2-column grid of cards
-            JPanel grid = new JPanel(new GridLayout(0, 2, 20, 20));
-            grid.setOpaque(false);
-            grid.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
-
-            for (TransactionWithDetails txn : group) {
-                grid.add(buildTransactionCard(txn, accentColor));
-            }
-
-            // If odd number of cards, fill last cell with an invisible placeholder
-            if (group.size() % 2 != 0) {
-                JPanel placeholder = new JPanel();
-                placeholder.setOpaque(false);
-                grid.add(placeholder);
-            }
-
-            parent.add(grid);
+        for (TransactionWithDetails txn : group) {
+            col.add(buildTransactionCard(txn, accent, tagBg));
+            col.add(Box.createVerticalStrut(14));
         }
 
-        // Spacing between sections
-        parent.add(Box.createVerticalStrut(32));
+        parent.add(col);
+        parent.add(Box.createVerticalStrut(24));
     }
 
-    // =========================================================================
-    // Data loading
-    // =========================================================================
+    // ── Card ───────────────────────────────────────────────────────────────────
+    private static JPanel buildTransactionCard(TransactionWithDetails entry,
+                                               Color accent,
+                                               Color tagBg) {
+        ParkingTransaction txn  = entry.transaction();
+        Vehicle           veh  = entry.vehicle();
+        ParkingSlot       slot = entry.slot();
 
+        // ── Guarantee fee and duration are always resolved before rendering ──
+        if (txn.getCalculatedFee() == null) {
+            try {
+                java.math.BigDecimal liveFee = new FeeCalculationService().calculateFee(txn);
+                txn.setCalculatedFee(liveFee);
+            } catch (Exception ignored) {
+                txn.setCalculatedFee(java.math.BigDecimal.ZERO);
+            }
+        }
+        if (txn.getDurationMinutes() == null && txn.getEntryTime() != null) {
+            long mins = FeeCalculationService.calculateDurationMinutes(
+                    txn.getEntryTime(), txn.getExitTime());
+            txn.setDurationMinutes((int) mins);
+        }
+
+        // Outer card
+        JPanel card = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(BG_SURFACE);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                g2.dispose();
+            }
+            @Override protected void paintBorder(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(accent);
+                g2.setStroke(new BasicStroke(1.2f));
+                g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 12, 12);
+                g2.dispose();
+            }
+        };
+        card.setOpaque(false);
+        card.setBorder(new EmptyBorder(0, 0, 0, 0));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+
+        // ── Card header: accent-tinted strip ─────────────────────────────────
+        JPanel cardHeader = new JPanel(new BorderLayout(12, 0)) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(tagBg);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight() + 12, 12, 12);
+                g2.dispose();
+            }
+        };
+        cardHeader.setOpaque(false);
+        cardHeader.setBorder(new EmptyBorder(12, 18, 12, 18));
+
+        // Left: live dot + "CURRENTLY PARKED"
+        JPanel headerLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        headerLeft.setOpaque(false);
+
+        JLabel liveDot = new JLabel("●");
+        liveDot.setFont(new Font("SansSerif", Font.PLAIN, 8));
+        liveDot.setForeground(accent);
+
+        JLabel liveLabel = new JLabel("CURRENTLY PARKED");
+        liveLabel.setFont(new Font("SansSerif", Font.BOLD, 10));
+        liveLabel.setForeground(accent);
+
+        headerLeft.add(liveDot);
+        headerLeft.add(liveLabel);
+
+        // Right: plate number — large and prominent
+        JLabel plateLabel = new JLabel(veh.getPlateNumber());
+        plateLabel.setFont(new Font("Monospaced", Font.BOLD, 16));
+        plateLabel.setForeground(TEXT_PRIMARY);
+
+        cardHeader.add(headerLeft, BorderLayout.WEST);
+        cardHeader.add(plateLabel, BorderLayout.EAST);
+        card.add(cardHeader, BorderLayout.NORTH);
+
+        // ── Card body — two-column detail grid ───────────────────────────────
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setOpaque(false);
+        body.setBorder(new EmptyBorder(14, 18, 18, 18));
+
+        // ─ Slot / Zone row side by side ─
+        JPanel slotRow = new JPanel(new GridLayout(1, 2, 16, 0));
+        slotRow.setOpaque(false);
+        slotRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+        slotRow.add(infoBlock("SLOT", slot.getSlotCode(), accent));
+        slotRow.add(infoBlock("ZONE", slot.getZone(), TEXT_SECONDARY));
+        body.add(slotRow);
+        body.add(Box.createVerticalStrut(12));
+
+        // ─ Vehicle type / Entry side by side ─
+        JPanel row2 = new JPanel(new GridLayout(1, 2, 16, 0));
+        row2.setOpaque(false);
+        row2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+        String entryStr = txn.getEntryTime() != null ? txn.getEntryTime().format(DATE_FORMAT) : "—";
+        row2.add(infoBlock("VEHICLE TYPE", veh.getVehicleType(), TEXT_SECONDARY));
+        row2.add(infoBlock("ENTRY TIME",   entryStr,            TEXT_SECONDARY));
+        body.add(row2);
+        body.add(Box.createVerticalStrut(12));
+
+        // ─ Duration (full width, slightly highlighted) ─
+        String durStr = txn.getDurationMinutes() != null
+                ? formatDuration(txn.getDurationMinutes()) : "0 min";
+        body.add(infoBlock("ELAPSED TIME", durStr, ACCENT_WARN));
+        body.add(Box.createVerticalStrut(14));
+
+        // ─ Divider ─
+        JSeparator feeSep = new JSeparator();
+        feeSep.setForeground(BORDER_LINE);
+        feeSep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        body.add(feeSep);
+        body.add(Box.createVerticalStrut(12));
+
+        // ─ Accrued fee — large ─
+        String feeStr = txn.getCalculatedFee() != null
+                ? "₱" + String.format("%.2f", txn.getCalculatedFee().doubleValue())
+                : "₱0.00";
+        body.add(accrualBlock("ACCRUED FEE", feeStr));
+
+        card.add(body, BorderLayout.CENTER);
+        return card;
+    }
+
+    /** Two-line stacked label block: small grey label above, value below. */
+    private static JPanel infoBlock(String label, String value, Color valueColor) {
+        JPanel block = new JPanel();
+        block.setLayout(new BoxLayout(block, BoxLayout.Y_AXIS));
+        block.setOpaque(false);
+
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(FONT_LABEL);
+        lbl.setForeground(TEXT_SECONDARY);
+        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel val = new JLabel(value);
+        val.setFont(FONT_VALUE);
+        val.setForeground(valueColor);
+        val.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        block.add(lbl);
+        block.add(Box.createVerticalStrut(3));
+        block.add(val);
+        return block;
+    }
+
+    /** Full-width fee block with a large bold value. */
+    private static JPanel accrualBlock(String label, String value) {
+        JPanel block = new JPanel(new BorderLayout(8, 0));
+        block.setOpaque(false);
+        block.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(FONT_LABEL);
+        lbl.setForeground(TEXT_SECONDARY);
+
+        JLabel val = new JLabel(value);
+        val.setFont(new Font("Monospaced", Font.BOLD, 18));
+        val.setForeground(TEXT_PRIMARY);
+        val.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        block.add(lbl, BorderLayout.WEST);
+        block.add(val, BorderLayout.EAST);
+        return block;
+    }
+
+    /** Format minutes as e.g. "2h 34m" or "45m". */
+    private static String formatDuration(int totalMinutes) {
+        if (totalMinutes < 60) return totalMinutes + "m";
+        int h = totalMinutes / 60;
+        int m = totalMinutes % 60;
+        return h + "h " + m + "m";
+    }
+
+    // ── Classification helpers ─────────────────────────────────────────────────
+    /**
+     * Active: car is still parked — no exit time recorded yet.
+     */
+    private static boolean isCurrentTransaction(ParkingTransaction txn) {
+        return txn.getExitTime() == null;
+    }
+
+    // Completed = exited + PAID (falls through; kept here for reference only)
+
+    // ── Data loading ───────────────────────────────────────────────────────────
     private record TransactionWithDetails(
             ParkingTransaction transaction,
             Vehicle vehicle,
@@ -207,10 +524,24 @@ public class UserMyStatusScreen {
 
             ParkingTransactionDAO txnDAO = new ParkingTransactionDAO();
             ParkingSlotDAO slotDAO = new ParkingSlotDAO();
+            FeeCalculationService feeService = new FeeCalculationService();
 
             for (Vehicle v : vehicles) {
                 List<ParkingTransaction> txns = txnDAO.findByVehicleId(v.getVehicleId());
                 for (ParkingTransaction txn : txns) {
+                    // Always compute a live fee if one is not already stored
+                    if (txn.getCalculatedFee() == null) {
+                        try {
+                            BigDecimal liveFee = feeService.calculateFee(txn);
+                            txn.setCalculatedFee(liveFee);
+                        } catch (SQLException ignored) {}
+                    }
+                    // Also compute live duration if missing
+                    if (txn.getDurationMinutes() == null && txn.getEntryTime() != null) {
+                        long mins = FeeCalculationService.calculateDurationMinutes(
+                                txn.getEntryTime(), txn.getExitTime());
+                        txn.setDurationMinutes((int) mins);
+                    }
                     Optional<ParkingSlot> slotOpt = slotDAO.findById(txn.getSlotId());
                     slotOpt.ifPresent(slot -> result.add(new TransactionWithDetails(txn, v, slot)));
                 }
@@ -221,126 +552,29 @@ public class UserMyStatusScreen {
         return result;
     }
 
-    // =========================================================================
-    // Card rendering
-    // =========================================================================
+    // ── Utility: rounded border ────────────────────────────────────────────────
+    private static class RoundedLineBorder extends AbstractBorder {
+        private final Color color;
+        private final int thickness;
+        private final int radius;
 
-    private static JPanel buildTransactionCard(TransactionWithDetails entry, Color sectionAccent) {
-        ParkingTransaction txn = entry.transaction();
-        Vehicle vehicle = entry.vehicle();
-        ParkingSlot slot = entry.slot();
-
-        JPanel card = UIFactory.cardPanel(new GridBagLayout());
-        card.setBorder(new EmptyBorder(20, 24, 20, 24));
-
-        GridBagConstraints cc = new GridBagConstraints();
-        cc.gridx = 0;
-        cc.fill = GridBagConstraints.HORIZONTAL;
-        cc.weightx = 1.0;
-
-        // Status badge — colour matches the section accent
-        cc.gridy = 0;
-        cc.insets = new Insets(0, 0, 12, 0);
-        String statusText;
-        if (isCurrentTransaction(txn)) {
-            statusText = "🅿 CURRENTLY PARKED";
-        } else if (isPendingTransaction(txn)) {
-            statusText = "⏳ PENDING PAYMENT";
-        } else {
-            statusText = "✓ COMPLETED";
+        RoundedLineBorder(Color color, int thickness, int radius) {
+            this.color = color;
+            this.thickness = thickness;
+            this.radius = radius;
         }
-        JLabel statusBadge = UIFactory.lbl(statusText, Font.BOLD, 12, sectionAccent);
-        statusBadge.setHorizontalAlignment(SwingConstants.CENTER);
-        card.add(statusBadge, cc);
 
-        // Divider
-        cc.gridy = 1;
-        cc.insets = new Insets(0, 0, 12, 0);
-        card.add(divider(), cc);
+        @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(color);
+            g2.setStroke(new BasicStroke(thickness));
+            g2.drawRoundRect(x, y, w - 1, h - 1, radius, radius);
+            g2.dispose();
+        }
 
-        // Details
-        cc.insets = new Insets(4, 0, 4, 0);
-
-        cc.gridy = 2;
-        card.add(infoRow("PLATE NUMBER", vehicle.getPlateNumber()), cc);
-
-        cc.gridy = 3;
-        card.add(infoRow("VEHICLE TYPE", vehicle.getVehicleType()), cc);
-
-        cc.gridy = 4;
-        card.add(infoRow("PARKING SLOT", slot.getSlotCode()), cc);
-
-        cc.gridy = 5;
-        card.add(infoRow("ZONE", slot.getZone()), cc);
-
-        cc.gridy = 6;
-        String entryTimeStr = txn.getEntryTime() != null
-                ? txn.getEntryTime().format(DATE_FORMAT)
-                : "—";
-        card.add(infoRow("ENTRY TIME", entryTimeStr), cc);
-
-        cc.gridy = 7;
-        String exitTimeStr = txn.getExitTime() != null
-                ? txn.getExitTime().format(DATE_FORMAT)
-                : "—";
-        card.add(infoRow("EXIT TIME", exitTimeStr), cc);
-
-        cc.gridy = 8;
-        String durationStr = txn.getDurationMinutes() != null
-                ? txn.getDurationMinutes() + " min"
-                : "—";
-        card.add(infoRow("DURATION", durationStr), cc);
-
-        cc.gridy = 9;
-        String feeStr = txn.getCalculatedFee() != null
-                ? "₱" + String.format("%.2f", txn.getCalculatedFee())
-                : "—";
-        card.add(infoRow("CALCULATED FEE", feeStr), cc);
-
-        cc.gridy = 10;
-        cc.insets = new Insets(4, 0, 0, 0);
-        String paymentStatus = txn.getPaymentStatus() != null ? txn.getPaymentStatus() : "PENDING";
-        Color paymentColor = paymentStatus.equalsIgnoreCase("PAID") ? C_AVAILABLE : C_MUTED;
-        card.add(infoRowColored("PAYMENT STATUS", paymentStatus, paymentColor), cc);
-
-        return card;
-    }
-
-    // =========================================================================
-    // Helpers
-    // =========================================================================
-
-    private static JSeparator divider() {
-        JSeparator sep = new JSeparator();
-        sep.setForeground(new Color(255, 255, 255, 40));
-        return sep;
-    }
-
-    private static JPanel infoRow(String label, String value) {
-        JPanel row = new JPanel(new BorderLayout(12, 0));
-        row.setOpaque(false);
-
-        JLabel lbl = UIFactory.lbl(label, Font.BOLD, 10, C_MUTED);
-        row.add(lbl, BorderLayout.WEST);
-
-        JLabel val = UIFactory.lbl(value, Font.PLAIN, 12, C_WHITE);
-        val.setHorizontalAlignment(SwingConstants.RIGHT);
-        row.add(val, BorderLayout.EAST);
-
-        return row;
-    }
-
-    private static JPanel infoRowColored(String label, String value, Color valueColor) {
-        JPanel row = new JPanel(new BorderLayout(12, 0));
-        row.setOpaque(false);
-
-        JLabel lbl = UIFactory.lbl(label, Font.BOLD, 10, C_MUTED);
-        row.add(lbl, BorderLayout.WEST);
-
-        JLabel val = UIFactory.lbl(value, Font.PLAIN, 12, valueColor);
-        val.setHorizontalAlignment(SwingConstants.RIGHT);
-        row.add(val, BorderLayout.EAST);
-
-        return row;
+        @Override public Insets getBorderInsets(Component c) {
+            return new Insets(thickness + 2, thickness + 2, thickness + 2, thickness + 2);
+        }
     }
 }

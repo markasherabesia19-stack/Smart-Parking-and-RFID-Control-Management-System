@@ -1,6 +1,8 @@
 package ui.user;
 
+import dao.ParkingSlotDAO;
 import model.AppState;
+import model.ParkingSlot;
 import ui.shared.SidebarPanel;
 import ui.shared.SlotGridPanel;
 import util.UIFactory;
@@ -9,11 +11,15 @@ import static util.UIConstants.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.sql.SQLException;
+import java.util.List;
 
 /**
  * SPARCS — User slot view screen.
  * Shows the full parking map with available / occupied colours.
- * TODO (back-end): Reload slot availability from DB on screen entry.
+ * Reloads slot availability from the DB every time the screen becomes visible.
  */
 public class UserSlotViewScreen {
 
@@ -25,18 +31,19 @@ public class UserSlotViewScreen {
         JPanel content = new JPanel(new BorderLayout());
         content.setBackground(C_BG_DARK);
 
+        // ── Top bar ──────────────────────────────────────────────────────────
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBackground(C_BG_PANEL);
         topBar.setBorder(new EmptyBorder(14, 24, 14, 24));
         topBar.add(UIFactory.lbl("SLOT VIEW", Font.BOLD, 20, C_WHITE), BorderLayout.WEST);
         content.add(topBar, BorderLayout.NORTH);
 
+        // ── Stats row (mutable — rebuilt on each reload) ─────────────────────
         JPanel statsRow = new JPanel(new GridLayout(1, 2, 12, 0));
         statsRow.setOpaque(false);
         statsRow.setBorder(new EmptyBorder(20, 20, 10, 20));
-        statsRow.add(UIFactory.statCard("Available", String.valueOf(state.availableSlots), C_AVAILABLE));
-        statsRow.add(UIFactory.statCard("Occupied",  String.valueOf(state.occupiedSlots),  C_OCCUPIED));
 
+        // ── Map card (grid swapped out on each reload) ───────────────────────
         JPanel mapCard = UIFactory.cardPanel(new BorderLayout(0, 10));
         mapCard.setBorder(new EmptyBorder(20, 20, 20, 20));
         mapCard.add(UIFactory.lbl("PARKING ZONES", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
@@ -46,10 +53,10 @@ public class UserSlotViewScreen {
         legend.add(UIFactory.legendDot(C_AVAILABLE, "Available"));
         legend.add(UIFactory.legendDot(C_OCCUPIED,  "Occupied"));
 
+        // south holds legend (fixed) + grid (replaced on reload)
         JPanel south = new JPanel(new BorderLayout(0, 8));
         south.setOpaque(false);
         south.add(legend, BorderLayout.NORTH);
-        south.add(SlotGridPanel.buildFullGrid(state, true), BorderLayout.CENTER);
         mapCard.add(south, BorderLayout.CENTER);
 
         JPanel body = new JPanel(new BorderLayout());
@@ -60,9 +67,55 @@ public class UserSlotViewScreen {
         JPanel main = new JPanel(new BorderLayout());
         main.setOpaque(false);
         main.add(statsRow, BorderLayout.NORTH);
-        main.add(body, BorderLayout.CENTER);
+        main.add(body,     BorderLayout.CENTER);
         content.add(main, BorderLayout.CENTER);
         root.add(content, BorderLayout.CENTER);
+
+        // ── Reload helper ────────────────────────────────────────────────────
+        Runnable reload = () -> {
+            // 1. Re-fetch all slots from DB and update AppState counts
+            try {
+                ParkingSlotDAO slotDAO = new ParkingSlotDAO();
+                List<ParkingSlot> slots = slotDAO.findAll();
+                long available = slots.stream()
+                        .filter(s -> "AVAILABLE".equalsIgnoreCase(s.getStatus()))
+                        .count();
+                long occupied  = slots.stream()
+                        .filter(s -> "OCCUPIED".equalsIgnoreCase(s.getStatus()))
+                        .count();
+                state.availableSlots = (int) available;
+                state.occupiedSlots  = (int) occupied;
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+            // 2. Rebuild stats cards
+            statsRow.removeAll();
+            statsRow.add(UIFactory.statCard("Available", String.valueOf(state.availableSlots), C_AVAILABLE));
+            statsRow.add(UIFactory.statCard("Occupied",  String.valueOf(state.occupiedSlots),  C_OCCUPIED));
+
+            // 3. Swap in a fresh slot grid
+            if (south.getComponentCount() > 1) {
+                south.remove(1); // remove old grid (index 1; legend stays at 0)
+            }
+            south.add(SlotGridPanel.buildFullGrid(state, true), BorderLayout.CENTER);
+
+            statsRow.revalidate();
+            statsRow.repaint();
+            south.revalidate();
+            south.repaint();
+        };
+
+        // ── Trigger reload every time this screen becomes visible ────────────
+        root.addComponentListener(new ComponentAdapter() {
+            @Override public void componentShown(ComponentEvent e) {
+                reload.run();
+            }
+        });
+
+        // Initial load
+        reload.run();
+
         return root;
     }
 }
