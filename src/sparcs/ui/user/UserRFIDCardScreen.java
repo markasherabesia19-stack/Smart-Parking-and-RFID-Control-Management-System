@@ -20,6 +20,7 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -38,27 +39,56 @@ public class UserRFIDCardScreen {
         JPanel content = new JPanel(new BorderLayout());
         content.setBackground(C_BG_DARK);
 
-        // ── Top bar ──────────────────────────────────────────────────────────
+        // ── Top bar ───────────────────────────────────────────────────────────
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBackground(C_BG_PANEL);
         topBar.setBorder(new EmptyBorder(14, 24, 14, 24));
         topBar.add(UIFactory.lbl("MY RFID CARDS", Font.BOLD, 20, C_WHITE), BorderLayout.WEST);
+        JLabel subLbl = UIFactory.lbl("Your registered vehicle access cards", Font.PLAIN, 11, C_MUTED);
+        topBar.add(subLbl, BorderLayout.EAST);
         content.add(topBar, BorderLayout.NORTH);
 
-        // ── Load data ────────────────────────────────────────────────────────
+        // ── Load data ─────────────────────────────────────────────────────────
         List<VehicleWithRFID> entries = loadVehiclesWithRFID(state);
 
-        // ── Cards container ──────────────────────────────────────────────────
+        // ── Centered scrollable wrapper ────────────────────────────────────────
         JPanel cardsContainer = new JPanel();
         cardsContainer.setLayout(new BoxLayout(cardsContainer, BoxLayout.Y_AXIS));
-        cardsContainer.setBackground(C_BG_DARK);
-        cardsContainer.setBorder(new EmptyBorder(28, 0, 28, 0));
+        cardsContainer.setOpaque(false);
+        cardsContainer.setBorder(new EmptyBorder(32, 0, 32, 0));
 
         if (entries.isEmpty()) {
             JPanel emptyWrap = new JPanel(new GridBagLayout());
             emptyWrap.setOpaque(false);
-            JLabel msg = UIFactory.lbl("No vehicles registered to your account.", Font.PLAIN, 14, C_MUTED);
-            emptyWrap.add(msg);
+
+            JPanel emptyCard = new JPanel() {
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(new Color(30, 22, 70, 200));
+                    g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 18, 18));
+                    g2.setColor(new Color(175, 169, 236, 40));
+                    g2.draw(new RoundRectangle2D.Float(0, 0, getWidth() - 1, getHeight() - 1, 18, 18));
+                    g2.dispose();
+                }
+                @Override public boolean isOpaque() { return false; }
+            };
+            emptyCard.setLayout(new BoxLayout(emptyCard, BoxLayout.Y_AXIS));
+            emptyCard.setPreferredSize(new Dimension(420, 200));
+            emptyCard.setBorder(new EmptyBorder(40, 40, 40, 40));
+
+            JLabel icon = UIFactory.lbl("⊘", Font.PLAIN, 40, new Color(127, 119, 221, 100));
+            icon.setAlignmentX(Component.CENTER_ALIGNMENT);
+            JLabel msg = UIFactory.lbl("No vehicles registered to your account.", Font.PLAIN, 13, C_MUTED);
+            msg.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+            emptyCard.add(Box.createVerticalGlue());
+            emptyCard.add(icon);
+            emptyCard.add(Box.createVerticalStrut(12));
+            emptyCard.add(msg);
+            emptyCard.add(Box.createVerticalGlue());
+
+            emptyWrap.add(emptyCard);
             cardsContainer.add(emptyWrap);
         } else {
             for (VehicleWithRFID entry : entries) {
@@ -69,11 +99,18 @@ public class UserRFIDCardScreen {
             }
         }
 
-        JScrollPane scroll = new JScrollPane(cardsContainer);
+        // Center the cards horizontally
+        JPanel centerWrapper = new JPanel(new GridBagLayout());
+        centerWrapper.setOpaque(false);
+        centerWrapper.add(cardsContainer, new GridBagConstraints());
+
+        JScrollPane scroll = new JScrollPane(centerWrapper);
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
+        scroll.getViewport().setBackground(C_BG_DARK);
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.getVerticalScrollBar().setUnitIncrement(16);
+        scroll.getVerticalScrollBar().setBackground(C_BG_DARK);
         content.add(scroll, BorderLayout.CENTER);
 
         root.add(content, BorderLayout.CENTER);
@@ -92,8 +129,6 @@ public class UserRFIDCardScreen {
             model.UserAccount currentUser = state.getCurrentUserAccount();
             if (currentUser == null) return result;
 
-            // Single JOIN query — fetches all vehicles for this user regardless
-            // of how many owner rows exist (UNIQUE constraint now prevents duplicates anyway)
             VehicleDAO vehicleDAO = new VehicleDAO();
             List<Vehicle> vehicles = vehicleDAO.findAllByUserId(currentUser.getUserId());
 
@@ -118,69 +153,201 @@ public class UserRFIDCardScreen {
         RFIDMapping mapping = entry.mapping();
         String      rfidTag = mapping.getRfidTag();
 
-        JPanel card = UIFactory.cardPanel(new GridBagLayout());
-        card.setPreferredSize(new Dimension(480, 520));
-        card.setMaximumSize(new Dimension(480, 520));
-        card.setBorder(new EmptyBorder(28, 36, 28, 36));
+        // Outer card with gradient header
+        JPanel card = new JPanel(new BorderLayout(0, 0)) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Card background
+                g2.setColor(new Color(30, 22, 70, 255));
+                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 20, 20));
+                // Card border
+                g2.setColor(new Color(175, 169, 236, 50));
+                g2.setStroke(new BasicStroke(1f));
+                g2.draw(new RoundRectangle2D.Float(0, 0, getWidth() - 1, getHeight() - 1, 20, 20));
+                g2.dispose();
+            }
+            @Override public boolean isOpaque() { return false; }
+        };
+        card.setPreferredSize(new Dimension(500, 520));
+        card.setMaximumSize(new Dimension(500, 520));
+
+        // ── Gradient header strip ─────────────────────────────────────────────
+        JPanel header = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                GradientPaint gp = new GradientPaint(0, 0, new Color(105, 48, 195, 230),
+                        getWidth(), 0, new Color(210, 50, 140, 200));
+                g2.setPaint(gp);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight() + 20, 20, 20);
+
+                // Subtle dot pattern on header
+                g2.setColor(new Color(255, 255, 255, 12));
+                for (int x = 10; x < getWidth(); x += 18)
+                    for (int y = 10; y < getHeight() + 20; y += 18)
+                        g2.fillOval(x, y, 3, 3);
+
+                g2.dispose();
+            }
+            @Override public boolean isOpaque() { return false; }
+        };
+        header.setPreferredSize(new Dimension(500, 72));
+        header.setBorder(new EmptyBorder(0, 24, 0, 24));
+
+        // SPARCS logo area in header
+        JPanel headerLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 16));
+        headerLeft.setOpaque(false);
+
+        // Chip icon
+        JPanel chipIcon = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(255, 255, 255, 30));
+                g2.fillRoundRect(0, 0, 38, 38, 8, 8);
+                g2.setColor(new Color(255, 255, 255, 200));
+                g2.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                // Chip body
+                g2.drawRoundRect(8, 8, 22, 22, 4, 4);
+                // Chip pins
+                g2.drawLine(4, 13, 8, 13); g2.drawLine(4, 19, 8, 19); g2.drawLine(4, 25, 8, 25);
+                g2.drawLine(30, 13, 34, 13); g2.drawLine(30, 19, 34, 19); g2.drawLine(30, 25, 34, 25);
+                g2.drawLine(13, 4, 13, 8); g2.drawLine(19, 4, 19, 8); g2.drawLine(25, 4, 25, 8);
+                g2.drawLine(13, 30, 13, 34); g2.drawLine(19, 30, 19, 34); g2.drawLine(25, 30, 25, 34);
+                // Inner grid
+                g2.drawLine(14, 14, 24, 14); g2.drawLine(14, 19, 24, 19); g2.drawLine(14, 24, 24, 24);
+                g2.drawLine(14, 14, 14, 24); g2.drawLine(19, 14, 19, 24); g2.drawLine(24, 14, 24, 24);
+                g2.dispose();
+            }
+            @Override public Dimension getPreferredSize() { return new Dimension(38, 38); }
+            @Override public boolean isOpaque() { return false; }
+        };
+
+        JPanel headerTitles = new JPanel(new GridLayout(2, 1, 0, 2));
+        headerTitles.setOpaque(false);
+        JLabel sparcsLbl = UIFactory.lbl("SPARCS", Font.BOLD, 18, Color.WHITE);
+        JLabel systemLbl = UIFactory.lbl("Smart Parking & RFID Control System", Font.PLAIN, 10,
+                new Color(255, 255, 255, 180));
+        headerTitles.add(sparcsLbl);
+        headerTitles.add(systemLbl);
+
+        headerLeft.add(chipIcon);
+        headerLeft.add(headerTitles);
+
+        // Status badge top right
+        JPanel statusBadge = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(60, 210, 130, 40));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+                g2.setColor(new Color(60, 210, 130, 120));
+                g2.setStroke(new BasicStroke(1f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 20, 20);
+                g2.dispose();
+            }
+            @Override public boolean isOpaque() { return false; }
+        };
+        JLabel dot = UIFactory.lbl("●", Font.PLAIN, 8, C_AVAILABLE);
+        JLabel activeLbl = UIFactory.lbl("ACTIVE", Font.BOLD, 10, C_AVAILABLE);
+        statusBadge.setPreferredSize(new Dimension(78, 26));
+        statusBadge.setLayout(new BorderLayout());
+        statusBadge.setBorder(new EmptyBorder(4, 10, 4, 10));
+        JPanel dotRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 0));
+        dotRow.setOpaque(false);
+        dotRow.add(dot);
+        dotRow.add(activeLbl);
+        statusBadge.add(dotRow, BorderLayout.CENTER);
+
+        JPanel headerRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 22));
+        headerRight.setOpaque(false);
+        headerRight.add(statusBadge);
+
+        header.add(headerLeft, BorderLayout.WEST);
+        header.add(headerRight, BorderLayout.EAST);
+        card.add(header, BorderLayout.NORTH);
+
+        // ── Card body ─────────────────────────────────────────────────────────
+        JPanel body = new JPanel(new GridBagLayout());
+        body.setOpaque(false);
+        body.setBorder(new EmptyBorder(20, 28, 24, 28));
 
         GridBagConstraints cc = new GridBagConstraints();
-        cc.gridx = 0;
-        cc.fill  = GridBagConstraints.HORIZONTAL;
-        cc.weightx = 1.0;
+        cc.gridx = 0; cc.fill = GridBagConstraints.HORIZONTAL; cc.weightx = 1.0;
 
-        cc.gridy = 0; cc.insets = new Insets(0, 0, 2, 0);
-        JLabel titleLbl = UIFactory.lbl("SPARCS", Font.BOLD, 22, C_ACCENT);
-        titleLbl.setHorizontalAlignment(SwingConstants.CENTER);
-        card.add(titleLbl, cc);
+        // Vehicle info section label
+        cc.gridy = 0; cc.insets = new Insets(0, 0, 10, 0);
+        body.add(makeSectionLabel("VEHICLE INFORMATION", C_PURPLE), cc);
+
+        // Info rows in a styled panel
+        JPanel infoBox = new JPanel(new GridLayout(0, 1, 0, 0)) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(255, 255, 255, 6));
+                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 12, 12));
+                g2.setColor(new Color(175, 169, 236, 25));
+                g2.draw(new RoundRectangle2D.Float(0, 0, getWidth() - 1, getHeight() - 1, 12, 12));
+                g2.dispose();
+            }
+            @Override public boolean isOpaque() { return false; }
+        };
+        infoBox.setBorder(new EmptyBorder(4, 14, 4, 14));
+        infoBox.add(infoRow("LICENSE PLATE", vehicle.getPlateNumber(), C_ACCENT));
+        infoBox.add(infoRow("VEHICLE TYPE",  vehicle.getVehicleType(), C_WHITE));
+        infoBox.add(infoRow("COLOR",
+                (vehicle.getColor() != null && !vehicle.getColor().isBlank())
+                        ? vehicle.getColor() : "N/A", C_WHITE));
+        infoBox.add(infoRow("RFID TAG",      rfidTag, C_PINK));
 
         cc.gridy = 1; cc.insets = new Insets(0, 0, 18, 0);
-        JLabel subLbl = UIFactory.lbl("Smart Parking & RFID Control System", Font.PLAIN, 11, C_MUTED);
-        subLbl.setHorizontalAlignment(SwingConstants.CENTER);
-        card.add(subLbl, cc);
+        body.add(infoBox, cc);
 
-        cc.gridy = 2; cc.insets = new Insets(0, 0, 16, 0);
-        card.add(divider(), cc);
+        // Barcode section label
+        cc.gridy = 2; cc.insets = new Insets(0, 0, 10, 0);
+        body.add(makeSectionLabel("ACCESS BARCODE", C_PINK), cc);
 
-        cc.insets = new Insets(5, 0, 5, 0);
+        // Barcode in styled container
+        JPanel barcodeBox = new JPanel(new BorderLayout(0, 6)) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(255, 255, 255, 6));
+                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 12, 12));
+                g2.setColor(new Color(175, 169, 236, 25));
+                g2.draw(new RoundRectangle2D.Float(0, 0, getWidth() - 1, getHeight() - 1, 12, 12));
+                g2.dispose();
+            }
+            @Override public boolean isOpaque() { return false; }
+        };
+        barcodeBox.setBorder(new EmptyBorder(14, 14, 14, 14));
 
-        cc.gridy = 3;
-        card.add(infoRow("LICENSE PLATE", vehicle.getPlateNumber()), cc);
-
-        cc.gridy = 4;
-        card.add(infoRow("VEHICLE TYPE", vehicle.getVehicleType()), cc);
-
-        cc.gridy = 5;
-        card.add(infoRow("COLOR",
-                (vehicle.getColor() != null && !vehicle.getColor().isBlank())
-                        ? vehicle.getColor() : "N/A"), cc);
-
-        cc.gridy = 6;
-        card.add(infoRow("RFID TAG", rfidTag), cc);
-
-        cc.gridy = 7; cc.insets = new Insets(14, 0, 14, 0);
-        card.add(divider(), cc);
-
-        cc.gridy = 8; cc.insets = new Insets(0, 0, 6, 0);
         JLabel barcodeLbl = new JLabel();
         barcodeLbl.setHorizontalAlignment(SwingConstants.CENTER);
         try {
-            barcodeLbl.setIcon(new ImageIcon(generateBarcode(rfidTag, 360, 80)));
+            barcodeLbl.setIcon(new ImageIcon(generateBarcode(rfidTag, 400, 80)));
         } catch (WriterException ex) {
             barcodeLbl.setText("Barcode generation failed.");
             barcodeLbl.setForeground(C_MUTED);
         }
-        card.add(barcodeLbl, cc);
 
-        cc.gridy = 9; cc.insets = new Insets(0, 0, 20, 0);
         JLabel barcodeText = UIFactory.lbl(rfidTag, Font.PLAIN, 9, C_MUTED);
         barcodeText.setHorizontalAlignment(SwingConstants.CENTER);
-        card.add(barcodeText, cc);
 
-        cc.gridy = 10; cc.insets = new Insets(0, 0, 0, 0);
+        barcodeBox.add(barcodeLbl, BorderLayout.CENTER);
+        barcodeBox.add(barcodeText, BorderLayout.SOUTH);
+
+        cc.gridy = 3; cc.insets = new Insets(0, 0, 20, 0);
+        body.add(barcodeBox, cc);
+
+        // Save button
+        cc.gridy = 4; cc.insets = new Insets(0, 0, 0, 0);
         JButton saveBtn = UIFactory.gradientButton("SAVE CARD AS IMAGE");
+        body.add(saveBtn, cc);
         saveBtn.addActionListener(e -> saveCardAsImage(card, vehicle.getPlateNumber()));
-        card.add(saveBtn, cc);
 
+        card.add(body, BorderLayout.CENTER);
         return card;
     }
 
@@ -188,23 +355,54 @@ public class UserRFIDCardScreen {
     // Helpers
     // =========================================================================
 
-    private static JSeparator divider() {
-        JSeparator sep = new JSeparator();
-        sep.setForeground(new Color(255, 255, 255, 40));
-        return sep;
+    private static JPanel makeSectionLabel(String text, Color accent) {
+        JPanel row = new JPanel(new BorderLayout(8, 0)) {
+            @Override public boolean isOpaque() { return false; }
+        };
+        JPanel bar = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(accent);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 2, 2);
+                g2.dispose();
+            }
+            @Override public Dimension getPreferredSize() { return new Dimension(3, 14); }
+            @Override public boolean isOpaque() { return false; }
+        };
+        JPanel line = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                g.setColor(new Color(175, 169, 236, 30));
+                g.fillRect(0, getHeight() / 2, getWidth(), 1);
+            }
+            @Override public boolean isOpaque() { return false; }
+        };
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        left.setOpaque(false);
+        left.add(bar);
+        left.add(UIFactory.lbl(text, Font.BOLD, 10, C_MUTED));
+        row.add(left, BorderLayout.WEST);
+        row.add(line, BorderLayout.CENTER);
+        return row;
     }
 
-    private static JPanel infoRow(String label, String value) {
+    private static JPanel infoRow(String label, String value, Color valueColor) {
         JPanel row = new JPanel(new BorderLayout(12, 0));
         row.setOpaque(false);
+        row.setBorder(new EmptyBorder(8, 0, 8, 0));
 
         JLabel lbl = UIFactory.lbl(label, Font.BOLD, 10, C_MUTED);
         lbl.setPreferredSize(new Dimension(110, 20));
 
-        JLabel val = UIFactory.lbl(value, Font.PLAIN, 13, C_WHITE);
+        JLabel val = UIFactory.lbl(value, Font.BOLD, 13, valueColor);
 
-        row.add(lbl, BorderLayout.WEST);
-        row.add(val, BorderLayout.CENTER);
+        // Subtle separator line between rows
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.add(lbl, BorderLayout.WEST);
+        wrapper.add(val, BorderLayout.CENTER);
+
+        row.add(wrapper, BorderLayout.CENTER);
         return row;
     }
 

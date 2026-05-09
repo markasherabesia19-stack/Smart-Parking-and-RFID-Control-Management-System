@@ -219,6 +219,19 @@ public class UserRegisterScreen {
         center.add(Box.createVerticalStrut(20));
 
         // ── Actions ───────────────────────────────────────────────────────────
+        // Wire Enter key on all fields to trigger the Register button
+        java.awt.event.KeyAdapter enterKey = new java.awt.event.KeyAdapter() {
+            @Override public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) registerBtn.doClick();
+            }
+        };
+        firstNameField.addKeyListener(enterKey);
+        lastNameField.addKeyListener(enterKey);
+        usernameField.addKeyListener(enterKey);
+        emailField.addKeyListener(enterKey);
+        passwordField.addKeyListener(enterKey);
+        confirmField.addKeyListener(enterKey);
+
         registerBtn.addActionListener(e -> {
             String firstName   = firstNameField.getText().trim();
             String lastName    = lastNameField.getText().trim();
@@ -286,6 +299,23 @@ public class UserRegisterScreen {
         });
 
         backBtn.addActionListener(e -> cardLayout.show(rootPanel, "USER_LOGIN"));
+
+        // Reset all fields every time this screen becomes visible
+        p.addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0 && p.isShowing()) {
+                Color ph = new Color(185, 175, 255, 145);
+                firstNameField.setText("Juan");        firstNameField.setForeground(ph);
+                lastNameField.setText("dela Cruz");    lastNameField.setForeground(ph);
+                usernameField.setText("juandelacruz"); usernameField.setForeground(ph);
+                emailField.setText("juan@email.com");  emailField.setForeground(ph);
+                passwordField.setText("••••••••");
+                passwordField.setForeground(ph);
+                ((JPasswordField) passwordField).setEchoChar((char) 0);
+                confirmField.setText("••••••••");
+                confirmField.setForeground(ph);
+                ((JPasswordField) confirmField).setEchoChar((char) 0);
+            }
+        });
 
         p.add(center, gc);
         return p;
