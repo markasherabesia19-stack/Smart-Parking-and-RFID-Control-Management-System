@@ -178,14 +178,14 @@ public class AdminLoginScreen {
         cc.gridy = 0; cc.insets = new Insets(0, 0, 4, 0);
         card.add(makeLabel("USERNAME"), cc);
         cc.gridy = 1; cc.insets = new Insets(0, 0, 12, 0);
-        JTextField usernameField = makeField("Enter your username", false);
+        JTextField usernameField = makeField("e.g. admin", false);
         card.add(usernameField, cc);
 
         // Password
         cc.gridy = 2; cc.insets = new Insets(0, 0, 4, 0);
         card.add(makeLabel("PASSWORD"), cc);
         cc.gridy = 3; cc.insets = new Insets(0, 0, 20, 0);
-        JTextField passwordField = makeField("Enter your password", true);
+        JTextField passwordField = makeField("e.g. ••••••••", true);
         card.add(passwordField, cc);
 
         // Sign in button
@@ -214,8 +214,8 @@ public class AdminLoginScreen {
             String password = new String(((JPasswordField) passwordField).getPassword());
 
             // treat placeholder text as empty
-            if (username.equals("Enter your username")) username = "";
-            if (password.equals("Enter your password")) password = "";
+            if (username.equals("e.g. admin")) username = "";
+            if (password.equals("e.g. ••••••••")) password = "";
 
             if (username.isEmpty() || password.isEmpty()) {
                 DialogUtil.showMessageDialog(null, "Please enter both username and password.",
@@ -251,9 +251,9 @@ public class AdminLoginScreen {
                 } else {
                     DialogUtil.showMessageDialog(null, "Invalid username or password.",
                             "Authentication Failed", JOptionPane.ERROR_MESSAGE);
-                    usernameField.setText("Enter your username");
+                    usernameField.setText("e.g. admin");
                     usernameField.setForeground(new Color(185, 175, 255, 145));
-                    passwordField.setText("Enter your password");
+                    passwordField.setText("e.g. ••••••••");
                     passwordField.setForeground(new Color(185, 175, 255, 145));
                     ((JPasswordField) passwordField).setEchoChar((char) 0);
                 }
@@ -277,10 +277,10 @@ public class AdminLoginScreen {
         p.addHierarchyListener(e -> {
             if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0
                     && p.isShowing()) {
-                usernameField.setText("Enter your username");
+                usernameField.setText("e.g. admin");
                 usernameField.setForeground(new Color(185, 175, 255, 145));
 
-                passwordField.setText("Enter your password");
+                passwordField.setText("e.g. ••••••••");
                 passwordField.setForeground(new Color(185, 175, 255, 145));
                 ((JPasswordField) passwordField).setEchoChar((char) 0);
             }

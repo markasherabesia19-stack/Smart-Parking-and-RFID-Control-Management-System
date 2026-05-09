@@ -179,14 +179,14 @@ public class UserLoginScreen {
         cc.gridy = 0; cc.insets = new Insets(0, 0, 5, 0);
         card.add(makeLabel("USERNAME"), cc);
         cc.gridy = 1; cc.insets = new Insets(0, 0, 10, 0);
-        JTextField usernameField = makeField("Enter your username", false);
+        JTextField usernameField = makeField("e.g. juan_dela_cruz", false);
         card.add(usernameField, cc);
 
         // Password
         cc.gridy = 2; cc.insets = new Insets(0, 0, 5, 0);
         card.add(makeLabel("PASSWORD"), cc);
         cc.gridy = 3; cc.insets = new Insets(0, 0, 14, 0);
-        JPasswordField passwordField = (JPasswordField) makeField("Enter your password", true);
+        JPasswordField passwordField = (JPasswordField) makeField("e.g. ••••••••", true);
         card.add(passwordField, cc);
 
         // Sign In
@@ -271,9 +271,9 @@ public class UserLoginScreen {
         // Clear fields every time this screen becomes visible (e.g. after logout)
         p.addHierarchyListener(e -> {
             if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0 && p.isShowing()) {
-                usernameField.setText("Enter your username");
+                usernameField.setText("e.g. juan_dela_cruz");
                 usernameField.setForeground(new Color(185, 175, 255, 145));
-                passwordField.setText("Enter your password");
+                passwordField.setText("e.g. ••••••••");
                 passwordField.setForeground(new Color(185, 175, 255, 145));
                 ((JPasswordField) passwordField).setEchoChar((char) 0);
             }
