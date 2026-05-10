@@ -1,8 +1,6 @@
 package ui.user;
 
-import dao.ParkingSlotDAO;
 import model.AppState;
-import model.ParkingSlot;
 import ui.shared.SidebarPanel;
 import ui.shared.SlotGridPanel;
 import util.UIFactory;
@@ -13,13 +11,12 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.sql.SQLException;
-import java.util.List;
 
 /**
  * SPARCS — User slot view screen.
- * Shows the full parking map with available / occupied colours.
- * Reloads slot availability from the DB every time the screen becomes visible.
+ * Shows the full parking map with available / occupied / reserved colours.
+ * Reloads slot data from DB every time the screen becomes visible,
+ * AND immediately whenever state.notifySlotChange() is called.
  */
 public class UserSlotViewScreen {
 
@@ -39,7 +36,8 @@ public class UserSlotViewScreen {
         content.add(topBar, BorderLayout.NORTH);
 
         // ── Stats row (mutable — rebuilt on each reload) ─────────────────────
-        JPanel statsRow = new JPanel(new GridLayout(1, 2, 12, 0));
+        // Now 3 columns to match admin: Available | Occupied | Reserved
+        JPanel statsRow = new JPanel(new GridLayout(1, 3, 12, 0));
         statsRow.setOpaque(false);
         statsRow.setBorder(new EmptyBorder(20, 20, 10, 20));
 
@@ -48,10 +46,12 @@ public class UserSlotViewScreen {
         mapCard.setBorder(new EmptyBorder(20, 20, 20, 20));
         mapCard.add(UIFactory.lbl("PARKING ZONES", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
 
+        // Legend now includes Reserved to match admin view
         JPanel legend = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
         legend.setOpaque(false);
         legend.add(UIFactory.legendDot(C_AVAILABLE, "Available"));
         legend.add(UIFactory.legendDot(C_OCCUPIED,  "Occupied"));
+        legend.add(UIFactory.legendDot(C_RESERVED,  "Reserved"));
 
         // south holds legend (fixed) + grid (replaced on reload)
         JPanel south = new JPanel(new BorderLayout(0, 8));
@@ -71,34 +71,20 @@ public class UserSlotViewScreen {
         content.add(main, BorderLayout.CENTER);
         root.add(content, BorderLayout.CENTER);
 
-        // ── Reload helper ────────────────────────────────────────────────────
-        Runnable reload = () -> {
-            // 1. Re-fetch all slots from DB and update AppState counts
-            try {
-                ParkingSlotDAO slotDAO = new ParkingSlotDAO();
-                List<ParkingSlot> slots = slotDAO.findAll();
-                long available = slots.stream()
-                        .filter(s -> "AVAILABLE".equalsIgnoreCase(s.getStatus()))
-                        .count();
-                long occupied  = slots.stream()
-                        .filter(s -> "OCCUPIED".equalsIgnoreCase(s.getStatus()))
-                        .count();
-                state.availableSlots = (int) available;
-                state.occupiedSlots  = (int) occupied;
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
-
-            // 2. Rebuild stats cards
+        // ── Shared redraw logic (slotData[] already up-to-date when called) ──
+        Runnable redraw = () -> {
+            // Rebuild stats cards (Available + Occupied + Reserved)
             statsRow.removeAll();
             statsRow.add(UIFactory.statCard("Available", String.valueOf(state.availableSlots), C_AVAILABLE));
             statsRow.add(UIFactory.statCard("Occupied",  String.valueOf(state.occupiedSlots),  C_OCCUPIED));
+            statsRow.add(UIFactory.statCard("Reserved",  String.valueOf(state.reservedSlots),  C_RESERVED));
 
-            // 3. Swap in a fresh slot grid
+            // Swap in a fresh slot grid
+            // Pass false (same as admin) so reserved slots render with C_RESERVED colour
             if (south.getComponentCount() > 1) {
                 south.remove(1); // remove old grid (index 1; legend stays at 0)
             }
-            south.add(SlotGridPanel.buildFullGrid(state, true), BorderLayout.CENTER);
+            south.add(SlotGridPanel.buildFullGrid(state, false), BorderLayout.CENTER);
 
             statsRow.revalidate();
             statsRow.repaint();
@@ -106,15 +92,24 @@ public class UserSlotViewScreen {
             south.repaint();
         };
 
-        // ── Trigger reload every time this screen becomes visible ────────────
+        // Path 1: user navigates to this screen — load from DB then redraw
         root.addComponentListener(new ComponentAdapter() {
             @Override public void componentShown(ComponentEvent e) {
-                reload.run();
+                state.loadSlotDataFromDB();
+                redraw.run();
             }
         });
 
+        // Path 2: notifySlotChange() fired elsewhere (e.g. after a reservation
+        // is made or cancelled) — reload fresh data from DB, then redraw
+        state.addSlotChangeListener(() -> SwingUtilities.invokeLater(() -> {
+            state.loadSlotDataFromDB();
+            redraw.run();
+        }));
+
         // Initial load
-        reload.run();
+        state.loadSlotDataFromDB();
+        redraw.run();
 
         return root;
     }

@@ -87,6 +87,11 @@ public class ParkingSlotDAO {
         updateSlotStatus(slotId, ParkingSlot.OCCUPIED);
     }
 
+    /** Convenience: mark a slot as RESERVED (shown as yellow on the slot map). */
+    public void reserveSlot(int slotId) throws SQLException {
+        updateSlotStatus(slotId, ParkingSlot.RESERVED);
+    }
+
     /** Convenience: mark a slot as AVAILABLE. */
     public void vacateSlot(int slotId) throws SQLException {
         updateSlotStatus(slotId, ParkingSlot.AVAILABLE);

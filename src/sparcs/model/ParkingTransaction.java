@@ -24,7 +24,7 @@ public class ParkingTransaction {
     }
 
     public enum TransactionStatus {
-        IN_PROGRESS, COMPLETED, CANCELLED
+        IN_PROGRESS, COMPLETED, CANCELLED, RESERVED
     }
 
     public ParkingTransaction() {}
@@ -73,6 +73,10 @@ public class ParkingTransaction {
 
     public boolean isCompleted() {
         return TransactionStatus.COMPLETED.toString().equals(this.transactionStatus);
+    }
+
+    public boolean isReserved() {
+        return TransactionStatus.RESERVED.toString().equals(this.transactionStatus);
     }
 
     public boolean isPaid() {

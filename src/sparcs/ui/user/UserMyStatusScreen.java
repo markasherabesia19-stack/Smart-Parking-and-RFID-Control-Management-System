@@ -325,7 +325,9 @@ public class UserMyStatusScreen {
         ParkingSlot       slot = entry.slot();
 
         // ── Guarantee fee and duration are always resolved before rendering ──
-        if (txn.getCalculatedFee() == null) {
+        boolean isInProgress = txn.getExitTime() == null
+                && "IN_PROGRESS".equalsIgnoreCase(txn.getTransactionStatus());
+        if (isInProgress || txn.getCalculatedFee() == null) {
             try {
                 java.math.BigDecimal liveFee = new FeeCalculationService().calculateFee(txn);
                 txn.setCalculatedFee(liveFee);
@@ -333,7 +335,7 @@ public class UserMyStatusScreen {
                 txn.setCalculatedFee(java.math.BigDecimal.ZERO);
             }
         }
-        if (txn.getDurationMinutes() == null && txn.getEntryTime() != null) {
+        if (isInProgress || (txn.getDurationMinutes() == null && txn.getEntryTime() != null)) {
             long mins = FeeCalculationService.calculateDurationMinutes(
                     txn.getEntryTime(), txn.getExitTime());
             txn.setDurationMinutes((int) mins);
@@ -374,7 +376,7 @@ public class UserMyStatusScreen {
         cardHeader.setOpaque(false);
         cardHeader.setBorder(new EmptyBorder(12, 18, 12, 18));
 
-        // Left: live dot + "CURRENTLY PARKED"
+        // Left: live dot + status label — reflects actual transaction state
         JPanel headerLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         headerLeft.setOpaque(false);
 
@@ -382,7 +384,8 @@ public class UserMyStatusScreen {
         liveDot.setFont(new Font("SansSerif", Font.PLAIN, 8));
         liveDot.setForeground(accent);
 
-        JLabel liveLabel = new JLabel("CURRENTLY PARKED");
+        boolean reserved = "RESERVED".equalsIgnoreCase(txn.getTransactionStatus());
+        JLabel liveLabel = new JLabel(reserved ? "SLOT RESERVED" : "CURRENTLY PARKED");
         liveLabel.setFont(new Font("SansSerif", Font.BOLD, 10));
         liveLabel.setForeground(accent);
 
@@ -498,10 +501,13 @@ public class UserMyStatusScreen {
 
     // ── Classification helpers ─────────────────────────────────────────────────
     /**
-     * Active: car is still parked — no exit time recorded yet.
+     * Active: car is physically parked and session is in progress.
+     * RESERVED transactions are intentionally excluded — the vehicle has not
+     * entered yet, so it must not appear in "Active Sessions".
      */
     private static boolean isCurrentTransaction(ParkingTransaction txn) {
-        return txn.getExitTime() == null;
+        return txn.getExitTime() == null
+                && !"RESERVED".equalsIgnoreCase(txn.getTransactionStatus());
     }
 
     // Completed = exited + PAID (falls through; kept here for reference only)
@@ -529,15 +535,19 @@ public class UserMyStatusScreen {
             for (Vehicle v : vehicles) {
                 List<ParkingTransaction> txns = txnDAO.findByVehicleId(v.getVehicleId());
                 for (ParkingTransaction txn : txns) {
-                    // Always compute a live fee if one is not already stored
-                    if (txn.getCalculatedFee() == null) {
+                    boolean isInProgress = txn.getExitTime() == null
+                            && "IN_PROGRESS".equalsIgnoreCase(txn.getTransactionStatus());
+
+                    // For in-progress sessions: ALWAYS recalculate so the fee
+                    // and duration reflect the current moment (not a stale cached value).
+                    // For completed/reserved transactions: only compute once if missing.
+                    if (isInProgress || txn.getCalculatedFee() == null) {
                         try {
                             BigDecimal liveFee = feeService.calculateFee(txn);
                             txn.setCalculatedFee(liveFee);
                         } catch (SQLException ignored) {}
                     }
-                    // Also compute live duration if missing
-                    if (txn.getDurationMinutes() == null && txn.getEntryTime() != null) {
+                    if (isInProgress || (txn.getDurationMinutes() == null && txn.getEntryTime() != null)) {
                         long mins = FeeCalculationService.calculateDurationMinutes(
                                 txn.getEntryTime(), txn.getExitTime());
                         txn.setDurationMinutes((int) mins);

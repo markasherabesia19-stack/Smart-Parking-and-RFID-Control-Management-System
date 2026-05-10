@@ -104,7 +104,10 @@ public class AdminDashboardScreen {
                 Component c = super.prepareRenderer(renderer, row, col);
                 String action = (String) getModel().getValueAt(row, 1);
                 if (col == 1) {
-                    c.setForeground("ENTRY".equals(action) ? C_AVAILABLE : C_OCCUPIED);
+                    if ("ENTRY".equals(action))        c.setForeground(C_AVAILABLE);
+                    else if ("EXIT".equals(action))    c.setForeground(C_OCCUPIED);
+                    else if ("RESERVE".equals(action)) c.setForeground(C_RESERVED);
+                    else                               c.setForeground(C_WHITE);
                 } else {
                     c.setForeground(C_WHITE);
                 }
@@ -254,7 +257,8 @@ public class AdminDashboardScreen {
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MM/dd HH:mm");
             int count = 0;
             for (AuditLog log : logs) {
-                if (!"ENTRY".equals(log.getAction()) && !"EXIT".equals(log.getAction())) continue;
+                if (!"ENTRY".equals(log.getAction()) && !"EXIT".equals(log.getAction())
+                        && !"RESERVE".equals(log.getAction())) continue;
                 if (count++ >= 10) break;
 
                 // changes_log format: "plate=X slot=Y"

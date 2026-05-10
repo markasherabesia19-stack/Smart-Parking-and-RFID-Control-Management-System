@@ -22,15 +22,24 @@ public class FeeCalculationService {
     }
 
     /**
-     * Calculate parking fee for a transaction
+     * Calculate parking fee for a transaction.
+     * Returns ZERO immediately for RESERVED transactions (vehicle not yet parked).
+     * For IN_PROGRESS / COMPLETED sessions the fee is:
+     *   ceil(billable_hours) × ratePerHour, capped at ratePerDay × number_of_days.
      */
     public BigDecimal calculateFee(ParkingTransaction transaction) throws SQLException {
+        // No entry yet — nothing to charge
         if (transaction.getEntryTime() == null) {
             return BigDecimal.ZERO;
         }
 
-        LocalDateTime exitTime = transaction.getExitTime() != null ? 
-            transaction.getExitTime() : LocalDateTime.now();
+        // Reserved slots have not been occupied yet — fee is always zero
+        if ("RESERVED".equalsIgnoreCase(transaction.getTransactionStatus())) {
+            return BigDecimal.ZERO;
+        }
+
+        LocalDateTime exitTime = transaction.getExitTime() != null
+                ? transaction.getExitTime() : LocalDateTime.now();
 
         long durationMinutes = ChronoUnit.MINUTES.between(transaction.getEntryTime(), exitTime);
 
@@ -40,18 +49,25 @@ public class FeeCalculationService {
         }
 
         FeeSchedule schedule = feeSchedule.get();
-        
+
+        // Within grace period — free
         if (durationMinutes <= schedule.getGracePeriodMinutes()) {
             return BigDecimal.ZERO;
         }
 
         long billableMinutes = durationMinutes - schedule.getGracePeriodMinutes();
-        long billableHours = (long) Math.ceil((double) billableMinutes / 60.0);
+        long billableHours   = (long) Math.ceil((double) billableMinutes / 60.0);
+
+        // Number of calendar days (24-hour blocks) spanned — used for the daily cap.
+        // e.g. 48 h → 2 days cap = 2 × ratePerDay instead of a flat ratePerDay.
+        long totalDays = (long) Math.ceil((double) billableMinutes / (60.0 * 24.0));
+        BigDecimal dailyCap = schedule.getRatePerDay().multiply(BigDecimal.valueOf(totalDays));
 
         BigDecimal fee = schedule.getRatePerHour().multiply(BigDecimal.valueOf(billableHours));
 
-        if (fee.compareTo(schedule.getRatePerDay()) > 0) {
-            fee = schedule.getRatePerDay();
+        // Cap hourly total against the per-day rate scaled to actual days parked
+        if (fee.compareTo(dailyCap) > 0) {
+            fee = dailyCap;
         }
 
         return fee.setScale(2, RoundingMode.HALF_UP);
