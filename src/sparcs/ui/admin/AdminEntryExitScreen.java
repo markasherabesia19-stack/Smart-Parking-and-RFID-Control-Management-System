@@ -17,7 +17,6 @@ import static util.UIConstants.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.geom.RoundRectangle2D;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -43,47 +42,139 @@ public class AdminEntryExitScreen {
         topBar.add(UIFactory.lbl("Record vehicle arrivals and departures", Font.PLAIN, 11, C_MUTED), BorderLayout.EAST);
         content.add(topBar, BorderLayout.NORTH);
 
-        // ── Body: side-by-side cards ──────────────────────────────────────────
-        JPanel body = new JPanel(new GridLayout(1, 2, 16, 0));
-        body.setOpaque(false);
-        body.setBorder(new EmptyBorder(28, 28, 28, 28));
-
         VehicleDAO vehicleDAO         = new VehicleDAO();
         ParkingSlotDAO slotDAO        = new ParkingSlotDAO();
         ParkingTransactionDAO txDAO   = new ParkingTransactionDAO();
         AuditLogDAO auditDAO          = new AuditLogDAO();
 
+        // ── Body: side by side ────────────────────────────────────────────────
+        JPanel body = new JPanel(new GridLayout(1, 2, 16, 0));
+        body.setOpaque(false);
+        body.setBorder(new EmptyBorder(24, 24, 24, 24));
+
+        // ── Colors ────────────────────────────────────────────────────────────
+        Color entryGreen  = new Color(15, 110, 86);
+        Color entryLight  = new Color(29, 158, 117);
+        Color exitRed     = new Color(180, 30, 50);
+        Color exitLight   = new Color(220, 60, 80);
+
         // ── ENTRY card ────────────────────────────────────────────────────────
-        JPanel entryCard = buildActionCard(
-            "RECORD ENTRY",
-            "Scan or type the vehicle's RFID tag or license plate to record arrival.",
-            C_AVAILABLE,
-            new int[][]{ // Arrow-in icon points
-                {18,10}, {26,18}, {18,26}, {18,21}, {6,21}, {6,15}, {18,15}, {18,10}
-            },
-            true
-        );
+        JPanel entryCard = UIFactory.cardPanel(new BorderLayout(0, 0));
 
-        JTextField rfidEntry = (JTextField) entryCard.getClientProperty("field1");
-        JTextField slotEntry = (JTextField) entryCard.getClientProperty("field2");
-        JButton entryBtn     = (JButton)    entryCard.getClientProperty("btn");
+        entryCard.add(makeHeader("RECORD ENTRY", "Vehicle arrival", entryGreen, entryLight), BorderLayout.NORTH);
 
+        JPanel entryBody = new JPanel(new GridBagLayout());
+        entryBody.setOpaque(false);
+        entryBody.setBorder(new EmptyBorder(16, 20, 20, 20));
+        GridBagConstraints ec = new GridBagConstraints();
+        ec.fill = GridBagConstraints.HORIZONTAL; ec.weightx = 1.0; ec.gridx = 0;
+        ec.anchor = GridBagConstraints.NORTH;
+
+        ec.gridy = 0; ec.insets = new Insets(0, 0, 12, 0);
+        JLabel entryDesc = new JLabel("<html>Scan or type the vehicle's RFID tag or license plate to record arrival.</html>");
+        entryDesc.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        entryDesc.setForeground(C_MUTED);
+        entryBody.add(entryDesc, ec);
+
+        ec.gridy = 1; ec.insets = new Insets(0, 0, 4, 0);
+        entryBody.add(makeFieldLabel("RFID TAG / PLATE NUMBER", C_AVAILABLE), ec);
+        ec.gridy = 2; ec.insets = new Insets(0, 0, 12, 0);
+        JTextField rfidEntry = UIFactory.styledField("Scan or type RFID / plate");
+        entryBody.add(rfidEntry, ec);
+
+        ec.gridy = 3; ec.insets = new Insets(0, 0, 4, 0);
+        entryBody.add(makeFieldLabel("SLOT NUMBER", C_AVAILABLE), ec);
+        ec.gridy = 4; ec.insets = new Insets(0, 0, 16, 0);
+        JTextField slotEntry = UIFactory.styledField("e.g. B-04");
+        entryBody.add(slotEntry, ec);
+
+        ec.gridy = 5; ec.insets = new Insets(0, 0, 10, 0);
+        entryBody.add(makeDivider(), ec);
+
+        ec.gridy = 6; ec.insets = new Insets(0, 0, 10, 0);
+        entryBody.add(makeHint("Vehicle will be marked as PARKED", C_AVAILABLE), ec);
+
+        ec.gridy = 7; ec.insets = new Insets(0, 0, 0, 0);
+        JButton entryBtn = makeColorButton("RECORD ENTRY", entryGreen);
+        entryBody.add(entryBtn, ec);
+
+        // Push content to top
+        ec.gridy = 8; ec.weighty = 1.0; ec.insets = new Insets(0,0,0,0);
+        entryBody.add(new JPanel() {{ setOpaque(false); }}, ec);
+
+        entryCard.add(entryBody, BorderLayout.CENTER);
+
+        // ── EXIT card ─────────────────────────────────────────────────────────
+        JPanel exitCard = UIFactory.cardPanel(new BorderLayout(0, 0));
+
+        exitCard.add(makeHeader("RECORD EXIT", "Vehicle departure", exitRed, exitLight), BorderLayout.NORTH);
+
+        JPanel exitBody = new JPanel(new GridBagLayout());
+        exitBody.setOpaque(false);
+        exitBody.setBorder(new EmptyBorder(16, 20, 20, 20));
+        GridBagConstraints xc = new GridBagConstraints();
+        xc.fill = GridBagConstraints.HORIZONTAL; xc.weightx = 1.0; xc.gridx = 0;
+        xc.anchor = GridBagConstraints.NORTH;
+
+        xc.gridy = 0; xc.insets = new Insets(0, 0, 12, 0);
+        JLabel exitDesc = new JLabel("<html>Scan or type the vehicle's RFID tag or license plate to record departure.</html>");
+        exitDesc.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        exitDesc.setForeground(C_MUTED);
+        exitBody.add(exitDesc, xc);
+
+        xc.gridy = 1; xc.insets = new Insets(0, 0, 4, 0);
+        exitBody.add(makeFieldLabel("RFID TAG / PLATE NUMBER", C_OCCUPIED), xc);
+        xc.gridy = 2; xc.insets = new Insets(0, 0, 16, 0);
+        JTextField rfidExit = UIFactory.styledField("Scan or type RFID / plate");
+        exitBody.add(rfidExit, xc);
+
+        xc.gridy = 3; xc.insets = new Insets(0, 0, 10, 0);
+        exitBody.add(makeDivider(), xc);
+
+        xc.gridy = 4; xc.insets = new Insets(0, 0, 10, 0);
+        exitBody.add(makeHint("Vehicle will be marked as EXITED", C_OCCUPIED), xc);
+
+        xc.gridy = 5; xc.insets = new Insets(0, 0, 0, 0);
+        JButton exitBtn = makeColorButton("RECORD EXIT", exitRed);
+        exitBody.add(exitBtn, xc);
+
+        // Push content to top
+        xc.gridy = 6; xc.weighty = 1.0; xc.insets = new Insets(0,0,0,0);
+        exitBody.add(new JPanel() {{ setOpaque(false); }}, xc);
+
+        exitCard.add(exitBody, BorderLayout.CENTER);
+
+        // ── Enter key ─────────────────────────────────────────────────────────
+        java.awt.event.KeyAdapter entryEnter = new java.awt.event.KeyAdapter() {
+            @Override public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) entryBtn.doClick();
+            }
+        };
+        rfidEntry.addKeyListener(entryEnter);
+        slotEntry.addKeyListener(entryEnter);
+        rfidExit.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) exitBtn.doClick();
+            }
+        });
+
+        // ── Entry action ──────────────────────────────────────────────────────
         entryBtn.addActionListener(e -> {
             String plateInput = rfidEntry.getText().trim();
             String slotInput  = slotEntry.getText().trim().toUpperCase();
 
             if (plateInput.isEmpty() || slotInput.isEmpty()) {
+                rfidEntry.setText(""); slotEntry.setText("");
                 DialogUtil.showMessageDialog(null,
                     "Please enter both a plate number and a slot number.",
                     "Input Required", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-
             try {
                 Optional<Vehicle> found = vehicleDAO.findByPlateNumber(plateInput);
                 if (found.isEmpty()) {
-                    DialogUtil.showMessageDialog(null,
-                        "No active vehicle found for: " + plateInput,
+                    rfidEntry.setText(""); slotEntry.setText("");
+                    DialogUtil.showMessageDialog(null, "No active vehicle found for: " + plateInput,
                         "Not Found", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
@@ -93,10 +184,11 @@ public class AdminEntryExitScreen {
                 boolean alreadyParked = activeTxList.stream()
                     .anyMatch(t -> "IN_PROGRESS".equals(t.getTransactionStatus()));
                 if (alreadyParked) {
-                    Optional<ParkingSlot> currentSlot = slotDAO.findByVehicleId(vehicle.getVehicleId());
-                    String currentSlotCode = currentSlot.map(ParkingSlot::getSlotCode).orElse("unknown slot");
+                    Optional<ParkingSlot> cur = slotDAO.findByVehicleId(vehicle.getVehicleId());
+                    String curCode = cur.map(ParkingSlot::getSlotCode).orElse("unknown slot");
+                    rfidEntry.setText(""); slotEntry.setText("");
                     DialogUtil.showMessageDialog(null,
-                        "Vehicle " + plateInput + " is already parked at slot " + currentSlotCode + ".\n"
+                        "Vehicle " + plateInput + " is already parked at slot " + curCode + ".\n"
                         + "Please record an exit first before recording a new entry.",
                         "Already Parked", JOptionPane.WARNING_MESSAGE);
                     return;
@@ -104,6 +196,7 @@ public class AdminEntryExitScreen {
 
                 Optional<ParkingSlot> slotOpt = slotDAO.findBySlotCode(slotInput);
                 if (slotOpt.isEmpty()) {
+                    rfidEntry.setText(""); slotEntry.setText("");
                     DialogUtil.showMessageDialog(null,
                         "Slot \"" + slotInput + "\" not found. Check the slot code (e.g. B-04).",
                         "Slot Not Found", JOptionPane.WARNING_MESSAGE);
@@ -111,8 +204,8 @@ public class AdminEntryExitScreen {
                 }
                 ParkingSlot slot = slotOpt.get();
                 if (slot.isOccupied()) {
-                    DialogUtil.showMessageDialog(null,
-                        "Slot " + slotInput + " is already Occupied.",
+                    rfidEntry.setText(""); slotEntry.setText("");
+                    DialogUtil.showMessageDialog(null, "Slot " + slotInput + " is already Occupied.",
                         "Slot Unavailable", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
@@ -120,64 +213,41 @@ public class AdminEntryExitScreen {
                 vehicleDAO.updateParkingStatus(vehicle.getVehicleId(), "Parked");
                 slotDAO.occupySlot(slot.getSlotId());
                 slotDAO.updateCurrentVehicle(slot.getSlotId(), vehicle.getVehicleId());
+                txDAO.create(new ParkingTransaction(vehicle.getVehicleId(), slot.getSlotId(), LocalDateTime.now()));
 
-                ParkingTransaction tx = new ParkingTransaction(
-                    vehicle.getVehicleId(), slot.getSlotId(), LocalDateTime.now());
-                txDAO.create(tx);
-
-                AuditLog entryLog = new AuditLog();
-                entryLog.setAction("ENTRY");
-                entryLog.setEntityType("PARKING_SLOT");
-                entryLog.setEntityId(slot.getSlotId());
-                entryLog.setNewValue(plateInput);
-                entryLog.setOldValue(slotInput);
-                entryLog.setIpAddress("localhost");
-                auditDAO.create(entryLog);
+                AuditLog log = new AuditLog();
+                log.setAction("ENTRY"); log.setEntityType("PARKING_SLOT");
+                log.setEntityId(slot.getSlotId()); log.setNewValue(plateInput);
+                log.setOldValue(slotInput); log.setIpAddress("localhost");
+                auditDAO.create(log);
 
                 state.notifySlotChange();
-                rfidEntry.setText("");
-                slotEntry.setText("");
+                rfidEntry.setText(""); slotEntry.setText("");
                 DialogUtil.showMessageDialog(null,
                     "Entry recorded — " + plateInput + " assigned to slot " + slotInput + ".",
                     "Success", JOptionPane.INFORMATION_MESSAGE);
-
             } catch (Exception ex) {
+                rfidEntry.setText(""); slotEntry.setText("");
                 ex.printStackTrace();
-                DialogUtil.showMessageDialog(null,
-                    "Database error: " + ex.getMessage(),
+                DialogUtil.showMessageDialog(null, "Database error: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        // ── EXIT card ─────────────────────────────────────────────────────────
-        JPanel exitCard = buildActionCard(
-            "RECORD EXIT",
-            "Scan or type the vehicle's RFID tag or license plate to record departure.",
-            C_OCCUPIED,
-            new int[][]{ // Arrow-out icon
-                {14,10}, {14,15}, {6,15}, {6,21}, {14,21}, {14,26}, {26,18}, {14,10}
-            },
-            false
-        );
-
-        JTextField rfidExit = (JTextField) exitCard.getClientProperty("field1");
-        JButton exitBtn     = (JButton)    exitCard.getClientProperty("btn");
-
+        // ── Exit action ───────────────────────────────────────────────────────
         exitBtn.addActionListener(e -> {
             String plateInput = rfidExit.getText().trim();
-
             if (plateInput.isEmpty()) {
-                DialogUtil.showMessageDialog(null,
-                    "Please enter a plate number.",
+                rfidExit.setText("");
+                DialogUtil.showMessageDialog(null, "Please enter a plate number.",
                     "Input Required", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-
             try {
                 Optional<Vehicle> found = vehicleDAO.findByPlateNumber(plateInput);
                 if (found.isEmpty()) {
-                    DialogUtil.showMessageDialog(null,
-                        "No vehicle found for: " + plateInput,
+                    rfidExit.setText("");
+                    DialogUtil.showMessageDialog(null, "No vehicle found for: " + plateInput,
                         "Not Found", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
@@ -185,9 +255,9 @@ public class AdminEntryExitScreen {
 
                 Optional<ParkingSlot> slotOpt = slotDAO.findByVehicleId(vehicle.getVehicleId());
                 if (slotOpt.isEmpty()) {
+                    rfidExit.setText("");
                     DialogUtil.showMessageDialog(null,
-                        "Vehicle " + plateInput + " is not currently occupying any slot.\n"
-                        + "It may have already exited.",
+                        "Vehicle " + plateInput + " is not currently occupying any slot.\nIt may have already exited.",
                         "Not Parked", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
@@ -211,25 +281,21 @@ public class AdminEntryExitScreen {
                     }
                 }
 
-                AuditLog exitLog = new AuditLog();
-                exitLog.setAction("EXIT");
-                exitLog.setEntityType("PARKING_SLOT");
-                exitLog.setEntityId(slot.getSlotId());
-                exitLog.setNewValue(plateInput);
-                exitLog.setOldValue(resolvedSlotCode);
-                exitLog.setIpAddress("localhost");
-                auditDAO.create(exitLog);
+                AuditLog log = new AuditLog();
+                log.setAction("EXIT"); log.setEntityType("PARKING_SLOT");
+                log.setEntityId(slot.getSlotId()); log.setNewValue(plateInput);
+                log.setOldValue(resolvedSlotCode); log.setIpAddress("localhost");
+                auditDAO.create(log);
 
                 state.notifySlotChange();
                 rfidExit.setText("");
                 DialogUtil.showMessageDialog(null,
                     "Exit recorded — " + plateInput + " has left slot " + resolvedSlotCode + ".",
                     "Success", JOptionPane.INFORMATION_MESSAGE);
-
             } catch (Exception ex) {
+                rfidExit.setText("");
                 ex.printStackTrace();
-                DialogUtil.showMessageDialog(null,
-                    "Database error: " + ex.getMessage(),
+                DialogUtil.showMessageDialog(null, "Database error: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
@@ -241,28 +307,15 @@ public class AdminEntryExitScreen {
         return root;
     }
 
-    // ── Card builder ──────────────────────────────────────────────────────────
-    private static JPanel buildActionCard(String title, String description,
-                                          Color accentColor, int[][] iconPoints,
-                                          boolean twoFields) {
-        JPanel card = UIFactory.cardPanel(new BorderLayout(0, 0));
-
-        // ── Colored header strip ──────────────────────────────────────────────
+    // ── Gradient header ───────────────────────────────────────────────────────
+    private static JPanel makeHeader(String title, String subtitle, Color dark, Color light) {
         JPanel header = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                Color c1 = twoFields
-                    ? new Color(30, 140, 80, 220)
-                    : new Color(180, 40, 60, 220);
-                Color c2 = twoFields
-                    ? new Color(20, 100, 60, 180)
-                    : new Color(140, 20, 40, 180);
-                GradientPaint gp = new GradientPaint(0, 0, c1, getWidth(), 0, c2);
+                GradientPaint gp = new GradientPaint(0, 0, dark, getWidth(), 0, light);
                 g2.setPaint(gp);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight() + 20, 18, 18);
-
-                // Dot pattern
                 g2.setColor(new Color(255, 255, 255, 10));
                 for (int x = 8; x < getWidth(); x += 16)
                     for (int y = 8; y < getHeight() + 20; y += 16)
@@ -271,116 +324,51 @@ public class AdminEntryExitScreen {
             }
             @Override public boolean isOpaque() { return false; }
         };
-        header.setPreferredSize(new Dimension(0, 80));
-        header.setBorder(new EmptyBorder(0, 22, 0, 22));
+        header.setPreferredSize(new Dimension(0, 72));
+        header.setBorder(new EmptyBorder(0, 20, 0, 20));
 
-        // Icon panel
-        JPanel iconPanel = new JPanel() {
+        JPanel iconBox = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(255, 255, 255, 35));
+                g2.setColor(new Color(255, 255, 255, 40));
                 g2.fillRoundRect(0, 0, 38, 38, 10, 10);
-                g2.setColor(new Color(255, 255, 255, 220));
+                g2.setColor(Color.WHITE);
                 g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                // Draw arrow polygon
-                int[] xs = new int[iconPoints.length];
-                int[] ys = new int[iconPoints.length];
-                for (int i = 0; i < iconPoints.length; i++) {
-                    xs[i] = iconPoints[i][0];
-                    ys[i] = iconPoints[i][1];
+                boolean isEntry = title.contains("ENTRY");
+                if (isEntry) {
+                    g2.drawLine(8, 19, 22, 19);
+                    g2.drawLine(17, 14, 22, 19); g2.drawLine(17, 24, 22, 19);
+                    g2.drawLine(26, 10, 26, 28); g2.drawLine(26, 10, 32, 10);
+                    g2.drawLine(26, 28, 32, 28); g2.drawLine(32, 10, 32, 28);
+                } else {
+                    g2.drawLine(8, 10, 8, 28); g2.drawLine(8, 10, 14, 10);
+                    g2.drawLine(8, 28, 14, 28); g2.drawLine(14, 10, 14, 28);
+                    g2.drawLine(18, 19, 32, 19);
+                    g2.drawLine(27, 14, 32, 19); g2.drawLine(27, 24, 32, 19);
                 }
-                g2.fillPolygon(xs, ys, iconPoints.length);
                 g2.dispose();
             }
             @Override public Dimension getPreferredSize() { return new Dimension(38, 38); }
             @Override public boolean isOpaque() { return false; }
         };
 
-        JPanel headerLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 20));
-        headerLeft.setOpaque(false);
-        headerLeft.add(iconPanel);
-
-        JPanel headerTitles = new JPanel(new GridLayout(2, 1, 0, 2));
-        headerTitles.setOpaque(false);
-        headerTitles.add(UIFactory.lbl(title, Font.BOLD, 14, Color.WHITE));
-        headerTitles.add(UIFactory.lbl(twoFields ? "Vehicle arrival" : "Vehicle departure",
-                Font.PLAIN, 11, new Color(255, 255, 255, 180)));
-        headerLeft.add(headerTitles);
-        header.add(headerLeft, BorderLayout.WEST);
-        card.add(header, BorderLayout.NORTH);
-
-        // ── Form body ─────────────────────────────────────────────────────────
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setOpaque(false);
-        form.setBorder(new EmptyBorder(24, 24, 24, 24));
-
-        GridBagConstraints gc = new GridBagConstraints();
-        gc.fill = GridBagConstraints.HORIZONTAL;
-        gc.weightx = 1.0;
-        gc.gridx = 0;
-
-        // Description
-        gc.gridy = 0; gc.insets = new Insets(0, 0, 20, 0);
-        JLabel descLbl = new JLabel("<html><div style='width:280px'>" + description + "</div></html>");
-        descLbl.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        descLbl.setForeground(C_MUTED);
-        form.add(descLbl, gc);
-
-        // Field 1 — RFID / Plate
-        gc.gridy = 1; gc.insets = new Insets(0, 0, 4, 0);
-        form.add(makeSectionLabel("RFID TAG / PLATE NUMBER", accentColor), gc);
-        gc.gridy = 2; gc.insets = new Insets(0, 0, twoFields ? 16 : 0, 0);
-        JTextField field1 = UIFactory.styledField("Scan or type RFID / plate");
-        form.add(field1, gc);
-
-        JTextField field2 = null;
-        if (twoFields) {
-            gc.gridy = 3; gc.insets = new Insets(0, 0, 4, 0);
-            form.add(makeSectionLabel("SLOT NUMBER", accentColor), gc);
-            gc.gridy = 4; gc.insets = new Insets(0, 0, 0, 0);
-            field2 = UIFactory.styledField("e.g. B-04");
-            form.add(field2, gc);
-        }
-
-        // Spacer to push button to bottom
-        gc.gridy = 5; gc.weighty = 1.0;
-        gc.insets = new Insets(0, 0, 0, 0);
-        form.add(Box.createVerticalGlue(), gc);
-        gc.weighty = 0;
-
-        // Status hint row
-        gc.gridy = 6; gc.insets = new Insets(0, 0, 12, 0);
-        JPanel hintRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        hintRow.setOpaque(false);
-        JLabel hintDot = UIFactory.lbl("●", Font.PLAIN, 10, accentColor);
-        JLabel hintTxt = UIFactory.lbl(
-            twoFields ? "Vehicle will be marked as PARKED" : "Vehicle will be marked as EXITED",
-            Font.PLAIN, 11, C_MUTED);
-        hintRow.add(hintDot);
-        hintRow.add(hintTxt);
-        form.add(hintRow, gc);
-
-        // Button
-        gc.gridy = 7; gc.insets = new Insets(0, 0, 0, 0);
-        JButton btn = UIFactory.gradientButton(title);
-        form.add(btn, gc);
-
-        card.add(form, BorderLayout.CENTER);
-
-        // Store references for caller to wire up logic
-        card.putClientProperty("field1", field1);
-        card.putClientProperty("field2", field2);
-        card.putClientProperty("btn",    btn);
-
-        return card;
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 16));
+        left.setOpaque(false);
+        left.add(iconBox);
+        JPanel titles = new JPanel(new GridLayout(2, 1, 0, 2));
+        titles.setOpaque(false);
+        titles.add(UIFactory.lbl(title, Font.BOLD, 14, Color.WHITE));
+        titles.add(UIFactory.lbl(subtitle, Font.PLAIN, 11, new Color(255, 255, 255, 180)));
+        left.add(titles);
+        header.add(left, BorderLayout.WEST);
+        return header;
     }
 
-    // ── Section label with colored left bar ───────────────────────────────────
-    private static JPanel makeSectionLabel(String text, Color accent) {
-        JPanel row = new JPanel(new BorderLayout(8, 0)) {
-            @Override public boolean isOpaque() { return false; }
-        };
+    // ── Field label with colored bar ──────────────────────────────────────────
+    private static JPanel makeFieldLabel(String text, Color accent) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        row.setOpaque(false);
         JPanel bar = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -392,11 +380,47 @@ public class AdminEntryExitScreen {
             @Override public Dimension getPreferredSize() { return new Dimension(3, 14); }
             @Override public boolean isOpaque() { return false; }
         };
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
-        left.setOpaque(false);
-        left.add(bar);
-        left.add(UIFactory.lbl(text, Font.BOLD, 10, C_MUTED));
-        row.add(left, BorderLayout.WEST);
+        row.add(bar);
+        row.add(UIFactory.lbl(text, Font.BOLD, 10, C_MUTED));
         return row;
+    }
+
+    // ── Divider ───────────────────────────────────────────────────────────────
+    private static JSeparator makeDivider() {
+        JSeparator sep = new JSeparator();
+        sep.setForeground(new Color(175, 169, 236, 40));
+        return sep;
+    }
+
+    // ── Hint row ──────────────────────────────────────────────────────────────
+    private static JPanel makeHint(String text, Color dotColor) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        row.setOpaque(false);
+        row.add(UIFactory.lbl("●", Font.PLAIN, 10, dotColor));
+        row.add(UIFactory.lbl(text, Font.PLAIN, 11, C_MUTED));
+        return row;
+    }
+
+    // ── Solid colored button ──────────────────────────────────────────────────
+    private static JButton makeColorButton(String text, Color bg) {
+        JButton btn = new JButton(text) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getModel().isPressed() ? bg.darker() : bg);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+            @Override public boolean isOpaque() { return false; }
+        };
+        btn.setForeground(Color.WHITE);
+        btn.setFont(new Font("SansSerif", Font.BOLD, 13));
+        btn.setPreferredSize(new Dimension(200, 42));
+        btn.setBorderPainted(false);
+        btn.setContentAreaFilled(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return btn;
     }
 }
