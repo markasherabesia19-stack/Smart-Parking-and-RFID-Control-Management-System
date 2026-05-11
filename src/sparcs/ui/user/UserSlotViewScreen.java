@@ -32,11 +32,23 @@ public class UserSlotViewScreen {
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBackground(C_BG_PANEL);
         topBar.setBorder(new EmptyBorder(14, 24, 14, 24));
-        topBar.add(UIFactory.lbl("SLOT VIEW", Font.BOLD, 20, C_WHITE), BorderLayout.WEST);
+
+        // LEFT: ⊞ icon + "SLOT VIEW"
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        titlePanel.setOpaque(false);
+        titlePanel.add(UIFactory.lbl("\u229E", Font.BOLD, 20, C_ACCENT));
+        titlePanel.add(UIFactory.lbl("SLOT VIEW", Font.BOLD, 20, C_WHITE));
+        topBar.add(titlePanel, BorderLayout.WEST);
+
+        // RIGHT: ● Live
+        JPanel topBarRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        topBarRight.setOpaque(false);
+        topBarRight.add(UIFactory.lbl("\u25CF Live", Font.PLAIN, 12, C_AVAILABLE));
+        topBar.add(topBarRight, BorderLayout.EAST);
+
         content.add(topBar, BorderLayout.NORTH);
 
         // ── Stats row (mutable — rebuilt on each reload) ─────────────────────
-        // Now 3 columns to match admin: Available | Occupied | Reserved
         JPanel statsRow = new JPanel(new GridLayout(1, 3, 12, 0));
         statsRow.setOpaque(false);
         statsRow.setBorder(new EmptyBorder(20, 20, 10, 20));
@@ -46,7 +58,7 @@ public class UserSlotViewScreen {
         mapCard.setBorder(new EmptyBorder(20, 20, 20, 20));
         mapCard.add(UIFactory.lbl("PARKING ZONES", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
 
-        // Legend now includes Reserved to match admin view
+        // Legend
         JPanel legend = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
         legend.setOpaque(false);
         legend.add(UIFactory.legendDot(C_AVAILABLE, "Available"));
@@ -71,18 +83,15 @@ public class UserSlotViewScreen {
         content.add(main, BorderLayout.CENTER);
         root.add(content, BorderLayout.CENTER);
 
-        // ── Shared redraw logic (slotData[] already up-to-date when called) ──
+        // ── Shared redraw logic ───────────────────────────────────────────────
         Runnable redraw = () -> {
-            // Rebuild stats cards (Available + Occupied + Reserved)
             statsRow.removeAll();
             statsRow.add(UIFactory.statCard("Available", String.valueOf(state.availableSlots), C_AVAILABLE));
             statsRow.add(UIFactory.statCard("Occupied",  String.valueOf(state.occupiedSlots),  C_OCCUPIED));
             statsRow.add(UIFactory.statCard("Reserved",  String.valueOf(state.reservedSlots),  C_RESERVED));
 
-            // Swap in a fresh slot grid
-            // Pass false (same as admin) so reserved slots render with C_RESERVED colour
             if (south.getComponentCount() > 1) {
-                south.remove(1); // remove old grid (index 1; legend stays at 0)
+                south.remove(1);
             }
             south.add(SlotGridPanel.buildFullGrid(state, false), BorderLayout.CENTER);
 
@@ -92,7 +101,6 @@ public class UserSlotViewScreen {
             south.repaint();
         };
 
-        // Path 1: user navigates to this screen — load from DB then redraw
         root.addComponentListener(new ComponentAdapter() {
             @Override public void componentShown(ComponentEvent e) {
                 state.loadSlotDataFromDB();
@@ -100,14 +108,11 @@ public class UserSlotViewScreen {
             }
         });
 
-        // Path 2: notifySlotChange() fired elsewhere (e.g. after a reservation
-        // is made or cancelled) — reload fresh data from DB, then redraw
         state.addSlotChangeListener(() -> SwingUtilities.invokeLater(() -> {
             state.loadSlotDataFromDB();
             redraw.run();
         }));
 
-        // Initial load
         state.loadSlotDataFromDB();
         redraw.run();
 

@@ -10,12 +10,6 @@ import java.awt.*;
 
 /**
  * SPARCS — Reusable slot grid components.
- *
- * buildMiniGrid        – compact 5×8 overview used in dashboards.
- * buildFullGrid        – labelled 5×8 grid used in slot-map screens.
- * buildRefreshableGrid – full grid that auto-refreshes on navigation AND
- *                        whenever state.notifySlotChange() is called
- *                        (e.g. after an entry/exit operation).
  */
 public class SlotGridPanel {
 
@@ -57,47 +51,46 @@ public class SlotGridPanel {
                              : state.slotData[i] == 1 ? "Occupied"
                              : "Reserved";
 
-            JPanel cell = new JPanel(new GridBagLayout()) {
+            JPanel cell = new JPanel(null) {
                 @Override protected void paintComponent(Graphics g) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    // Tinted background
                     g2.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), 40));
                     g2.fillRoundRect(0, 0, getWidth()-1, getHeight()-1, 8, 8);
+                    // Border
                     g2.setColor(c);
                     g2.setStroke(new BasicStroke(1.5f));
                     g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 8, 8);
+                    // Status dot — top-right corner
+                    int dotSize = 7;
+                    g2.setColor(c);
+                    g2.fillOval(getWidth() - dotSize - 6, 6, dotSize, dotSize);
                     g2.dispose();
+                }
+                @Override public void doLayout() {
+                    for (Component comp : getComponents())
+                        comp.setBounds(0, 0, getWidth(), getHeight());
                 }
             };
             cell.setOpaque(false);
             cell.setToolTipText(slotCode + " — " + statusStr);
-            cell.add(UIFactory.lbl(slotCode, Font.PLAIN, 9, c));
+
+            JLabel lbl = UIFactory.lbl(slotCode, Font.PLAIN, 12, c);
+            lbl.setHorizontalAlignment(SwingConstants.CENTER);
+            lbl.setVerticalAlignment(SwingConstants.CENTER);
+            cell.add(lbl);
             grid.add(cell);
         }
         return grid;
     }
 
-    /**
-     * Returns a wrapper JPanel that holds a full grid and refreshes in two cases:
-     *   1. When it becomes visible (navigation / addNotify).
-     *   2. Immediately when state.notifySlotChange() is called from anywhere
-     *      (e.g. right after a successful entry or exit in AdminEntryExitScreen).
-     *
-     * The listener is automatically unregistered when the panel is removed from
-     * the component hierarchy to avoid memory leaks.
-     *
-     * @param state    shared AppState
-     * @param userView true = show reserved slots as occupied (user-facing view)
-     */
     public static JPanel buildRefreshableGrid(AppState state, boolean userView) {
         JPanel wrapper = new JPanel(new BorderLayout()) {
-
             private Runnable listener;
 
-            @Override
-            public void addNotify() {
+            @Override public void addNotify() {
                 super.addNotify();
-                // Register listener the first time this panel enters a container
                 if (listener == null) {
                     listener = this::refresh;
                     state.addSlotChangeListener(listener);
@@ -105,25 +98,20 @@ public class SlotGridPanel {
                 refresh();
             }
 
-            @Override
-            public void removeNotify() {
+            @Override public void removeNotify() {
                 super.removeNotify();
-                // Unregister when removed so there are no dangling references
                 if (listener != null) {
                     state.removeSlotChangeListener(listener);
                     listener = null;
                 }
             }
 
-            @Override
-            public void setVisible(boolean visible) {
+            @Override public void setVisible(boolean visible) {
                 super.setVisible(visible);
                 if (visible) refresh();
             }
 
             private void refresh() {
-                // loadSlotDataFromDB() is already called by notifySlotChange();
-                // only call it here for the navigation-triggered refresh path.
                 if (!SwingUtilities.isEventDispatchThread()) {
                     SwingUtilities.invokeLater(this::rebuildGrid);
                 } else {
