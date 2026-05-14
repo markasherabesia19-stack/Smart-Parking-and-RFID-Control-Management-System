@@ -42,7 +42,7 @@ public class VehicleDAO {
     }
 
     public Optional<Vehicle> findById(int vehicleId) throws SQLException {
-        String sql = "SELECT * FROM vehicle WHERE vehicle_id = ? AND is_active = TRUE";
+        String sql = "SELECT * FROM vehicle WHERE vehicle_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -58,7 +58,7 @@ public class VehicleDAO {
     }
 
     public Optional<Vehicle> findByPlateNumber(String plateNumber) throws SQLException {
-        String sql = "SELECT * FROM vehicle WHERE plate_number = ? AND is_active = TRUE";
+        String sql = "SELECT * FROM vehicle WHERE plate_number = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -74,7 +74,7 @@ public class VehicleDAO {
     }
 
     public List<Vehicle> findByOwnerId(int ownerId) throws SQLException {
-        String sql = "SELECT * FROM vehicle WHERE owner_id = ? AND is_active = TRUE ORDER BY registration_date DESC";
+        String sql = "SELECT * FROM vehicle WHERE owner_id = ? ORDER BY registration_date DESC";
         List<Vehicle> vehicles = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -97,7 +97,7 @@ public class VehicleDAO {
     public List<Vehicle> findAllByUserId(int userId) throws SQLException {
         String sql = "SELECT v.* FROM vehicle v " +
                 "INNER JOIN vehicle_owner vo ON v.owner_id = vo.owner_id " +
-                "WHERE vo.user_id = ? AND v.is_active = TRUE " +
+                "WHERE vo.user_id = ? " +
                 "ORDER BY v.registration_date DESC";
         List<Vehicle> vehicles = new ArrayList<>();
 
@@ -115,7 +115,7 @@ public class VehicleDAO {
     }
 
     public List<Vehicle> findAll() throws SQLException {
-        String sql = "SELECT * FROM vehicle WHERE is_active = TRUE ORDER BY plate_number";
+        String sql = "SELECT * FROM vehicle ORDER BY plate_number";
         List<Vehicle> vehicles = new ArrayList<>();
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -151,7 +151,7 @@ public class VehicleDAO {
     }
 
     public void delete(int vehicleId) throws SQLException {
-        String sql = "UPDATE vehicle SET is_active = FALSE WHERE vehicle_id = ?";
+        String sql = "DELETE FROM vehicle WHERE vehicle_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -174,7 +174,7 @@ public class VehicleDAO {
     }
 
     public int countActiveVehicles() throws SQLException {
-        String sql = "SELECT COUNT(*) as count FROM vehicle WHERE is_active = TRUE";
+        String sql = "SELECT COUNT(*) as count FROM vehicle";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              Statement stmt = conn.createStatement();
@@ -188,7 +188,7 @@ public class VehicleDAO {
     }
 
     public int countParkedVehicles() throws SQLException {
-        String sql = "SELECT COUNT(*) as count FROM vehicle WHERE is_active = TRUE AND parking_status = 'Parked'";
+        String sql = "SELECT COUNT(*) as count FROM vehicle WHERE parking_status = 'Parked'";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              Statement stmt = conn.createStatement();

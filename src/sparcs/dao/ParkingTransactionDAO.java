@@ -175,6 +175,17 @@ public class ParkingTransactionDAO {
         }
     }
 
+    public void delete(int transactionId) throws SQLException {
+        String sql = "DELETE FROM parking_transaction WHERE transaction_id = ?";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, transactionId);
+            stmt.executeUpdate();
+        }
+    }
+
     public int countTodayTransactions() throws SQLException {
         String sql = "SELECT COUNT(*) as count FROM parking_transaction WHERE DATE(entry_time) = CURDATE()";
 

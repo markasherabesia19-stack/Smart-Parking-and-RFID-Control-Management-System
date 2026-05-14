@@ -14,7 +14,7 @@ import java.util.Optional;
 public class RFIDMappingDAO {
 
     public void create(RFIDMapping mapping) throws SQLException {
-        String sql = "INSERT INTO rfid_mapping (rfid_tag, vehicle_id, status) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO rfid_mapping (rfid_tag_number, vehicle_id, status) VALUES (?, ?, ?)";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -53,7 +53,7 @@ public class RFIDMappingDAO {
     }
 
     public Optional<RFIDMapping> findByRFIDTag(String rfidTag) throws SQLException {
-        String sql = "SELECT * FROM rfid_mapping WHERE rfid_tag = ? AND status = 'Active'";
+        String sql = "SELECT * FROM rfid_mapping WHERE rfid_tag_number = ? AND status = 'Active'";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -83,6 +83,24 @@ public class RFIDMappingDAO {
             }
         }
         return Optional.empty();
+    }
+
+    /** Returns ALL RFID mappings for a vehicle regardless of status. Use for deletion. */
+    public List<RFIDMapping> findAllByVehicleId(int vehicleId) throws SQLException {
+        String sql = "SELECT * FROM rfid_mapping WHERE vehicle_id = ?";
+        List<RFIDMapping> mappings = new ArrayList<>();
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, vehicleId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    mappings.add(mapRow(rs));
+                }
+            }
+        }
+        return mappings;
     }
 
     /** Returns all RFID mappings for vehicles belonging to an owner (via JOIN). */
@@ -124,7 +142,7 @@ public class RFIDMappingDAO {
     }
 
     public void update(RFIDMapping mapping) throws SQLException {
-        String sql = "UPDATE rfid_mapping SET rfid_tag = ?, vehicle_id = ?, status = ? WHERE rfid_id = ?";
+        String sql = "UPDATE rfid_mapping SET rfid_tag_number = ?, vehicle_id = ?, status = ? WHERE rfid_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -139,7 +157,7 @@ public class RFIDMappingDAO {
     }
 
     public void delete(int rfidId) throws SQLException {
-        String sql = "UPDATE rfid_mapping SET status = 'Inactive' WHERE rfid_id = ?";
+        String sql = "DELETE FROM rfid_mapping WHERE rfid_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -152,7 +170,7 @@ public class RFIDMappingDAO {
     private RFIDMapping mapRow(ResultSet rs) throws SQLException {
         RFIDMapping mapping = new RFIDMapping();
         mapping.setRfidId(rs.getInt("rfid_id"));
-        mapping.setRfidTag(rs.getString("rfid_tag"));
+        mapping.setRfidTag(rs.getString("rfid_tag_number"));
         mapping.setVehicleId(rs.getInt("vehicle_id"));
         mapping.setActive("Active".equalsIgnoreCase(rs.getString("status")));
 

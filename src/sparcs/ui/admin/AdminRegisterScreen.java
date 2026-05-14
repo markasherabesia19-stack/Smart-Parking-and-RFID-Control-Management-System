@@ -291,7 +291,7 @@ public class AdminRegisterScreen {
                 owner.setAddress("");
 
                 VehicleOwnerDAO ownerDAO = new VehicleOwnerDAO();
-                ownerDAO.createOrFind(owner);
+                owner = ownerDAO.createOrFind(owner);
 
                 Vehicle vehicle = new Vehicle();
                 vehicle.setOwnerId(owner.getOwnerId());

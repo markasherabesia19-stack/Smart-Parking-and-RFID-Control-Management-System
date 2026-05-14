@@ -3,10 +3,14 @@ package ui.admin;
 import dao.VehicleDAO;
 import dao.UserAccountDAO;
 import dao.VehicleOwnerDAO;
+import dao.RFIDMappingDAO;
+import dao.ParkingTransactionDAO;
 import model.AppState;
 import model.Vehicle;
 import model.UserAccount;
 import model.VehicleOwner;
+import model.RFIDMapping;
+import model.ParkingTransaction;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
 import util.DialogUtil;
@@ -571,6 +575,22 @@ public class AdminVehiclesScreen {
 
                 if (choice == JOptionPane.YES_OPTION) {
                     try {
+                        // Delete in order of foreign key dependencies
+                        // 1. Delete parking transactions
+                        ParkingTransactionDAO transDAO = new ParkingTransactionDAO();
+                        java.util.List<ParkingTransaction> transactions = transDAO.findByVehicleId(vehicleId);
+                        for (ParkingTransaction trans : transactions) {
+                            transDAO.delete(trans.getTransactionId());
+                        }
+                        
+                        // 2. Delete ALL RFID mappings (regardless of status)
+                        RFIDMappingDAO rfidDAO = new RFIDMappingDAO();
+                        java.util.List<RFIDMapping> rfidMappings = rfidDAO.findAllByVehicleId(vehicleId);
+                        for (RFIDMapping rfid : rfidMappings) {
+                            rfidDAO.delete(rfid.getRfidId());
+                        }
+                        
+                        // 3. Finally delete the vehicle
                         new VehicleDAO().delete(vehicleId);
                         tableModel.removeRow(modelRow);
                         state.notifySlotChange();
