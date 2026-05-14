@@ -3,8 +3,11 @@ package ui.user;
 import dao.ParkingSlotDAO;
 import dao.ParkingTransactionDAO;
 import dao.VehicleDAO;
-import service.FeeCalculationService;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
+import java.sql.SQLException;
 import model.AppState;
 import model.ParkingSlot;
 import model.ParkingTransaction;
@@ -20,8 +23,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
-import java.sql.SQLException;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -326,19 +327,16 @@ public class UserMyStatusScreen {
 
         // ── Guarantee fee and duration are always resolved before rendering ──
         boolean isInProgress = txn.getExitTime() == null
-                && "IN_PROGRESS".equalsIgnoreCase(txn.getTransactionStatus());
-        if (isInProgress || txn.getCalculatedFee() == null) {
-            try {
-                java.math.BigDecimal liveFee = new FeeCalculationService().calculateFee(txn);
-                txn.setCalculatedFee(liveFee);
-            } catch (Exception ignored) {
-                txn.setCalculatedFee(java.math.BigDecimal.ZERO);
-            }
-        }
+                && "IN_PROGRESS".equalsIgnoreCase(txn.getTransactionStatus())
+                && !"PAID".equalsIgnoreCase(txn.getPaymentStatus());
         if (isInProgress || (txn.getDurationMinutes() == null && txn.getEntryTime() != null)) {
-            long mins = FeeCalculationService.calculateDurationMinutes(
-                    txn.getEntryTime(), txn.getExitTime());
+            LocalDateTime end = (txn.getExitTime() != null) ? txn.getExitTime() : LocalDateTime.now();
+            long mins = ChronoUnit.MINUTES.between(txn.getEntryTime(), end);
             txn.setDurationMinutes((int) mins);
+        }
+        if (isInProgress || txn.getCalculatedFee() == null) {
+            int mins = txn.getDurationMinutes() != null ? txn.getDurationMinutes() : 0;
+            txn.setCalculatedFee(new BigDecimal(computeLiveFee(mins)));
         }
 
         // Outer card
@@ -491,6 +489,15 @@ public class UserMyStatusScreen {
         return block;
     }
 
+    /** Computes parking fee — identical formula to AdminFeesScreen.computeFee(). */
+    private static int computeLiveFee(long totalMinutes) {
+        long hours = (long) Math.ceil(totalMinutes / 60.0);
+        if (hours == 0) hours = 1;
+        if (hours >= 12) return 150;
+        if (hours == 1)  return 30;
+        return 30 + (int)(hours - 1) * 20;
+    }
+
     /** Format minutes as e.g. "2h 34m" or "45m". */
     private static String formatDuration(int totalMinutes) {
         if (totalMinutes < 60) return totalMinutes + "m";
@@ -506,8 +513,11 @@ public class UserMyStatusScreen {
      * entered yet, so it must not appear in "Active Sessions".
      */
     private static boolean isCurrentTransaction(ParkingTransaction txn) {
-        return txn.getExitTime() == null
-                && !"RESERVED".equalsIgnoreCase(txn.getTransactionStatus());
+        // Hide if: reserved, already paid, completed, or exited
+        if ("RESERVED".equalsIgnoreCase(txn.getTransactionStatus()))   return false;
+        if ("COMPLETED".equalsIgnoreCase(txn.getTransactionStatus()))  return false;
+        if ("PAID".equalsIgnoreCase(txn.getPaymentStatus()))           return false;
+        return true;
     }
 
     // Completed = exited + PAID (falls through; kept here for reference only)
@@ -530,28 +540,24 @@ public class UserMyStatusScreen {
 
             ParkingTransactionDAO txnDAO = new ParkingTransactionDAO();
             ParkingSlotDAO slotDAO = new ParkingSlotDAO();
-            FeeCalculationService feeService = new FeeCalculationService();
 
             for (Vehicle v : vehicles) {
                 List<ParkingTransaction> txns = txnDAO.findByVehicleId(v.getVehicleId());
                 for (ParkingTransaction txn : txns) {
                     boolean isInProgress = txn.getExitTime() == null
-                            && "IN_PROGRESS".equalsIgnoreCase(txn.getTransactionStatus());
+                            && "IN_PROGRESS".equalsIgnoreCase(txn.getTransactionStatus())
+                            && !"PAID".equalsIgnoreCase(txn.getPaymentStatus());
 
-                    // For in-progress sessions: ALWAYS recalculate so the fee
-                    // and duration reflect the current moment (not a stale cached value).
-                    // For completed/reserved transactions: only compute once if missing.
-                    if (isInProgress || txn.getCalculatedFee() == null) {
-                        try {
-                            BigDecimal liveFee = feeService.calculateFee(txn);
-                            txn.setCalculatedFee(liveFee);
-                        } catch (SQLException ignored) {}
-                    }
                     if (isInProgress || (txn.getDurationMinutes() == null && txn.getEntryTime() != null)) {
-                        long mins = FeeCalculationService.calculateDurationMinutes(
-                                txn.getEntryTime(), txn.getExitTime());
+                        LocalDateTime end = (txn.getExitTime() != null) ? txn.getExitTime() : LocalDateTime.now();
+                        long mins = ChronoUnit.MINUTES.between(txn.getEntryTime(), end);
                         txn.setDurationMinutes((int) mins);
                     }
+                    if (isInProgress || txn.getCalculatedFee() == null) {
+                        int mins = txn.getDurationMinutes() != null ? txn.getDurationMinutes() : 0;
+                        txn.setCalculatedFee(new BigDecimal(computeLiveFee(mins)));
+                    }
+
                     Optional<ParkingSlot> slotOpt = slotDAO.findById(txn.getSlotId());
                     slotOpt.ifPresent(slot -> result.add(new TransactionWithDetails(txn, v, slot)));
                 }

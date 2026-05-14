@@ -4,6 +4,7 @@ import dao.ParkingTransactionDAO;
 import dao.ParkingSlotDAO;
 import dao.UserAccountDAO;
 import dao.VehicleDAO;
+import dao.VehicleOwnerDAO;
 import dao.AuditLogDAO;
 import model.AppState;
 import model.AuditLog;
@@ -11,6 +12,7 @@ import model.ParkingTransaction;
 import model.ParkingSlot;
 import model.UserAccount;
 import model.Vehicle;
+import model.VehicleOwner;
 import ui.shared.SidebarPanel;
 import util.UIFactory;
 import util.DialogUtil;
@@ -294,7 +296,6 @@ public class AdminFeesScreen {
 
             // Load pending (IN_PROGRESS) transactions - only those NOT yet collected
             for (ParkingTransaction tx : txDAO.findInProgress()) {
-                // Skip transactions that have already been paid
                 if ("PAID".equals(tx.getPaymentStatus())) continue;
 
                 String plate = "—", slotCode = "—";
@@ -343,24 +344,105 @@ public class AdminFeesScreen {
         }
     }
 
+    /**
+     * Resolves the UserAccount that owns the given vehicle.
+     * Returns empty if the chain vehicle → owner → user cannot be completed.
+     */
+    private static Optional<UserAccount> resolveUserForVehicle(Vehicle vehicle) {
+        try {
+            VehicleOwnerDAO ownerDAO = new VehicleOwnerDAO();
+            UserAccountDAO  userDAO  = new UserAccountDAO();
+
+            Optional<VehicleOwner> ownerOpt = ownerDAO.findById(vehicle.getOwnerId());
+            if (ownerOpt.isEmpty() || ownerOpt.get().getUserId() == null) return Optional.empty();
+
+            return userDAO.findById(ownerOpt.get().getUserId());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return Optional.empty();
+        }
+    }
+
     private static void collectAll(DefaultTableModel model, AppState state) {
         if (model.getRowCount() == 0) {
             DialogUtil.showMessageDialog(null, "No pending fees.", "Info", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        if (DialogUtil.showConfirmDialog(null, "Mark all pending fees as PAID?",
+        if (DialogUtil.showConfirmDialog(null, "Mark all pending fees as PAID?\nThe fee will be deducted from each vehicle owner's wallet.",
                 "Confirm", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) return;
+
         try {
-            ParkingTransactionDAO txDAO = new ParkingTransactionDAO();
+            ParkingTransactionDAO txDAO   = new ParkingTransactionDAO();
+            VehicleDAO            vDAO    = new VehicleDAO();
+            UserAccountDAO        userDAO = new UserAccountDAO();
+
+            int collected = 0;
+            int skipped   = 0;
+            StringBuilder skippedPlates = new StringBuilder();
+
             for (ParkingTransaction tx : txDAO.findInProgress()) {
+                if ("PAID".equals(tx.getPaymentStatus())) continue;
+
                 long mins = Duration.between(tx.getEntryTime(), LocalDateTime.now()).toMinutes();
+                int  fee  = computeFee(mins);
+                BigDecimal feeDec = new BigDecimal(fee);
+
+                // ── Resolve vehicle owner and deduct wallet ───────────────────
+                Optional<Vehicle> vOpt = vDAO.findById(tx.getVehicleId());
+                String plate = vOpt.map(Vehicle::getPlateNumber).orElse("Vehicle#" + tx.getVehicleId());
+
+                Optional<UserAccount> userOpt = vOpt.isPresent()
+                    ? resolveUserForVehicle(vOpt.get()) : Optional.empty();
+
+                if (userOpt.isPresent()) {
+                    BigDecimal balance = userDAO.getWalletBalance(userOpt.get().getUserId());
+                    if (balance.compareTo(feeDec) < 0) {
+                        // Skip vehicles whose owner has insufficient balance
+                        skipped++;
+                        skippedPlates.append("\n  • ").append(plate)
+                            .append(" (balance: P").append(balance.toPlainString())
+                            .append(", fee: P").append(fee).append(")");
+                        continue;
+                    }
+                    userDAO.deductWalletBalance(userOpt.get().getUserId(), feeDec);
+                }
+                // If owner/user cannot be resolved, still mark PAID (cash payment scenario)
+
                 tx.setPaymentStatus("PAID");
-                tx.setCalculatedFee(new java.math.BigDecimal(computeFee(mins)));
+                tx.setCalculatedFee(feeDec);
                 txDAO.update(tx);
+                collected++;
+
+                // Audit log
+                try {
+                    AuditLog feeLog = new AuditLog();
+                    if (state.getCurrentUserAccount() != null) {
+                        feeLog.setUserId(state.getCurrentUserAccount().getUserId());
+                    }
+                    feeLog.setAction("FEE_COLLECTED");
+                    feeLog.setEntityType("VEHICLE");
+                    if (vOpt.isPresent()) feeLog.setEntityId(vOpt.get().getVehicleId());
+                    feeLog.setNewValue("P" + fee);
+                    feeLog.setOldValue(plate);
+                    new AuditLogDAO().create(feeLog);
+                } catch (Exception auditEx) {
+                    auditEx.printStackTrace();
+                }
             }
-            DialogUtil.showMessageDialog(null, "All fees collected.", "Success", JOptionPane.INFORMATION_MESSAGE);
+
+            StringBuilder msg = new StringBuilder();
+            msg.append(collected).append(" fee(s) collected successfully.");
+            if (skipped > 0) {
+                msg.append("\n\n").append(skipped)
+                   .append(" vehicle(s) skipped (insufficient balance):").append(skippedPlates);
+            }
+            DialogUtil.showMessageDialog(null, msg.toString(),
+                skipped > 0 ? "Partially Collected" : "Success",
+                skipped > 0 ? JOptionPane.WARNING_MESSAGE : JOptionPane.INFORMATION_MESSAGE);
+
             reloadPending(model);
             state.notifySlotChange();
+
         } catch (Exception ex) {
             ex.printStackTrace();
             DialogUtil.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -440,7 +522,7 @@ public class AdminFeesScreen {
             clickedRow = row;
             String status = (String) v;
             JButton btn = (JButton) editorComponent;
-            
+
             if ("COLLECTED".equals(status)) {
                 btn.setText("COLLECTED");
                 btn.setBackground(new Color(100, 150, 100));
@@ -467,9 +549,11 @@ public class AdminFeesScreen {
                 String plate  = (String) model.getValueAt(row, 0);
                 String feeStr = ((String) model.getValueAt(row, 3)).replace("P", "");
                 int    fee    = Integer.parseInt(feeStr);
+                BigDecimal feeDec = new BigDecimal(fee);
 
-                ParkingTransactionDAO txDAO = new ParkingTransactionDAO();
-                VehicleDAO            vDAO  = new VehicleDAO();
+                ParkingTransactionDAO txDAO   = new ParkingTransactionDAO();
+                VehicleDAO            vDAO    = new VehicleDAO();
+                UserAccountDAO        userDAO = new UserAccountDAO();
 
                 Optional<Vehicle> vOpt = vDAO.findByPlateNumber(plate);
                 if (vOpt.isEmpty()) {
@@ -477,16 +561,36 @@ public class AdminFeesScreen {
                         "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
-                for (ParkingTransaction tx : txDAO.findByVehicleId(vOpt.get().getVehicleId())) {
+                Vehicle vehicle = vOpt.get();
+
+                // ── Deduct fee from vehicle owner's wallet ────────────────────
+                Optional<UserAccount> userOpt = resolveUserForVehicle(vehicle);
+                if (userOpt.isPresent()) {
+                    BigDecimal balance = userDAO.getWalletBalance(userOpt.get().getUserId());
+                    if (balance.compareTo(feeDec) < 0) {
+                        DialogUtil.showMessageDialog(null,
+                            "Insufficient wallet balance for " + plate + ".\n"
+                            + "Current balance: P" + balance.toPlainString()
+                            + "  |  Fee: P" + fee,
+                            "Insufficient Balance", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                    userDAO.deductWalletBalance(userOpt.get().getUserId(), feeDec);
+                }
+                // If no user account is linked (e.g. unregistered / cash payer),
+                // still mark the transaction PAID — just skip wallet deduction.
+
+                // ── Mark transaction as PAID ──────────────────────────────────
+                for (ParkingTransaction tx : txDAO.findByVehicleId(vehicle.getVehicleId())) {
                     if ("IN_PROGRESS".equals(tx.getTransactionStatus())) {
                         tx.setPaymentStatus("PAID");
-                        tx.setCalculatedFee(new java.math.BigDecimal(fee));
+                        tx.setCalculatedFee(feeDec);
                         txDAO.update(tx);
                         break;
                     }
                 }
-                
-                // Log fee collection to audit log
+
+                // ── Audit log ─────────────────────────────────────────────────
                 try {
                     AuditLog feeLog = new AuditLog();
                     if (state.getCurrentUserAccount() != null) {
@@ -494,20 +598,26 @@ public class AdminFeesScreen {
                     }
                     feeLog.setAction("FEE_COLLECTED");
                     feeLog.setEntityType("VEHICLE");
-                    feeLog.setEntityId(vOpt.get().getVehicleId());
+                    feeLog.setEntityId(vehicle.getVehicleId());
                     feeLog.setNewValue("P" + fee);
                     feeLog.setOldValue(plate);
                     new AuditLogDAO().create(feeLog);
                 } catch (Exception auditEx) {
                     auditEx.printStackTrace();
                 }
-                
-                DialogUtil.showMessageDialog(null,
-                    "Fee of P" + fee + " collected for " + plate + ".",
-                    "Collected", JOptionPane.INFORMATION_MESSAGE);
+
+                // Build success message — show new balance if user wallet was used
+                String successMsg = "Fee of P" + fee + " collected for " + plate + ".";
+                if (userOpt.isPresent()) {
+                    BigDecimal newBal = userDAO.getWalletBalance(userOpt.get().getUserId());
+                    successMsg += "\nNew wallet balance: P" + newBal.toPlainString();
+                }
+
+                DialogUtil.showMessageDialog(null, successMsg, "Collected", JOptionPane.INFORMATION_MESSAGE);
                 model.setValueAt("COLLECTED", row, 4);
                 reloadPending(model);
                 state.notifySlotChange();
+
             } catch (Exception ex) {
                 ex.printStackTrace();
                 DialogUtil.showMessageDialog(null, "Error: " + ex.getMessage(),

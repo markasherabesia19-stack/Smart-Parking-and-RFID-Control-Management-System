@@ -134,7 +134,6 @@ public class UserAccountDAO {
     /**
      * Adds amount to the user's wallet balance (cash-in).
      * Uses a direct SQL increment to avoid race conditions.
-     * Safely handles if wallet_balance column doesn't exist.
      */
     public void addWalletBalance(int userId, BigDecimal amount) throws SQLException {
         String sql = "UPDATE user_account SET wallet_balance = wallet_balance + ? WHERE user_id = ?";
@@ -153,6 +152,43 @@ public class UserAccountDAO {
             } catch (SQLException e) {
                 if (e.getMessage().contains("wallet_balance") || e.getMessage().contains("not found")) {
                     System.err.println("[UserAccountDAO] wallet_balance column not found in schema - skipping");
+                } else {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    /**
+     * Deducts amount from the user's wallet balance (fee collection).
+     * Uses a direct SQL decrement to avoid race conditions.
+     * Throws IllegalStateException if the resulting balance would go below zero.
+     */
+    public void deductWalletBalance(int userId, BigDecimal amount) throws SQLException {
+        // Guard: check current balance first to give a meaningful error
+        BigDecimal current = getWalletBalance(userId);
+        if (current.compareTo(amount) < 0) {
+            throw new IllegalStateException(
+                "Insufficient wallet balance. Current: P" + current.toPlainString()
+                + ", Required: P" + amount.toPlainString());
+        }
+
+        String sql = "UPDATE user_account SET wallet_balance = wallet_balance - ? WHERE user_id = ?";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setBigDecimal(1, amount);
+            stmt.setInt(2, userId);
+
+            try {
+                int affectedRows = stmt.executeUpdate();
+                if (affectedRows == 0) {
+                    System.err.println("[UserAccountDAO] deductWalletBalance — user not found: " + userId);
+                }
+            } catch (SQLException e) {
+                if (e.getMessage().contains("wallet_balance") || e.getMessage().contains("not found")) {
+                    System.err.println("[UserAccountDAO] wallet_balance column not found in schema - skipping deduct");
                 } else {
                     throw e;
                 }
@@ -245,8 +281,7 @@ public class UserAccountDAO {
         account.setEmail(rs.getString("email"));
         account.setFullName(rs.getString("full_name"));
         account.setActive(rs.getBoolean("is_active"));
-        
-        // wallet_balance is optional - set to 0 if column doesn't exist
+
         try {
             account.setWalletBalance(rs.getBigDecimal("wallet_balance"));
         } catch (SQLException e) {
