@@ -5,9 +5,7 @@ import dao.ParkingSlotDAO;
 import dao.ParkingTransactionDAO;
 import dao.UserAccountDAO;
 import dao.VehicleDAO;
-import dao.FeeScheduleDAO;
 import model.AuditLog;
-import model.FeeSchedule;
 import model.AppState;
 import model.ParkingSlot;
 import model.ParkingTransaction;
@@ -335,24 +333,6 @@ public class UserDashboardScreen {
         reservationForm.add(reserveBtn);
 
         rightContent.add(reservationForm);
-        rightContent.add(Box.createVerticalStrut(14));
-        rightContent.add(thinDivider());
-        rightContent.add(Box.createVerticalStrut(14));
-
-        // Fee schedule section
-        JLabel feeLbl2 = UIFactory.lbl("FEE SCHEDULE", Font.BOLD, 12, C_MUTED);
-        feeLbl2.setAlignmentX(Component.LEFT_ALIGNMENT);
-        rightContent.add(feeLbl2);
-        rightContent.add(Box.createVerticalStrut(10));
-
-        JPanel feeList = new JPanel();
-        feeList.setLayout(new BoxLayout(feeList, BoxLayout.Y_AXIS));
-        feeList.setOpaque(false);
-        feeList.setAlignmentX(Component.LEFT_ALIGNMENT);
-        feeList.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
-        addFeeRows(feeList, state);
-        rightContent.add(feeList);
-
         rightCard.add(rightContent, BorderLayout.CENTER);
         body.add(rightCard);
 
@@ -372,6 +352,11 @@ public class UserDashboardScreen {
                         rfidScansCard, sessionsCard, actList, rfidList);
             }
         });
+
+        // ── Real-time refresh on any slot change (reserve, cancel, entry, exit) ──
+        state.addSlotChangeListener(() -> SwingUtilities.invokeLater(() ->
+                refreshDashboard(state, walletCard,
+                        rfidScansCard, sessionsCard, actList, rfidList)));
 
         // Initial load
         refreshDashboard(state, walletCard,
@@ -400,6 +385,10 @@ public class UserDashboardScreen {
             setStatCardValue(rfidScansCard, String.valueOf(data.rfidScansToday));
             setStatCardValue(sessionsCard,  String.valueOf(data.sessionsThisMonth));
 
+            // Refresh callback — rebuilds the RFID list after a cancellation
+            Runnable refreshRfid = () -> refreshDashboard(state, walletCard,
+                    rfidScansCard, sessionsCard, actList, rfidList);
+
             // RFID cards list - show all vehicles
             rfidList.removeAll();
             if (data.vehicleRFIDInfo.isEmpty()) {
@@ -409,7 +398,7 @@ public class UserDashboardScreen {
             } else {
                 for (int i = 0; i < data.vehicleRFIDInfo.size(); i++) {
                     VehicleRFIDInfo info = data.vehicleRFIDInfo.get(i);
-                    rfidList.add(buildVehicleRFIDCard(info));
+                    rfidList.add(buildVehicleRFIDCard(info, state, refreshRfid));
                     if (i < data.vehicleRFIDInfo.size() - 1) {
                         rfidList.add(Box.createVerticalStrut(10));
                     }
@@ -495,18 +484,24 @@ public class UserDashboardScreen {
                 for (ParkingTransaction txn : txns) {
 
                     // Currently parked or reserved?
+                    // IN_PROGRESS (parked) always takes priority over RESERVED.
+                    // Once a vehicle is marked PARKED, a stale RESERVED transaction
+                    // in the same list must not overwrite it.
                     if (!txn.isCompleted() && txn.getExitTime() == null) {
                         String txStatus = txn.getTransactionStatus();
-                        Optional<model.ParkingSlot> slotOpt = slotDAO.findById(txn.getSlotId());
-                        if (slotOpt.isPresent()) {
-                            String slotCode = slotOpt.get().getSlotCode();
-                            // Only mark PARKED for genuinely in-progress sessions;
-                            // RESERVED transactions must show as RESERVED, not PARKED
-                            String vehicleStatus = "RESERVED".equalsIgnoreCase(txStatus)
-                                    ? "RESERVED" : "PARKED";
-                            d.vehicleRFIDInfo.set(i, new VehicleRFIDInfo(
-                                    info.rfidTag(), info.vehicleInfo(), vehicleStatus, slotCode));
-                            info = d.vehicleRFIDInfo.get(i);
+                        boolean isParkedTx   = "IN_PROGRESS".equalsIgnoreCase(txStatus);
+                        boolean isReservedTx = "RESERVED".equalsIgnoreCase(txStatus);
+                        // Skip RESERVED if we already know the vehicle is PARKED
+                        if (isReservedTx && "PARKED".equals(info.status())) continue;
+                        if (isParkedTx || isReservedTx) {
+                            Optional<model.ParkingSlot> slotOpt = slotDAO.findById(txn.getSlotId());
+                            if (slotOpt.isPresent()) {
+                                String slotCode     = slotOpt.get().getSlotCode();
+                                String vehicleStatus = isParkedTx ? "PARKED" : "RESERVED";
+                                d.vehicleRFIDInfo.set(i, new VehicleRFIDInfo(
+                                        info.rfidTag(), info.vehicleInfo(), vehicleStatus, slotCode));
+                                info = d.vehicleRFIDInfo.get(i);
+                            }
                         }
                     }
 
@@ -551,51 +546,6 @@ public class UserDashboardScreen {
         return d;
     }
 
-    // =========================================================================
-    // Fee schedule
-    // =========================================================================
-
-    /**
-     * Loads the current active fee schedule from FeeScheduleDAO.
-     * Falls back to hardcoded defaults if no active schedule is found in DB.
-     */
-    private static void addFeeRows(JPanel feeList, AppState state) {
-        String ratePerHour = "₱30";
-        String ratePerDay  = "₱150";
-        int    graceMins   = 0;
-
-        try {
-            FeeScheduleDAO feeDAO = new FeeScheduleDAO();
-            Optional<FeeSchedule> activeOpt = feeDAO.findCurrentActive();
-            if (activeOpt.isPresent()) {
-                FeeSchedule fs = activeOpt.get();
-                ratePerHour = "₱" + fs.getRatePerHour().toPlainString();
-                ratePerDay  = "₱" + fs.getRatePerDay().toPlainString();
-                graceMins   = fs.getGracePeriodMinutes();
-            }
-        } catch (Exception ignored) {}
-
-        feeList.add(buildFeeRow("Rate per hour", ratePerHour));
-        feeList.add(Box.createVerticalStrut(7));
-        feeList.add(buildFeeRow("Rate per day",  ratePerDay));
-        feeList.add(Box.createVerticalStrut(7));
-        feeList.add(buildFeeRow("Grace period",  graceMins + " min"));
-        feeList.add(Box.createVerticalStrut(7));
-    }
-
-    private static JPanel buildFeeRow(String label, String rate) {
-        JPanel row = new JPanel(new BorderLayout(8, 0));
-        row.setOpaque(false);
-        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
-
-        JLabel lbl = UIFactory.lbl(label, Font.PLAIN, 12, new Color(160, 157, 192));
-        JLabel val = UIFactory.lbl(rate,  Font.BOLD,  12, C_WHITE);
-        val.setHorizontalAlignment(SwingConstants.RIGHT);
-
-        row.add(lbl, BorderLayout.WEST);
-        row.add(val, BorderLayout.EAST);
-        return row;
-    }
 
     // =========================================================================
     // Activity row builder
@@ -605,11 +555,13 @@ public class UserDashboardScreen {
     // Vehicle RFID Card builder
     // =========================================================================
 
-    private static JPanel buildVehicleRFIDCard(VehicleRFIDInfo info) {
+    private static JPanel buildVehicleRFIDCard(VehicleRFIDInfo info,
+                                               AppState state,
+                                               Runnable onCancelRefresh) {
         JPanel card = new JPanel(new BorderLayout(8, 0));
         card.setOpaque(false);
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
-        card.setMinimumSize(new Dimension(200, 52));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, info.isReserved() ? 62 : 52));
+        card.setMinimumSize(new Dimension(200, info.isReserved() ? 62 : 52));
         card.setAlignmentX(Component.LEFT_ALIGNMENT);
         card.setBorder(new EmptyBorder(6, 0, 6, 0));
 
@@ -639,7 +591,25 @@ public class UserDashboardScreen {
             statusColor = C_MUTED;
             statusText  = "● INACTIVE";
         }
+
+        JPanel badgeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        badgeRow.setOpaque(false);
         JLabel statusBadge = makeBadge(statusText, statusColor);
+        badgeRow.add(statusBadge);
+
+        // Add Cancel button only when the vehicle is RESERVED
+        if (info.isReserved()) {
+            JButton cancelBtn = new JButton("✕ Cancel");
+            cancelBtn.setFont(new Font("Dialog", Font.BOLD, 10));
+            cancelBtn.setForeground(Color.WHITE);
+            cancelBtn.setBackground(new Color(180, 40, 60));
+            cancelBtn.setBorder(new EmptyBorder(3, 8, 3, 8));
+            cancelBtn.setFocusPainted(false);
+            cancelBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            cancelBtn.setOpaque(true);
+            cancelBtn.addActionListener(e -> cancelReservation(info, state, onCancelRefresh));
+            badgeRow.add(cancelBtn);
+        }
 
         JLabel slotLabel = UIFactory.lbl(
             info.isActive() ? "Slot " + info.parkedSlot() : "Not parked",
@@ -648,13 +618,99 @@ public class UserDashboardScreen {
         );
         slotLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
-        statusPanel.add(statusBadge, BorderLayout.WEST);
+        statusPanel.add(badgeRow,  BorderLayout.WEST);
         statusPanel.add(slotLabel, BorderLayout.CENTER);
 
-        card.add(rfidChip, BorderLayout.WEST);
-        card.add(statusPanel, BorderLayout.CENTER);
+        card.add(rfidChip,     BorderLayout.WEST);
+        card.add(statusPanel,  BorderLayout.CENTER);
 
         return card;
+    }
+
+    // =========================================================================
+    // Cancel reservation
+    // =========================================================================
+
+    private static void cancelReservation(VehicleRFIDInfo info,
+                                          AppState state,
+                                          Runnable onDone) {
+        int confirm = JOptionPane.showConfirmDialog(
+            null,
+            "Cancel reservation for vehicle " + info.vehicleInfo()
+                + " at Slot " + info.parkedSlot() + "?",
+            "Confirm Cancellation",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+        if (confirm != JOptionPane.YES_OPTION) return;
+
+        try {
+            VehicleDAO            vehicleDAO = new VehicleDAO();
+            ParkingSlotDAO        slotDAO    = new ParkingSlotDAO();
+            ParkingTransactionDAO txDAO      = new ParkingTransactionDAO();
+            AuditLogDAO           auditDAO   = new AuditLogDAO();
+
+            // ── Resolve vehicle ───────────────────────────────────────────────
+            Optional<Vehicle> vehicleOpt = vehicleDAO.findByPlateNumber(info.vehicleInfo());
+            if (vehicleOpt.isEmpty()) {
+                DialogUtil.showMessageDialog(null,
+                    "Could not find vehicle: " + info.vehicleInfo(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            Vehicle vehicle = vehicleOpt.get();
+
+            // ── Mark the RESERVED transaction as CANCELLED ────────────────────
+            List<ParkingTransaction> txns = txDAO.findByVehicleId(vehicle.getVehicleId());
+            for (ParkingTransaction txn : txns) {
+                if ("RESERVED".equalsIgnoreCase(txn.getTransactionStatus())) {
+                    txn.setTransactionStatus("CANCELLED");
+                    txn.setExitTime(LocalDateTime.now());
+                    txDAO.update(txn);
+                    break;
+                }
+            }
+
+            // ── Release the slot — mirrors reserveSlot() in reverse ──────────
+            Optional<ParkingSlot> slotOpt = slotDAO.findBySlotCode(info.parkedSlot());
+            if (slotOpt.isPresent()) {
+                ParkingSlot slot = slotOpt.get();
+                slotDAO.vacateSlot(slot.getSlotId());                // sets status → AVAILABLE
+                slotDAO.updateCurrentVehicle(slot.getSlotId(), null); // clears vehicle link
+            }
+
+            // ── Reset vehicle parking status ──────────────────────────────────
+            vehicleDAO.updateParkingStatus(vehicle.getVehicleId(), "Inactive");
+
+            // ── Audit log ─────────────────────────────────────────────────────
+            AuditLog log = new AuditLog();
+            log.setAction("CANCEL_RESERVATION");
+            log.setEntityType("PARKING_SLOT");
+            log.setNewValue("AVAILABLE");
+            log.setOldValue("plate=" + vehicle.getPlateNumber() + " slot=" + info.parkedSlot());
+            log.setIpAddress("localhost");
+            auditDAO.create(log);
+
+            // ── Notify ALL slot-change listeners (slot map, admin map, etc.) ──
+            // This causes UserSlotViewScreen and AdminSlotMapScreen to reload
+            // from DB and redraw — the formerly-reserved slot turns green.
+            state.notifySlotChange();
+
+            // ── Refresh the dashboard RFID card list ──────────────────────────
+            SwingUtilities.invokeLater(onDone);
+
+            DialogUtil.showMessageDialog(null,
+                "Reservation for " + info.vehicleInfo() + " at Slot "
+                    + info.parkedSlot() + " has been cancelled.\n"
+                    + "The slot is now available on the parking map.",
+                "Reservation Cancelled", JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            DialogUtil.showMessageDialog(null,
+                "Cancellation failed: " + ex.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     // =========================================================================
