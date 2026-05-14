@@ -19,6 +19,8 @@ import static util.UIConstants.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -140,7 +142,7 @@ public class UserDashboardScreen {
         reservationForm.setLayout(new BoxLayout(reservationForm, BoxLayout.Y_AXIS));
         reservationForm.setOpaque(false);
         reservationForm.setAlignmentX(Component.LEFT_ALIGNMENT);
-        reservationForm.setMaximumSize(new Dimension(Integer.MAX_VALUE, 130));
+        reservationForm.setMaximumSize(new Dimension(Integer.MAX_VALUE, 175));
 
         // Plate/RFID field
         JLabel plateLbl = UIFactory.lbl("Plate / RFID", Font.PLAIN, 9, C_MUTED);
@@ -170,12 +172,10 @@ public class UserDashboardScreen {
         reservationForm.add(slotField);
         reservationForm.add(Box.createVerticalStrut(5));
 
-        // Date & Time row
-        JPanel dateTimeRow = new JPanel(new GridLayout(1, 2, 6, 0));
-        dateTimeRow.setOpaque(false);
-        dateTimeRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
-        dateTimeRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        DateTimeFormatter dateFmt   = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter timeFmt24 = DateTimeFormatter.ofPattern("HH:mm");
 
+        // ── Date row ─────────────────────────────────────────────────────
         JPanel datePanel = new JPanel();
         datePanel.setLayout(new BoxLayout(datePanel, BoxLayout.Y_AXIS));
         datePanel.setOpaque(false);
@@ -184,34 +184,78 @@ public class UserDashboardScreen {
         JLabel dateLbl = UIFactory.lbl("Date", Font.PLAIN, 9, C_MUTED);
         dateLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
         datePanel.add(dateLbl);
-        JTextField dateField = new JTextField("yyyy-MM-dd");
+        JTextField dateField = new JTextField(LocalDateTime.now().format(dateFmt));
         dateField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
         dateField.setAlignmentX(Component.LEFT_ALIGNMENT);
         dateField.setBackground(new Color(40, 35, 80));
         dateField.setForeground(C_WHITE);
         dateField.setBorder(new EmptyBorder(4, 6, 4, 6));
         datePanel.add(dateField);
+        reservationForm.add(datePanel);
+        reservationForm.add(Box.createVerticalStrut(5));
 
-        JPanel timePanel = new JPanel();
-        timePanel.setLayout(new BoxLayout(timePanel, BoxLayout.Y_AXIS));
-        timePanel.setOpaque(false);
-        timePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        timePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
-        JLabel timeLbl = UIFactory.lbl("Time", Font.PLAIN, 9, C_MUTED);
-        timeLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
-        timePanel.add(timeLbl);
-        JTextField timeField = new JTextField("HH:mm");
-        timeField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
-        timeField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        timeField.setBackground(new Color(40, 35, 80));
-        timeField.setForeground(C_WHITE);
-        timeField.setBorder(new EmptyBorder(4, 6, 4, 6));
-        timePanel.add(timeField);
+        // ── From / To time row ───────────────────────────────────────────
+        JPanel timeRow = new JPanel(new GridLayout(1, 2, 6, 0));
+        timeRow.setOpaque(false);
+        timeRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 35));
+        timeRow.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        dateTimeRow.add(datePanel);
-        dateTimeRow.add(timePanel);
-        reservationForm.add(dateTimeRow);
+        // From field (live clock)
+        JPanel fromPanel = new JPanel();
+        fromPanel.setLayout(new BoxLayout(fromPanel, BoxLayout.Y_AXIS));
+        fromPanel.setOpaque(false);
+        fromPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel fromLbl = UIFactory.lbl("From (HH:mm)", Font.PLAIN, 9, C_MUTED);
+        fromLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fromPanel.add(fromLbl);
+        JTextField timeFromField = new JTextField(LocalDateTime.now().format(timeFmt24));
+        timeFromField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
+        timeFromField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        timeFromField.setBackground(new Color(40, 35, 80));
+        timeFromField.setForeground(C_WHITE);
+        timeFromField.setBorder(new EmptyBorder(4, 6, 4, 6));
+        fromPanel.add(timeFromField);
+
+        // To field (manual)
+        JPanel toPanel = new JPanel();
+        toPanel.setLayout(new BoxLayout(toPanel, BoxLayout.Y_AXIS));
+        toPanel.setOpaque(false);
+        toPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        JLabel toLbl = UIFactory.lbl("To (HH:mm)", Font.PLAIN, 9, C_MUTED);
+        toLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+        toPanel.add(toLbl);
+        JTextField timeToField = new JTextField();
+        timeToField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
+        timeToField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        timeToField.setBackground(new Color(40, 35, 80));
+        timeToField.setForeground(C_WHITE);
+        timeToField.setBorder(new EmptyBorder(4, 6, 4, 6));
+        toPanel.add(timeToField);
+
+        timeRow.add(fromPanel);
+        timeRow.add(toPanel);
+        reservationForm.add(timeRow);
         reservationForm.add(Box.createVerticalStrut(6));
+
+        // ── Live clock on From field; stops when user edits ───────────────
+        boolean[] userEditedFrom = {false};
+        boolean[] userEditedDate = {false};
+        timeFromField.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e)  { userEditedFrom[0] = true; }
+            public void removeUpdate(DocumentEvent e)  { userEditedFrom[0] = true; }
+            public void changedUpdate(DocumentEvent e) { userEditedFrom[0] = true; }
+        });
+        dateField.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e)  { userEditedDate[0] = true; }
+            public void removeUpdate(DocumentEvent e)  { userEditedDate[0] = true; }
+            public void changedUpdate(DocumentEvent e) { userEditedDate[0] = true; }
+        });
+        javax.swing.Timer clockTimer = new javax.swing.Timer(1000, tick -> {
+            LocalDateTime now = LocalDateTime.now();
+            if (!userEditedFrom[0]) timeFromField.setText(now.format(timeFmt24));
+            if (!userEditedDate[0]) dateField.setText(now.format(dateFmt));
+        });
+        clockTimer.start();
 
         // Reserve button — wired to DB reservation logic
         JButton reserveBtn = UIFactory.gradientButton("RESERVE");
@@ -221,15 +265,43 @@ public class UserDashboardScreen {
             String plateOrRfid = plateField.getText().trim();
             String slotCode    = slotField.getText().trim().toUpperCase();
             String dateStr     = dateField.getText().trim();
-            String timeStr     = timeField.getText().trim();
+            String timeFromStr = timeFromField.getText().trim();
+            String timeToStr   = timeToField.getText().trim();
 
             // ── Basic validation ─────────────────────────────────────────────
             if (plateOrRfid.isEmpty() || slotCode.isEmpty()
-                    || dateStr.isEmpty() || timeStr.isEmpty()
-                    || "yyyy-MM-dd".equals(dateStr) || "HH:mm".equals(timeStr)) {
+                    || dateStr.isEmpty() || timeFromStr.isEmpty() || timeToStr.isEmpty()) {
                 DialogUtil.showMessageDialog(null,
-                    "Please fill in all fields (Plate/RFID, Slot, Date, Time) before reserving.",
+                    "Please fill in all fields (Plate/RFID, Slot, Date, From, To) before reserving.",
                     "Input Required", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            // ── Validate date is yyyy-MM-dd ───────────────────────────────────
+            if (!dateStr.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                DialogUtil.showMessageDialog(null,
+                    "Invalid date format. Please use yyyy-MM-dd, e.g. 2025-12-31.",
+                    "Invalid Date", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            // ── Validate From/To are HH:mm (24-hour) ─────────────────────────
+            String timeHhmm = "([01]?[0-9]|2[0-3]):[0-5][0-9]";
+            if (!timeFromStr.matches(timeHhmm)) {
+                DialogUtil.showMessageDialog(null,
+                    "Invalid 'From' time. Please use HH:mm (24-hour), e.g. 09:00.",
+                    "Invalid Time", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if (!timeToStr.matches(timeHhmm)) {
+                DialogUtil.showMessageDialog(null,
+                    "Invalid 'To' time. Please use HH:mm (24-hour), e.g. 11:00.",
+                    "Invalid Time", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            // ── Ensure To is after From ───────────────────────────────────────
+            if (timeToStr.compareTo(timeFromStr) <= 0) {
+                DialogUtil.showMessageDialog(null,
+                    "'To' time must be after 'From' time.",
+                    "Invalid Time Range", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -304,22 +376,29 @@ public class UserDashboardScreen {
                 log.setEntityType("PARKING_SLOT");
                 log.setEntityId(slot.getSlotId());
                 log.setNewValue(vehicle.getPlateNumber());
-                log.setOldValue("plate=" + vehicle.getPlateNumber() + " slot=" + slotCode);
+                log.setOldValue("plate=" + vehicle.getPlateNumber()
+                    + " slot=" + slotCode
+                    + " from=" + timeFromStr + " to=" + timeToStr);
                 log.setIpAddress("localhost");
                 auditDAO.create(log);
 
                 // ── Notify all slot-change listeners (admin map, dashboard) ──
                 state.notifySlotChange();
 
-                // ── Clear form ───────────────────────────────────────────────
+                // ── Clear form and re-enable live clock ──────────────────────
                 plateField.setText("");
                 slotField.setText("");
-                dateField.setText("yyyy-MM-dd");
-                timeField.setText("HH:mm");
+                timeToField.setText("");
+                userEditedDate[0] = false;
+                userEditedFrom[0] = false;
+                LocalDateTime nowClear = LocalDateTime.now();
+                dateField.setText(nowClear.format(dateFmt));
+                timeFromField.setText(nowClear.format(timeFmt24));
 
                 DialogUtil.showMessageDialog(null,
                     "Slot " + slotCode + " has been reserved for "
                     + vehicle.getPlateNumber() + ".\n"
+                    + "Date: " + dateStr + "  |  Time: " + timeFromStr + " – " + timeToStr + "\n"
                     + "It will appear as RESERVED (yellow) on the parking map.",
                     "Reservation Confirmed", JOptionPane.INFORMATION_MESSAGE);
 
