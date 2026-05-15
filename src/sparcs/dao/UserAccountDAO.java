@@ -10,6 +10,8 @@ import java.util.Optional;
 
 public class UserAccountDAO {
 
+    private static final String WALLET_COLUMN = "wallet_balance";
+
     public void create(UserAccount userAccount) throws SQLException {
         String sql = "INSERT INTO user_account (username, password_hash, role, email, full_name, is_active) " +
                 "VALUES (?, ?, ?, ?, ?, ?)";
@@ -136,6 +138,7 @@ public class UserAccountDAO {
      * Uses a direct SQL increment to avoid race conditions.
      */
     public void addWalletBalance(int userId, BigDecimal amount) throws SQLException {
+        ensureWalletBalanceColumn();
         String sql = "UPDATE user_account SET wallet_balance = wallet_balance + ? WHERE user_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -165,6 +168,7 @@ public class UserAccountDAO {
      * Throws IllegalStateException if the resulting balance would go below zero.
      */
     public void deductWalletBalance(int userId, BigDecimal amount) throws SQLException {
+        ensureWalletBalanceColumn();
         // Guard: check current balance first to give a meaningful error
         BigDecimal current = getWalletBalance(userId);
         if (current.compareTo(amount) < 0) {
@@ -201,6 +205,7 @@ public class UserAccountDAO {
      * Returns 0 if column doesn't exist or user not found.
      */
     public BigDecimal getWalletBalance(int userId) throws SQLException {
+        ensureWalletBalanceColumn();
         String sql = "SELECT wallet_balance FROM user_account WHERE user_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -299,5 +304,26 @@ public class UserAccountDAO {
         if (updatedAt != null) account.setUpdatedAt(updatedAt.toLocalDateTime());
 
         return account;
+    }
+
+    private void ensureWalletBalanceColumn() throws SQLException {
+        try (Connection conn = DatabaseConfig.getInstance().getConnection()) {
+            if (hasWalletBalanceColumn(conn)) {
+                return;
+            }
+
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate(
+                        "ALTER TABLE user_account ADD COLUMN wallet_balance DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER is_active"
+                );
+            }
+        }
+    }
+
+    private boolean hasWalletBalanceColumn(Connection conn) throws SQLException {
+        DatabaseMetaData metaData = conn.getMetaData();
+        try (ResultSet rs = metaData.getColumns(conn.getCatalog(), null, "user_account", WALLET_COLUMN)) {
+            return rs.next();
+        }
     }
 }

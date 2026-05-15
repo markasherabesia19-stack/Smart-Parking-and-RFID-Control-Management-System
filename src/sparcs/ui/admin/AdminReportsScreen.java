@@ -80,11 +80,7 @@ public class AdminReportsScreen {
         JButton exportCSVBtn = UIFactory.gradientButton("EXPORT CSV");
         exportCSVBtn.addActionListener(e -> exportToCSV());
         
-        JButton exportPDFBtn = UIFactory.gradientButton("EXPORT PDF");
-        exportPDFBtn.addActionListener(e -> exportToPDF());
-        
         exportRow.add(exportCSVBtn);
-        exportRow.add(exportPDFBtn);
 
         JPanel main = new JPanel(new BorderLayout());
         main.setOpaque(false);
@@ -217,58 +213,6 @@ public class AdminReportsScreen {
                 } catch (SQLException e) {
                     System.err.println("Error reading transactions: " + e.getMessage());
                 }
-                
-                DialogUtil.showMessageDialog(null, 
-                    "Report exported successfully to:\n" + fileChooser.getSelectedFile().getAbsolutePath(), 
-                    "Export Success", JOptionPane.INFORMATION_MESSAGE);
-                    
-            } catch (IOException e) {
-                DialogUtil.showMessageDialog(null, 
-                    "Error exporting report: " + e.getMessage(), 
-                    "Export Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
-
-    private static void exportToPDF() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
-            @Override
-            public boolean accept(File f) {
-                return f.isDirectory() || f.getName().endsWith(".txt");
-            }
-            @Override
-            public String getDescription() {
-                return "Text Files (*.txt)";
-            }
-        });
-        fileChooser.setSelectedFile(new File("SPARCS_Report_" + LocalDate.now() + ".txt"));
-        
-        int result = fileChooser.showSaveDialog(null);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            try (PrintWriter writer = new PrintWriter(new FileWriter(fileChooser.getSelectedFile()))) {
-                writer.println("╔════════════════════════════════════════════════════════════════╗");
-                writer.println("║  SPARCS - Smart Parking & RFID Control Management System        ║");
-                writer.println("║  ADMINISTRATIVE REPORT                                         ║");
-                writer.println("╚════════════════════════════════════════════════════════════════╝");
-                writer.println();
-                writer.println("Report Generated: " + LocalDateTime.now());
-                writer.println();
-                writer.println("─────────────────────────────────────────────────────────────────");
-                writer.println("FINANCIAL METRICS");
-                writer.println("─────────────────────────────────────────────────────────────────");
-                writer.printf("Daily Revenue (Today):        $%.2f%n", dailyRevenue);
-                writer.printf("Weekly Revenue (This Week):   $%.2f%n", weeklyRevenue);
-                writer.println();
-                writer.println("─────────────────────────────────────────────────────────────────");
-                writer.println("SYSTEM METRICS");
-                writer.println("─────────────────────────────────────────────────────────────────");
-                writer.printf("Total Vehicles Registered:    %d%n", totalVehicles);
-                writer.printf("Average Parking Duration:     %s%n", formatDuration(avgDuration));
-                writer.println();
-                writer.println("─────────────────────────────────────────────────────────────────");
-                writer.println("END OF REPORT");
-                writer.println("─────────────────────────────────────────────────────────────────");
                 
                 DialogUtil.showMessageDialog(null, 
                     "Report exported successfully to:\n" + fileChooser.getSelectedFile().getAbsolutePath(), 
