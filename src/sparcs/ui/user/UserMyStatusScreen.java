@@ -593,4 +593,5 @@ public class UserMyStatusScreen {
             return new Insets(thickness + 2, thickness + 2, thickness + 2, thickness + 2);
         }
     }
+    
 }
