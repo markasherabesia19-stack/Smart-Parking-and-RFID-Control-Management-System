@@ -26,172 +26,155 @@ import java.util.Optional;
 
 public class AdminVehiclesScreen {
 
-    // Column indices
+    // ── Column indices ────────────────────────────────────────────────────────
     private static final int COL_PLATE  = 0;
     private static final int COL_OWNER  = 1;
     private static final int COL_USER   = 2;
     private static final int COL_TYPE   = 3;
     private static final int COL_COLOR  = 4;
     private static final int COL_STATUS = 5;
-    private static final int COL_DELETE = 6;   // icon-only trash button
+    private static final int COL_DELETE = 6;
     private static final int COL_ID     = 7;   // hidden — vehicle_id
 
-    // Row colors
-    private static final Color ROW_ODD       = new Color(30, 22, 70);
-    private static final Color ROW_EVEN      = new Color(36, 27, 82);
-    private static final Color ROW_SELECTED  = new Color(80, 62, 165);
-    private static final Color ROW_HOVER     = new Color(55, 42, 120);
+    // ── Design System: Row colors ─────────────────────────────────────────────
+    // Aligned to UIConstants layer hierarchy
+    private static final Color ROW_ODD      = new Color(13, 11, 31);       // Layer 0 — #0D0B1F
+    private static final Color ROW_EVEN     = new Color(18, 16, 58);       // Layer 1 — #12103A
+    private static final Color ROW_SELECTED = new Color(36, 30, 107);      // Layer 3 — #241E6B
+    private static final Color ROW_HOVER    = new Color(26, 22, 80);       // Layer 2 — #1A1650
 
-    // Status pill colors
-    private static final Color PARKED_BG    = new Color(29, 158, 117, 55);
-    private static final Color PARKED_FG    = new Color(93, 202, 165);
-    private static final Color PARKED_BD    = new Color(29, 158, 117, 100);
-    private static final Color NOTPKD_BG   = new Color(255, 255, 255, 18);
-    private static final Color NOTPKD_FG   = new Color(175, 169, 236, 160);
-    private static final Color NOTPKD_BD   = new Color(175, 169, 236, 50);
-    private static final Color SUSPND_BG   = new Color(220, 70, 90, 50);
-    private static final Color SUSPND_FG   = new Color(240, 100, 110);
-    private static final Color SUSPND_BD   = new Color(220, 70, 90, 100);
+    // ── Design System: Status badge colors ───────────────────────────────────
+    // Exact values from SPARCS Design System doc
+    // Parked  → Emerald Green  #1DB954
+    // Inactive / Suspended → Amber Orange  #FF8C42
+    // Not Parked → muted purple
+    private static final Color PARKED_BG  = new Color(29, 185, 84, 38);   // #1DB954 @ 15%
+    private static final Color PARKED_FG  = new Color(29, 185, 84);        // #1DB954
+    private static final Color PARKED_BD  = new Color(29, 185, 84, 80);
+
+    private static final Color NOTPKD_BG  = new Color(124, 92, 191, 46);  // #7C5CBF @ 18%
+    private static final Color NOTPKD_FG  = new Color(155, 143, 212);      // #9B8FD4
+    private static final Color NOTPKD_BD  = new Color(107, 95, 160, 60);
+
+    // "Inactive" maps to Amber Orange — not red
+    private static final Color INACT_BG   = new Color(255, 140, 66, 38);  // #FF8C42 @ 15%
+    private static final Color INACT_FG   = new Color(255, 140, 66);       // #FF8C42
+    private static final Color INACT_BD   = new Color(255, 140, 66, 80);
+
+    // "Suspended" maps to Crimson Red — deliberate danger signal
+    private static final Color SUSPND_BG  = new Color(232, 54, 93, 38);   // #E8365D @ 15%
+    private static final Color SUSPND_FG  = new Color(232, 54, 93);        // #E8365D
+    private static final Color SUSPND_BD  = new Color(232, 54, 93, 80);
+
+    // ── Design System: Plate number color ────────────────────────────────────
+    // Lighter purple so it reads as a code/ID, distinct from body text
+    private static final Color PLATE_FG   = new Color(167, 139, 250);      // #A78BFA
+
+    // ── Design System: Misc ───────────────────────────────────────────────────
+    private static final Color SEPARATOR   = new Color(30, 28, 69, 255);   // #1E1C45
+    private static final Color CARD_BD     = new Color(45, 40, 96, 120);   // #2D2860 @ ~47%
+    private static final Color HEADER_FG   = new Color(107, 95, 160);      // #6B5FA0 — muted label
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
         JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(C_BG_DARK);
+        root.setBackground(ROW_ODD);
         root.setOpaque(true);
         root.setName("ADMIN_VEHICLES");
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_VEHICLES"), BorderLayout.WEST);
 
         JPanel content = new JPanel(new BorderLayout());
-        content.setBackground(C_BG_DARK);
+        content.setBackground(ROW_ODD);
         content.setOpaque(true);
 
-        // ── Top Bar ──────────────────────────────────────────────────────────
+        // ── Top Bar ───────────────────────────────────────────────────────────
+        // Height fixed at 54px; background is Layer 2 (#1A1650) per design system
         JPanel topBar = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.setColor(C_BG_PANEL);
+                g2.setColor(ROW_HOVER);                        // #1A1650
                 g2.fillRect(0, 0, getWidth(), getHeight());
-                // subtle bottom separator line
-                g2.setColor(new Color(175, 169, 236, 40));
+                g2.setColor(SEPARATOR);
                 g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
                 g2.dispose();
             }
         };
         topBar.setOpaque(false);
-        topBar.setBorder(new EmptyBorder(16, 28, 16, 32));
+        topBar.setBorder(new EmptyBorder(10, 28, 10, 24));
+        topBar.setPreferredSize(new Dimension(0, 54));
 
-        // Title — plain label, no emoji
-        JLabel titleLbl = UIFactory.lbl("VEHICLES", Font.BOLD, 20, C_WHITE);
+        // Page title — 18px Bold ALL CAPS, color #F0ECFF
+        JLabel titleLbl = UIFactory.lbl("VEHICLES", Font.BOLD, 18, new Color(240, 236, 255));
         topBar.add(titleLbl, BorderLayout.WEST);
 
-        JPanel topRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        JPanel topRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         topRight.setOpaque(false);
 
-        // ── Filter dropdown — fully custom-painted, no OS arrow box ──────────
-        String[] filterOptions = {"All", "Plate", "Owner", "Username", "Type", "Color", "Parking Status"};
-        JComboBox<String> filterBox = new JComboBox<>(filterOptions) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(55, 42, 115));
-                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
-                g2.setColor(new Color(175, 169, 236, 90));
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
-                String selected = getSelectedItem() != null ? getSelectedItem().toString() : "All";
-                g2.setFont(new Font("SansSerif", Font.PLAIN, 12));
-                g2.setColor(C_WHITE);
-                FontMetrics fm = g2.getFontMetrics();
-                int textY = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
-                g2.drawString(selected, 12, textY);
-                g2.setFont(new Font("SansSerif", Font.BOLD, 10));
-                g2.setColor(new Color(175, 169, 236, 180));
-                g2.drawString("\u25be", getWidth() - 18, textY);
-                g2.dispose();
-            }
-            @Override protected void paintBorder(Graphics g) {}
-        };
-        filterBox.setOpaque(false);
-        filterBox.setBackground(new Color(55, 42, 115));
-        filterBox.setForeground(C_WHITE);
-        filterBox.setPreferredSize(new Dimension(130, 34));
-        filterBox.setBorder(null);
-        filterBox.setFocusable(false);
-        for (Component comp : filterBox.getComponents()) {
-            if (comp instanceof AbstractButton ab) ab.setVisible(false);
-        }
-        filterBox.setRenderer(new DefaultListCellRenderer() {
-            @Override public Component getListCellRendererComponent(JList<?> list, Object value,
-                    int index, boolean isSelected, boolean cellHasFocus) {
-                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                setBackground(isSelected ? C_PURPLE : new Color(40, 30, 90));
-                setForeground(C_WHITE);
-                setBorder(new EmptyBorder(6, 12, 6, 12));
-                return this;
-            }
-        });
-
-        // ── Search field ──────────────────────────────────────────────────────
-        final String PLACEHOLDER = "  \uD83D\uDD0D  Search vehicles...";
+        // ── Search field — uses design system input spec ──────────────────────
+        // bg #0D0B1F, border 1.5px #2D2860, focus border #7C5CBF, text #C4BFED
+        final String PLACEHOLDER = "Search vehicles...";
         JTextField searchField = new JTextField() {
+            private boolean focused = false;
+            {
+                addFocusListener(new FocusAdapter() {
+                    @Override public void focusGained(FocusEvent e) { focused = true; repaint(); }
+                    @Override public void focusLost(FocusEvent e)   { focused = false; repaint(); }
+                });
+            }
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(45, 35, 100));
-                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
-                g2.setColor(new Color(175, 169, 236, 90));
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+                g2.setColor(ROW_ODD);                           // input bg #0D0B1F
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                g2.setColor(focused
+                    ? new Color(124, 92, 191)                   // focus: #7C5CBF
+                    : new Color(45, 40, 96));                   // default: #2D2860
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
                 super.paintComponent(g);
                 g2.dispose();
             }
         };
         searchField.setOpaque(false);
-        searchField.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        searchField.setForeground(C_MUTED);
-        searchField.setCaretColor(C_WHITE);
-        searchField.setPreferredSize(new Dimension(220, 34));
-        searchField.setBorder(new EmptyBorder(4, 6, 4, 10));
+        searchField.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        searchField.setForeground(new Color(107, 95, 160));    // placeholder: #6B5FA0
+        searchField.setCaretColor(new Color(196, 191, 237));   // caret: #C4BFED
+        searchField.setPreferredSize(new Dimension(200, 34));
+        searchField.setBorder(new EmptyBorder(4, 10, 4, 10));
         searchField.setText(PLACEHOLDER);
 
         searchField.addFocusListener(new FocusAdapter() {
             @Override public void focusGained(FocusEvent e) {
                 if (searchField.getText().equals(PLACEHOLDER)) {
                     searchField.setText("");
-                    searchField.setForeground(C_WHITE);
+                    searchField.setForeground(new Color(196, 191, 237)); // body text: #C4BFED
                 }
             }
             @Override public void focusLost(FocusEvent e) {
                 if (searchField.getText().isBlank()) {
                     searchField.setText(PLACEHOLDER);
-                    searchField.setForeground(C_MUTED);
+                    searchField.setForeground(new Color(107, 95, 160)); // muted: #6B5FA0
                 }
             }
         });
 
-        // ── Add Vehicle button ────────────────────────────────────────────────
-        JButton addBtn = new JButton("+ Add Vehicle") {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                Color base = getModel().isRollover()
-                    ? new Color(100, 80, 200)
-                    : new Color(80, 60, 180);
-                g2.setColor(base);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
+        // ── Filter dropdown — same paint style as search field ────────────────
+        String[] filterOptions = {"All", "Plate", "Owner", "Username", "Type", "Color", "Parking Status"};
+        JComboBox<String> filterBox = buildFilterCombo(filterOptions);
+
+        // ── Status filter ─────────────────────────────────────────────────────
+        String[] statusOptions = {"All Status", "Parked", "Not Parked", "Inactive", "Suspended"};
+        JComboBox<String> statusBox = buildFilterCombo(statusOptions);
+
+        // ── Add Vehicle button — solid accent purple per design system ─────────
+        // Uses UIFactory.gradientButton for purple→pink gradient (primary CTA)
+        JButton addBtn = UIFactory.gradientButton("+ Add Vehicle");
+        addBtn.setPreferredSize(new Dimension(130, 34));
         addBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
-        addBtn.setForeground(C_WHITE);
-        addBtn.setOpaque(false);
-        addBtn.setContentAreaFilled(false);
-        addBtn.setBorderPainted(false);
-        addBtn.setFocusPainted(false);
-        addBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        addBtn.setPreferredSize(new Dimension(120, 34));
         addBtn.addActionListener(e -> cardLayout.show(rootPanel, "ADMIN_REGISTER"));
 
-        topRight.add(filterBox);
         topRight.add(searchField);
+        topRight.add(filterBox);
+        topRight.add(statusBox);
         topRight.add(addBtn);
         topBar.add(topRight, BorderLayout.EAST);
         content.add(topBar, BorderLayout.NORTH);
@@ -199,7 +182,6 @@ public class AdminVehiclesScreen {
         // ── Table model ───────────────────────────────────────────────────────
         String[] cols = {"Plate", "Owner", "Username", "Type", "Color", "Parking Status", "", "id"};
 
-        // Track hovered row for hover highlight
         final int[] hoveredRow = {-1};
 
         DefaultTableModel tableModel = new DefaultTableModel(new Object[0][8], cols) {
@@ -215,8 +197,7 @@ public class AdminVehiclesScreen {
                 Component c = super.prepareRenderer(renderer, row, col);
                 boolean selected = isRowSelected(row);
 
-                // Row background — alternating + hover + selection
-                if (col != COL_DELETE) {
+                if (col != COL_DELETE && col != COL_STATUS) {
                     if (selected) {
                         c.setBackground(ROW_SELECTED);
                     } else if (row == hoveredRow[0]) {
@@ -226,25 +207,27 @@ public class AdminVehiclesScreen {
                     }
                 }
 
-                // Foreground per column
+                // Plate number — monospace, lighter purple #A78BFA
                 if (col == COL_PLATE) {
-                    c.setForeground(C_PURPLE);
+                    c.setForeground(PLATE_FG);
                     c.setFont(new Font("Monospaced", Font.BOLD, 12));
                     if (c instanceof JLabel lbl) lbl.setBorder(new EmptyBorder(0, 14, 0, 0));
+
+                // Username — muted purple #9B8FD4
                 } else if (col == COL_USER) {
-                    c.setForeground(C_MUTED);
+                    c.setForeground(new Color(155, 143, 212));
                     c.setFont(new Font("SansSerif", Font.PLAIN, 12));
-                } else if (col == COL_STATUS || col == COL_DELETE) {
-                    // handled by custom renderers below
-                } else {
-                    c.setForeground(C_WHITE);
+
+                // Status and delete handled by custom renderers
+                } else if (col != COL_STATUS && col != COL_DELETE) {
+                    c.setForeground(new Color(196, 191, 237));  // body text #C4BFED
                     c.setFont(new Font("SansSerif", Font.PLAIN, 13));
                 }
                 return c;
             }
         };
 
-        // Hover listener
+        // Hover tracking
         table.addMouseMotionListener(new MouseMotionAdapter() {
             @Override public void mouseMoved(MouseEvent e) {
                 int row = table.rowAtPoint(e.getPoint());
@@ -263,205 +246,364 @@ public class AdminVehiclesScreen {
 
         styleTable(table);
 
-        // ── Status pill renderer — extends DefaultTableCellRenderer so row bg is consistent
-        table.getColumnModel().getColumn(COL_STATUS).setCellRenderer(new DefaultTableCellRenderer() {
+        // ── Status badge renderer ─────────────────────────────────────────────
+        // Draws a pill badge with colored bg + dot + text per design system spec.
+        // Each status maps to its exact design system color — no improvisation.
+        table.getColumnModel().getColumn(COL_STATUS).setCellRenderer(new TableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable t, Object value,
                     boolean isSelected, boolean hasFocus, int row, int col) {
-                // Let the superclass handle selection/hover background tracking
-                super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, col);
                 final String status = value != null ? value.toString() : "Not Parked";
-                final boolean sel = isSelected;
-                final int r = row;
 
                 return new JPanel() {
                     { setOpaque(true); }
                     @Override protected void paintComponent(Graphics g) {
-                        // Match exact same bg logic as prepareRenderer
+                        // Row background — must match prepareRenderer logic exactly
+                        boolean sel = t.isRowSelected(row);
                         Color bg = sel ? ROW_SELECTED
-                                       : (r == hoveredRow[0] ? ROW_HOVER
-                                       : (r % 2 == 0 ? ROW_ODD : ROW_EVEN));
+                                       : (row == hoveredRow[0] ? ROW_HOVER
+                                       : (row % 2 == 0 ? ROW_ODD : ROW_EVEN));
                         g.setColor(bg);
                         g.fillRect(0, 0, getWidth(), getHeight());
 
                         Graphics2D g2 = (Graphics2D) g.create();
                         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+                        // Pick badge colors from design system
                         Color pillBg, pillFg, pillBd;
-                        if ("Parked".equals(status)) {
-                            pillBg = PARKED_BG; pillFg = PARKED_FG; pillBd = PARKED_BD;
-                        } else if ("Suspended".equals(status)) {
-                            pillBg = SUSPND_BG; pillFg = SUSPND_FG; pillBd = SUSPND_BD;
-                        } else {
-                            pillBg = NOTPKD_BG; pillFg = NOTPKD_FG; pillBd = NOTPKD_BD;
+                        switch (status) {
+                            case "Parked" -> {
+                                pillBg = PARKED_BG; pillFg = PARKED_FG; pillBd = PARKED_BD;
+                            }
+                            case "Inactive" -> {
+                                pillBg = INACT_BG; pillFg = INACT_FG; pillBd = INACT_BD;
+                            }
+                            case "Suspended" -> {
+                                pillBg = SUSPND_BG; pillFg = SUSPND_FG; pillBd = SUSPND_BD;
+                            }
+                            default -> {  // "Not Parked"
+                                pillBg = NOTPKD_BG; pillFg = NOTPKD_FG; pillBd = NOTPKD_BD;
+                            }
                         }
 
                         Font pillFont = new Font("SansSerif", Font.BOLD, 11);
                         g2.setFont(pillFont);
                         FontMetrics fm = g2.getFontMetrics(pillFont);
-                        int tw = fm.stringWidth(status);
-                        int ph = 22, pw = tw + 24;
-                        int px = 14, py = (getHeight() - ph) / 2;
-                        int arc = ph;
 
+                        // Badge geometry — 6px border-radius, 22px tall, padding 4px 10px
+                        int dotDiam = 6;
+                        int gap     = 5;
+                        int tw      = fm.stringWidth(status);
+                        int ph      = 22;
+                        int pw      = dotDiam + gap + tw + 22; // 11px left pad + dot + gap + text + 11px right pad
+                        int px      = 14;
+                        int py      = (getHeight() - ph) / 2;
+                        int arc     = 6;
+
+                        // Pill background + border
                         g2.setColor(pillBg);
                         g2.fillRoundRect(px, py, pw, ph, arc, arc);
                         g2.setColor(pillBd);
+                        g2.setStroke(new BasicStroke(1f));
                         g2.drawRoundRect(px, py, pw - 1, ph - 1, arc, arc);
+
+                        // Dot
+                        int dotX = px + 11;
+                        int dotY = py + (ph - dotDiam) / 2;
                         g2.setColor(pillFg);
+                        g2.fillOval(dotX, dotY, dotDiam, dotDiam);
+
+                        // Text
+                        int textX = dotX + dotDiam + gap;
                         int textY = py + (ph - fm.getHeight()) / 2 + fm.getAscent();
-                        g2.drawString(status, px + 12, textY);
+                        g2.setColor(pillFg);
+                        g2.drawString(status, textX, textY);
+
                         g2.dispose();
                     }
                 };
             }
         });
 
-        // ── Hide vehicle_id column ────────────────────────────────────────────
+        // ── Color column renderer — shows a small colored dot beside the color name ──
+        table.getColumnModel().getColumn(COL_COLOR).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int col) {
+                final String colorName = value != null ? value.toString() : "";
+
+                return new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0)) {
+                    { setOpaque(true); }
+                    @Override protected void paintComponent(Graphics g) {
+                        boolean sel = t.isRowSelected(row);
+                        Color bg = sel ? ROW_SELECTED
+                                       : (row == hoveredRow[0] ? ROW_HOVER
+                                       : (row % 2 == 0 ? ROW_ODD : ROW_EVEN));
+                        g.setColor(bg);
+                        g.fillRect(0, 0, getWidth(), getHeight());
+
+                        Graphics2D g2 = (Graphics2D) g.create();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                        // Resolve a representational dot color from the string
+                        Color dot = resolveColorDot(colorName);
+                        int dotSize = 10;
+                        int dotX = 14;
+                        int dotY = (getHeight() - dotSize) / 2;
+                        g2.setColor(dot);
+                        g2.fillOval(dotX, dotY, dotSize, dotSize);
+                        // Subtle ring so white/light dots are visible
+                        g2.setColor(new Color(255, 255, 255, 30));
+                        g2.setStroke(new BasicStroke(1f));
+                        g2.drawOval(dotX, dotY, dotSize - 1, dotSize - 1);
+
+                        // Color name text — body text #C4BFED
+                        g2.setFont(new Font("SansSerif", Font.PLAIN, 13));
+                        g2.setColor(new Color(196, 191, 237));
+                        FontMetrics fm = g2.getFontMetrics();
+                        int textY = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                        g2.drawString(colorName, dotX + dotSize + 6, textY);
+
+                        g2.dispose();
+                    }
+
+                    private Color resolveColorDot(String name) {
+                        if (name == null) return new Color(100, 100, 120);
+                        return switch (name.toLowerCase()) {
+                            case "blue"   -> new Color(59, 130, 246);
+                            case "red"    -> new Color(239, 68, 68);
+                            case "green"  -> new Color(34, 197, 94);
+                            case "yellow" -> new Color(234, 179, 8);
+                            case "white"  -> new Color(229, 231, 235);
+                            case "black"  -> new Color(30, 30, 40);
+                            case "gray","grey"   -> new Color(107, 114, 128);
+                            case "pink"   -> new Color(236, 72, 153);
+                            case "orange" -> new Color(249, 115, 22);
+                            case "brown"  -> new Color(120, 72, 30);
+                            case "silver" -> new Color(192, 192, 200);
+                            case "dark"   -> new Color(31, 41, 55);
+                            default       -> new Color(124, 92, 191); // fallback purple
+                        };
+                    }
+                };
+            }
+        });
+
+        // ── Hidden vehicle_id column ──────────────────────────────────────────
         TableColumn idCol = table.getColumnModel().getColumn(COL_ID);
         idCol.setMinWidth(0); idCol.setMaxWidth(0); idCol.setWidth(0);
         idCol.setResizable(false);
 
-        // ── Delete column ─────────────────────────────────────────────────────
+        // ── Delete column — icon button, red on hover ─────────────────────────
         TableColumn delCol = table.getColumnModel().getColumn(COL_DELETE);
-        delCol.setMinWidth(48); delCol.setMaxWidth(48); delCol.setWidth(48);
+        delCol.setMinWidth(52); delCol.setMaxWidth(52); delCol.setWidth(52);
         delCol.setResizable(false);
         delCol.setCellRenderer(new DeleteButtonRenderer(hoveredRow));
         delCol.setCellEditor(new DeleteButtonEditor(table, tableModel, root, state));
 
         // ── Column widths ─────────────────────────────────────────────────────
-        table.getColumnModel().getColumn(COL_PLATE).setPreferredWidth(130);
+        table.getColumnModel().getColumn(COL_PLATE).setPreferredWidth(120);
         table.getColumnModel().getColumn(COL_OWNER).setPreferredWidth(160);
-        table.getColumnModel().getColumn(COL_USER).setPreferredWidth(130);
+        table.getColumnModel().getColumn(COL_USER).setPreferredWidth(120);
         table.getColumnModel().getColumn(COL_TYPE).setPreferredWidth(80);
-        table.getColumnModel().getColumn(COL_COLOR).setPreferredWidth(90);
-        table.getColumnModel().getColumn(COL_STATUS).setPreferredWidth(150);
-        // Parking Status header — match the global header style exactly, left-aligned
-        table.getColumnModel().getColumn(COL_STATUS).setHeaderRenderer(new DefaultTableCellRenderer() {
-            @Override public Component getTableCellRendererComponent(JTable t, Object value,
-                    boolean isSelected, boolean hasFocus, int row, int col) {
-                JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, col);
-                lbl.setBackground(C_BG_PANEL);
-                lbl.setForeground(new Color(175, 169, 236, 180));
-                lbl.setFont(new Font("SansSerif", Font.BOLD, 11));
-                lbl.setBorder(new EmptyBorder(0, 14, 0, 14));
-                lbl.setHorizontalAlignment(SwingConstants.LEFT);
-                lbl.setOpaque(true);
-                return lbl;
-            }
-        });
+        table.getColumnModel().getColumn(COL_COLOR).setPreferredWidth(110);
+        table.getColumnModel().getColumn(COL_STATUS).setPreferredWidth(140);
 
-        // ── Sorter ────────────────────────────────────────────────────────────
+        // Parking Status header — left-aligned to match pill left edge
+        table.getColumnModel().getColumn(COL_STATUS).setHeaderRenderer(buildHeaderRenderer());
+
+        // ── Row sorter ────────────────────────────────────────────────────────
         TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
         sorter.setSortable(COL_DELETE, false);
         sorter.setSortable(COL_ID, false);
         table.setRowSorter(sorter);
 
         // ── No results label ──────────────────────────────────────────────────
-        JLabel noResultsLabel = new JLabel("No results found", SwingConstants.CENTER);
-        noResultsLabel.setFont(new Font("SansSerif", Font.BOLD, 15));
-        noResultsLabel.setForeground(C_MUTED);
+        JLabel noResultsLabel = new JLabel("No vehicles found", SwingConstants.CENTER);
+        noResultsLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+        noResultsLabel.setForeground(new Color(107, 95, 160)); // #6B5FA0
         noResultsLabel.setVisible(false);
 
-        // ── Scroll pane — borderless, the outer card draws the rounded border ──
+        // ── Scroll pane — custom dark scrollbar to match design system ───────
         JScrollPane scroll = new JScrollPane(table);
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(true);
         scroll.getViewport().setBackground(ROW_ODD);
         scroll.setBorder(BorderFactory.createEmptyBorder());
-        scroll.getVerticalScrollBar().setBackground(ROW_ODD);
-        scroll.getVerticalScrollBar().setOpaque(true);
-
-        // Scroll pane — normal, no clipping tricks
         scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
-        // Rounded card — corner masking painted LAST so it always wins
-        final int ARC = 22;
-        // Use a JPanel that paints children first, then masks corners on top
+        // Custom scrollbar UI — thin dark thumb, transparent track
+        // Track: transparent over ROW_ODD bg
+        // Thumb: #2D2860 default, #7C5CBF on hover
+        JScrollBar vBar = scroll.getVerticalScrollBar();
+        vBar.setOpaque(false);
+        vBar.setPreferredSize(new Dimension(8, 0));   // thin 8px bar
+        vBar.setUI(new javax.swing.plaf.basic.BasicScrollBarUI() {
+
+            @Override protected void configureScrollBarColors() {
+                thumbColor          = new Color(45, 40, 96);       // #2D2860 default thumb
+                thumbDarkShadowColor = new Color(0, 0, 0, 0);
+                thumbHighlightColor  = new Color(0, 0, 0, 0);
+                thumbLightShadowColor = new Color(0, 0, 0, 0);
+                trackColor          = new Color(0, 0, 0, 0);
+                trackHighlightColor = new Color(0, 0, 0, 0);
+            }
+
+            // Hide the arrow buttons entirely
+            @Override protected JButton createDecreaseButton(int orientation) {
+                return makeZeroButton();
+            }
+            @Override protected JButton createIncreaseButton(int orientation) {
+                return makeZeroButton();
+            }
+            private JButton makeZeroButton() {
+                JButton b = new JButton();
+                b.setPreferredSize(new Dimension(0, 0));
+                b.setMinimumSize(new Dimension(0, 0));
+                b.setMaximumSize(new Dimension(0, 0));
+                return b;
+            }
+
+            // Transparent track
+            @Override protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setColor(new Color(13, 11, 31, 180));           // near-transparent ROW_ODD
+                g2.fillRect(trackBounds.x, trackBounds.y,
+                            trackBounds.width, trackBounds.height);
+                g2.dispose();
+            }
+
+            // Rounded pill thumb — purple, brighter on hover
+            @Override protected void paintThumb(Graphics g, JComponent c, Rectangle thumbBounds) {
+                if (thumbBounds.isEmpty() || !scrollbar.isEnabled()) return;
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                                    RenderingHints.VALUE_ANTIALIAS_ON);
+                boolean hovered = isThumbRollover();
+                g2.setColor(hovered
+                    ? new Color(124, 92, 191, 200)                 // #7C5CBF hover
+                    : new Color(45, 40, 96, 180));                 // #2D2860 default
+                int arc = thumbBounds.width;                       // full pill shape
+                g2.fillRoundRect(
+                    thumbBounds.x + 2,
+                    thumbBounds.y + 2,
+                    thumbBounds.width - 4,
+                    thumbBounds.height - 4,
+                    arc, arc
+                );
+                g2.dispose();
+            }
+        });
+
+        // ── Row count footer ──────────────────────────────────────────────────
+        // Shows "Showing N vehicles" at bottom of table card — consistent with mockup
+        JLabel rowCountLabel = new JLabel(" ", SwingConstants.LEFT);
+        rowCountLabel.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        rowCountLabel.setForeground(new Color(74, 63, 138));    // #4A3F8A
+        rowCountLabel.setBorder(new EmptyBorder(8, 14, 8, 14));
+        rowCountLabel.setOpaque(true);
+        rowCountLabel.setBackground(ROW_ODD);
+
+        // ── Table card — rounded card with separator lines ────────────────────
+        final int ARC = 14;
         JPanel tableCard = new JPanel(new BorderLayout()) {
             @Override public void paint(Graphics g) {
-                // Paint everything (background + all children) first
                 super.paint(g);
-                // Then mask the corners by painting C_BG_DARK over the square bits
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(C_BG_DARK);
+
+                // Mask to rounded rect
+                g2.setColor(ROW_ODD);
                 java.awt.geom.Area full = new java.awt.geom.Area(
                     new Rectangle(0, 0, getWidth(), getHeight()));
                 java.awt.geom.Area rounded = new java.awt.geom.Area(
                     new java.awt.geom.RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), ARC, ARC));
                 full.subtract(rounded);
                 g2.fill(full);
-                // Thick mask stroke to cover aliased corner pixels
-                g2.setStroke(new BasicStroke(4f));
-                g2.setColor(C_BG_DARK);
-                g2.drawRoundRect(2, 2, getWidth() - 4, getHeight() - 4, ARC, ARC);
-                // Visible rounded border
-                g2.setStroke(new BasicStroke(1.5f));
-                g2.setColor(new Color(175, 169, 236, 70));
+
+                // Card border — #2D2860
+                g2.setStroke(new BasicStroke(1.0f));
+                g2.setColor(CARD_BD);
                 g2.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, ARC, ARC);
-                // Header separator + row separator lines
-                g2.setStroke(new BasicStroke(1f));
-                g2.setColor(new Color(175, 169, 236, 40));
+
+                // Header separator
+                g2.setColor(SEPARATOR);
                 int headerH = table.getTableHeader().getPreferredSize().height;
-                int scrollY = scroll.getViewport().getViewPosition().y;
-                int rowH = table.getRowHeight();
-                int rowCount = table.getRowCount();
-                int tableTop = headerH; // y offset where rows start inside the card
-                // Header bottom line
-                g2.drawLine(0, headerH, getWidth(), headerH);
+                g2.drawLine(1, headerH, getWidth() - 2, headerH);
+
                 // Row separator lines
+                int scrollY   = scroll.getViewport().getViewPosition().y;
+                int rowH      = table.getRowHeight();
+                int rowCount  = table.getRowCount();
                 for (int i = 1; i <= rowCount; i++) {
-                    int lineY = tableTop + (i * rowH) - scrollY;
-                    if (lineY > headerH && lineY < getHeight()) {
-                        g2.drawLine(0, lineY, getWidth(), lineY);
+                    int lineY = headerH + (i * rowH) - scrollY;
+                    if (lineY > headerH && lineY < getHeight() - rowCountLabel.getPreferredSize().height) {
+                        g2.setColor(SEPARATOR);
+                        g2.drawLine(1, lineY, getWidth() - 2, lineY);
                     }
                 }
+
                 g2.dispose();
             }
         };
         tableCard.setOpaque(true);
         tableCard.setBackground(ROW_ODD);
         tableCard.add(scroll, BorderLayout.CENTER);
+        tableCard.add(rowCountLabel, BorderLayout.SOUTH);
 
         JPanel tableLayer = new JPanel(new BorderLayout());
         tableLayer.setOpaque(true);
-        tableLayer.setBackground(C_BG_DARK);
+        tableLayer.setBackground(ROW_ODD);
         tableLayer.add(tableCard, BorderLayout.CENTER);
-
-        noResultsLabel.setOpaque(false);
 
         // ── Search + filter logic ─────────────────────────────────────────────
         Runnable applyFilter = () -> {
-            String raw       = searchField.getText();
-            String filterSel = (String) filterBox.getSelectedItem();
+            String raw        = searchField.getText();
+            String filterSel  = (String) filterBox.getSelectedItem();
+            String statusSel  = (String) statusBox.getSelectedItem();
 
-            if (raw.equals(PLACEHOLDER) || raw.isBlank()) {
+            // Build combined row filter
+            java.util.List<RowFilter<DefaultTableModel, Object>> filters = new java.util.ArrayList<>();
+
+            // Text filter
+            if (!raw.equals(PLACEHOLDER) && !raw.isBlank()) {
+                String regex = "(?i)" + java.util.regex.Pattern.quote(raw.trim());
+                if ("All".equals(filterSel)) {
+                    filters.add(RowFilter.regexFilter(regex));
+                } else {
+                    int col = switch (filterSel) {
+                        case "Plate"          -> COL_PLATE;
+                        case "Owner"          -> COL_OWNER;
+                        case "Username"       -> COL_USER;
+                        case "Type"           -> COL_TYPE;
+                        case "Color"          -> COL_COLOR;
+                        case "Parking Status" -> COL_STATUS;
+                        default               -> -1;
+                    };
+                    if (col >= 0) filters.add(RowFilter.regexFilter(regex, col));
+                    else          filters.add(RowFilter.regexFilter(regex));
+                }
+            }
+
+            // Status filter
+            if (statusSel != null && !"All Status".equals(statusSel)) {
+                filters.add(RowFilter.regexFilter(
+                    "(?i)^" + java.util.regex.Pattern.quote(statusSel) + "$", COL_STATUS));
+            }
+
+            if (filters.isEmpty()) {
                 sorter.setRowFilter(null);
-                noResultsLabel.setVisible(false);
-                return;
-            }
-
-            String regex = "(?i)^" + java.util.regex.Pattern.quote(raw.trim());
-            RowFilter<DefaultTableModel, Object> rf;
-
-            if ("All".equals(filterSel)) {
-                rf = RowFilter.regexFilter(regex);
+            } else if (filters.size() == 1) {
+                sorter.setRowFilter(filters.get(0));
             } else {
-                int col = switch (filterSel) {
-                    case "Plate"          -> COL_PLATE;
-                    case "Owner"          -> COL_OWNER;
-                    case "Username"       -> COL_USER;
-                    case "Type"           -> COL_TYPE;
-                    case "Color"          -> COL_COLOR;
-                    case "Parking Status" -> COL_STATUS;
-                    default               -> -1;
-                };
-                rf = col >= 0 ? RowFilter.regexFilter(regex, col) : RowFilter.regexFilter(regex);
+                sorter.setRowFilter(RowFilter.andFilter(filters));
             }
 
-            sorter.setRowFilter(rf);
-            noResultsLabel.setVisible(table.getRowCount() == 0);
+            int visible = table.getRowCount();
+            noResultsLabel.setVisible(visible == 0);
+            rowCountLabel.setText(visible == 0
+                ? "  No vehicles found"
+                : "  Showing " + visible + " vehicle" + (visible == 1 ? "" : "s"));
         };
 
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
@@ -470,31 +612,97 @@ public class AdminVehiclesScreen {
             @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { applyFilter.run(); }
         });
         filterBox.addActionListener(e -> applyFilter.run());
+        statusBox.addActionListener(e -> applyFilter.run());
 
         root.addComponentListener(new ComponentAdapter() {
             @Override public void componentShown(ComponentEvent e) {
-                reloadTable(tableModel, sorter, searchField, PLACEHOLDER, noResultsLabel);
+                reloadTable(tableModel, sorter, searchField, PLACEHOLDER, noResultsLabel, rowCountLabel);
             }
         });
 
         state.addSlotChangeListener(() ->
             SwingUtilities.invokeLater(() ->
-                reloadTable(tableModel, sorter, searchField, PLACEHOLDER, noResultsLabel)
+                reloadTable(tableModel, sorter, searchField, PLACEHOLDER, noResultsLabel, rowCountLabel)
             )
         );
 
-        reloadTable(tableModel, sorter, searchField, PLACEHOLDER, noResultsLabel);
+        reloadTable(tableModel, sorter, searchField, PLACEHOLDER, noResultsLabel, rowCountLabel);
 
-        // ── Layout Assembly ───────────────────────────────────────────────────
+        // ── Layout assembly ───────────────────────────────────────────────────
         JPanel body = new JPanel(new BorderLayout());
-        body.setBackground(C_BG_DARK);
+        body.setBackground(ROW_ODD);
         body.setOpaque(true);
         body.setBorder(new EmptyBorder(16, 20, 20, 20));
+        body.add(noResultsLabel, BorderLayout.NORTH);
         body.add(tableLayer, BorderLayout.CENTER);
 
         content.add(body, BorderLayout.CENTER);
         root.add(content, BorderLayout.CENTER);
         return root;
+    }
+
+    // ── Filter combo builder ──────────────────────────────────────────────────
+    // Consistent input-style dropdown: bg #0D0B1F, border #2D2860, text #9B8FD4
+    private static JComboBox<String> buildFilterCombo(String[] options) {
+        JComboBox<String> box = new JComboBox<>(options) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(ROW_ODD);                          // #0D0B1F
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                g2.setColor(new Color(45, 40, 96));            // #2D2860
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                // Selected text
+                String selected = getSelectedItem() != null ? getSelectedItem().toString() : "";
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 12));
+                g2.setColor(new Color(155, 143, 212));         // #9B8FD4
+                FontMetrics fm = g2.getFontMetrics();
+                int textY = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(selected, 10, textY);
+                // Chevron indicator
+                g2.setColor(new Color(107, 95, 160));          // #6B5FA0
+                g2.setFont(new Font("SansSerif", Font.BOLD, 9));
+                g2.drawString("\u25BE", getWidth() - 16, textY);
+                g2.dispose();
+            }
+            @Override protected void paintBorder(Graphics g) {}
+        };
+        box.setOpaque(false);
+        box.setPreferredSize(new Dimension(130, 34));
+        box.setBorder(null);
+        box.setFocusable(false);
+        for (Component comp : box.getComponents()) {
+            if (comp instanceof AbstractButton ab) ab.setVisible(false);
+        }
+        box.setRenderer(new DefaultListCellRenderer() {
+            @Override public Component getListCellRendererComponent(JList<?> list, Object value,
+                    int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? new Color(36, 30, 107) : new Color(18, 16, 58));
+                setForeground(new Color(196, 191, 237));
+                setBorder(new EmptyBorder(6, 12, 6, 12));
+                return this;
+            }
+        });
+        return box;
+    }
+
+    // ── Header renderer — shared style across all columns ────────────────────
+    private static TableCellRenderer buildHeaderRenderer() {
+        return new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int col) {
+                JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, col);
+                lbl.setBackground(ROW_ODD);
+                lbl.setForeground(HEADER_FG);               // #6B5FA0
+                lbl.setFont(new Font("SansSerif", Font.BOLD, 10));
+                lbl.setBorder(new EmptyBorder(0, 14, 0, 14));
+                lbl.setHorizontalAlignment(SwingConstants.LEFT);
+                lbl.setOpaque(true);
+                return lbl;
+            }
+        };
     }
 
     // ── Delete button renderer ────────────────────────────────────────────────
@@ -509,22 +717,30 @@ public class AdminVehiclesScreen {
                 { setOpaque(true); }
                 @Override protected void paintComponent(Graphics g) {
                     boolean sel = table.isRowSelected(row);
-                    Color bg = sel ? ROW_SELECTED : (row == hoveredRow[0] ? ROW_HOVER : (row % 2 == 0 ? ROW_ODD : ROW_EVEN));
+                    Color bg = sel ? ROW_SELECTED
+                                   : (row == hoveredRow[0] ? ROW_HOVER
+                                   : (row % 2 == 0 ? ROW_ODD : ROW_EVEN));
                     g.setColor(bg);
                     g.fillRect(0, 0, getWidth(), getHeight());
 
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    // Draw trash icon circle button
+
                     int cx = getWidth() / 2, cy = getHeight() / 2, r = 13;
-                    if (row == hoveredRow[0]) {
-                        g2.setColor(new Color(220, 70, 90, 40));
+                    boolean hovered = row == hoveredRow[0];
+
+                    // Red circle highlight on hover — #E8365D
+                    if (hovered) {
+                        g2.setColor(new Color(232, 54, 93, 35));
                         g2.fillOval(cx - r, cy - r, r * 2, r * 2);
-                        g2.setColor(new Color(220, 70, 90, 80));
+                        g2.setColor(new Color(232, 54, 93, 70));
+                        g2.setStroke(new BasicStroke(1f));
                         g2.drawOval(cx - r, cy - r, r * 2, r * 2);
                     }
+
+                    // Trash icon — use text unicode; muted when not hovered
                     g2.setFont(new Font("SansSerif", Font.PLAIN, 14));
-                    g2.setColor(row == hoveredRow[0] ? new Color(240, 90, 100) : new Color(180, 80, 90));
+                    g2.setColor(hovered ? new Color(232, 54, 93) : new Color(107, 95, 160));
                     FontMetrics fm = g2.getFontMetrics();
                     String icon = "\uD83D\uDDD1";
                     g2.drawString(icon, cx - fm.stringWidth(icon) / 2, cy + fm.getAscent() / 2 - 1);
@@ -575,22 +791,18 @@ public class AdminVehiclesScreen {
 
                 if (choice == JOptionPane.YES_OPTION) {
                     try {
-                        // Delete in order of foreign key dependencies
-                        // 1. Delete parking transactions
                         ParkingTransactionDAO transDAO = new ParkingTransactionDAO();
-                        java.util.List<ParkingTransaction> transactions = transDAO.findByVehicleId(vehicleId);
+                        List<ParkingTransaction> transactions = transDAO.findByVehicleId(vehicleId);
                         for (ParkingTransaction trans : transactions) {
                             transDAO.delete(trans.getTransactionId());
                         }
-                        
-                        // 2. Delete ALL RFID mappings (regardless of status)
+
                         RFIDMappingDAO rfidDAO = new RFIDMappingDAO();
-                        java.util.List<RFIDMapping> rfidMappings = rfidDAO.findAllByVehicleId(vehicleId);
+                        List<RFIDMapping> rfidMappings = rfidDAO.findAllByVehicleId(vehicleId);
                         for (RFIDMapping rfid : rfidMappings) {
                             rfidDAO.delete(rfid.getRfidId());
                         }
-                        
-                        // 3. Finally delete the vehicle
+
                         new VehicleDAO().delete(vehicleId);
                         tableModel.removeRow(modelRow);
                         state.notifySlotChange();
@@ -619,11 +831,12 @@ public class AdminVehiclesScreen {
                                     TableRowSorter<DefaultTableModel> sorter,
                                     JTextField searchField,
                                     String placeholder,
-                                    JLabel noResultsLabel) {
+                                    JLabel noResultsLabel,
+                                    JLabel rowCountLabel) {
         tableModel.setRowCount(0);
         sorter.setRowFilter(null);
         searchField.setText(placeholder);
-        searchField.setForeground(C_MUTED);
+        searchField.setForeground(new Color(107, 95, 160));    // #6B5FA0
         noResultsLabel.setVisible(false);
 
         try {
@@ -661,8 +874,12 @@ public class AdminVehiclesScreen {
                 });
             }
 
+            int total = tableModel.getRowCount();
+            rowCountLabel.setText("  Showing " + total + " vehicle" + (total == 1 ? "" : "s"));
+
         } catch (Exception e) {
             e.printStackTrace();
+            rowCountLabel.setText("  Error loading vehicles");
             DialogUtil.showMessageDialog(null,
                 "Error loading vehicles: " + e.getMessage(),
                 "Database Error", JOptionPane.ERROR_MESSAGE);
@@ -672,35 +889,24 @@ public class AdminVehiclesScreen {
     // ── Table styling ─────────────────────────────────────────────────────────
     private static void styleTable(JTable table) {
         table.setBackground(ROW_ODD);
-        table.setForeground(C_WHITE);
+        table.setForeground(new Color(196, 191, 237));          // #C4BFED
         table.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        table.setRowHeight(40);
+        table.setRowHeight(44);                                  // 44px per design system
         table.setShowGrid(false);
         table.setIntercellSpacing(new Dimension(0, 0));
         table.setSelectionBackground(ROW_SELECTED);
-        table.setSelectionForeground(C_WHITE);
+        table.setSelectionForeground(new Color(240, 236, 255));
         table.setOpaque(true);
         table.setFillsViewportHeight(true);
 
         JTableHeader header = table.getTableHeader();
-        header.setOpaque(false);
-        header.setBackground(C_BG_PANEL);
-        header.setBorder(new EmptyBorder(0, 0, 1, 0));
-        header.setForeground(new Color(175, 169, 236, 180));
-        header.setFont(new Font("SansSerif", Font.BOLD, 11));
+        header.setOpaque(true);
+        header.setBackground(ROW_ODD);
+        header.setForeground(HEADER_FG);
+        header.setFont(new Font("SansSerif", Font.BOLD, 10));
         header.setPreferredSize(new Dimension(0, 38));
-        header.setBorder(new EmptyBorder(0, 0, 1, 0));
-        header.setDefaultRenderer(new DefaultTableCellRenderer() {
-            @Override public Component getTableCellRendererComponent(JTable t, Object value,
-                    boolean isSelected, boolean hasFocus, int row, int col) {
-                JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, col);
-                lbl.setBackground(C_BG_PANEL);
-                lbl.setForeground(new Color(175, 169, 236, 180));
-                lbl.setFont(new Font("SansSerif", Font.BOLD, 11));
-                lbl.setBorder(new EmptyBorder(0, 14, 0, 14));
-                lbl.setOpaque(true);
-                return lbl;
-            }
-        });
+        header.setReorderingAllowed(false);
+        header.setBorder(BorderFactory.createEmptyBorder());
+        header.setDefaultRenderer(buildHeaderRenderer());
     }
 }

@@ -33,12 +33,8 @@ public class UserSlotViewScreen {
         topBar.setBackground(C_BG_PANEL);
         topBar.setBorder(new EmptyBorder(14, 24, 14, 24));
 
-        // LEFT: ⊞ icon + "SLOT VIEW"
-        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        titlePanel.setOpaque(false);
-        titlePanel.add(UIFactory.lbl("\u229E", Font.BOLD, 20, C_ACCENT));
-        titlePanel.add(UIFactory.lbl("SLOT VIEW", Font.BOLD, 20, C_WHITE));
-        topBar.add(titlePanel, BorderLayout.WEST);
+        // LEFT: "SLOT VIEW"
+        topBar.add(UIFactory.lbl("SLOT VIEW", Font.BOLD, 20, C_WHITE), BorderLayout.WEST);
 
         // RIGHT: ● Live
         JPanel topBarRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -56,19 +52,24 @@ public class UserSlotViewScreen {
         // ── Map card (grid swapped out on each reload) ───────────────────────
         JPanel mapCard = UIFactory.cardPanel(new BorderLayout(0, 10));
         mapCard.setBorder(new EmptyBorder(20, 20, 20, 20));
-        mapCard.add(UIFactory.lbl("PARKING ZONES", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
 
-        // Legend
-        JPanel legend = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
+        // Header row: title left, legend right
+        JPanel zonesHeader = new JPanel(new BorderLayout());
+        zonesHeader.setOpaque(false);
+        zonesHeader.add(UIFactory.lbl("PARKING ZONES", Font.BOLD, 12, C_MUTED), BorderLayout.WEST);
+
+        JPanel legend = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 0));
         legend.setOpaque(false);
         legend.add(UIFactory.legendDot(C_AVAILABLE, "Available"));
         legend.add(UIFactory.legendDot(C_OCCUPIED,  "Occupied"));
         legend.add(UIFactory.legendDot(C_RESERVED,  "Reserved"));
+        zonesHeader.add(legend, BorderLayout.EAST);
 
-        // south holds legend (fixed) + grid (replaced on reload)
+        mapCard.add(zonesHeader, BorderLayout.NORTH);
+
+        // south holds grid (replaced on reload)
         JPanel south = new JPanel(new BorderLayout(0, 8));
         south.setOpaque(false);
-        south.add(legend, BorderLayout.NORTH);
         mapCard.add(south, BorderLayout.CENTER);
 
         JPanel body = new JPanel(new BorderLayout());
@@ -86,12 +87,12 @@ public class UserSlotViewScreen {
         // ── Shared redraw logic ───────────────────────────────────────────────
         Runnable redraw = () -> {
             statsRow.removeAll();
-            statsRow.add(UIFactory.statCard("Available", String.valueOf(state.availableSlots), C_AVAILABLE));
-            statsRow.add(UIFactory.statCard("Occupied",  String.valueOf(state.occupiedSlots),  C_OCCUPIED));
-            statsRow.add(UIFactory.statCard("Reserved",  String.valueOf(state.reservedSlots),  C_RESERVED));
+            statsRow.add(accentStatCard("Available", String.valueOf(state.availableSlots), C_AVAILABLE));
+            statsRow.add(accentStatCard("Occupied",  String.valueOf(state.occupiedSlots),  C_OCCUPIED));
+            statsRow.add(accentStatCard("Reserved",  String.valueOf(state.reservedSlots),  C_RESERVED));
 
-            if (south.getComponentCount() > 1) {
-                south.remove(1);
+            if (south.getComponentCount() > 0) {
+                south.remove(0);
             }
             south.add(SlotGridPanel.buildFullGrid(state, false), BorderLayout.CENTER);
 
@@ -117,5 +118,44 @@ public class UserSlotViewScreen {
         redraw.run();
 
         return root;
+    }
+
+    /**
+     * Stat card with a thin colored accent bar on top matching the status color.
+     * Layout: [accent bar 4px] / [value + label body]
+     */
+    private static JPanel accentStatCard(String label, String value, Color accentColor) {
+        JPanel card = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(C_BG_PANEL);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.setColor(accentColor);
+                g2.fillRoundRect(0, 0, getWidth(), 6, 10, 10);
+                g2.fillRect(0, 3, getWidth(), 3);
+                g2.dispose();
+            }
+        };
+        card.setOpaque(false);
+
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setOpaque(false);
+        body.setBorder(new EmptyBorder(10, 16, 14, 16));
+
+        JLabel valLbl = UIFactory.lbl(value, Font.BOLD, 22, accentColor);
+        valLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel nameLbl = UIFactory.lbl(label.toUpperCase(), Font.BOLD, 11, C_MUTED);
+        nameLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        body.add(valLbl);
+        body.add(Box.createVerticalStrut(4));
+        body.add(nameLbl);
+
+        card.add(Box.createVerticalStrut(4), BorderLayout.NORTH);
+        card.add(body, BorderLayout.CENTER);
+        return card;
     }
 }

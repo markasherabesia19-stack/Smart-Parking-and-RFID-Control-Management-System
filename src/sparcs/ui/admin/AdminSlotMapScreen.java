@@ -47,13 +47,20 @@ public class AdminSlotMapScreen {
         // ── Map card ──────────────────────────────────────────────────────────
         JPanel mapCard = UIFactory.cardPanel(new BorderLayout(0, 10));
         mapCard.setBorder(new EmptyBorder(20, 20, 20, 20));
-        mapCard.add(UIFactory.lbl("SLOTS", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
 
-        JPanel legend = new JPanel(new FlowLayout(FlowLayout.LEFT, 16, 0));
+        // Header row: "SLOTS" title left, legend right
+        JPanel slotsHeader = new JPanel(new BorderLayout());
+        slotsHeader.setOpaque(false);
+        slotsHeader.add(UIFactory.lbl("SLOTS", Font.BOLD, 12, C_MUTED), BorderLayout.WEST);
+
+        JPanel legend = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 0));
         legend.setOpaque(false);
         legend.add(UIFactory.legendDot(C_AVAILABLE, "Available"));
         legend.add(UIFactory.legendDot(C_OCCUPIED,  "Occupied"));
         legend.add(UIFactory.legendDot(C_RESERVED,  "Reserved"));
+        slotsHeader.add(legend, BorderLayout.EAST);
+
+        mapCard.add(slotsHeader, BorderLayout.NORTH);
 
         JPanel gridWrapper = new JPanel(new BorderLayout());
         gridWrapper.setOpaque(false);
@@ -61,7 +68,6 @@ public class AdminSlotMapScreen {
 
         JPanel south = new JPanel(new BorderLayout());
         south.setOpaque(false);
-        south.add(legend, BorderLayout.NORTH);
         south.add(gridWrapper, BorderLayout.CENTER);
         mapCard.add(south, BorderLayout.CENTER);
 
@@ -110,8 +116,50 @@ public class AdminSlotMapScreen {
     }
 
     private static void buildStatsRow(JPanel statsRow, AppState state) {
-        statsRow.add(UIFactory.statCard("Available", String.valueOf(state.availableSlots), C_AVAILABLE));
-        statsRow.add(UIFactory.statCard("Occupied",  String.valueOf(state.occupiedSlots),  C_OCCUPIED));
-        statsRow.add(UIFactory.statCard("Reserved",  String.valueOf(state.reservedSlots),  C_RESERVED));
+        statsRow.add(accentStatCard("Available", String.valueOf(state.availableSlots), C_AVAILABLE));
+        statsRow.add(accentStatCard("Occupied",  String.valueOf(state.occupiedSlots),  C_OCCUPIED));
+        statsRow.add(accentStatCard("Reserved",  String.valueOf(state.reservedSlots),  C_RESERVED));
+    }
+
+    /**
+     * Stat card with a thin colored accent bar on top matching the status color.
+     * Layout: [accent bar 4px] / [value + label body]
+     */
+    private static JPanel accentStatCard(String label, String value, Color accentColor) {
+        JPanel card = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Card background with rounded corners
+                g2.setColor(C_BG_PANEL);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                // Accent bar — top 3px, rounded only on top corners
+                g2.setColor(accentColor);
+                g2.fillRoundRect(0, 0, getWidth(), 6, 10, 10);
+                g2.fillRect(0, 3, getWidth(), 3); // square off bottom half of accent
+                g2.dispose();
+            }
+        };
+        card.setOpaque(false);
+
+        // Body: value + label, padded below the accent bar
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setOpaque(false);
+        body.setBorder(new EmptyBorder(10, 16, 14, 16));
+
+        JLabel valLbl = UIFactory.lbl(value, Font.BOLD, 22, accentColor);
+        valLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel nameLbl = UIFactory.lbl(label.toUpperCase(), Font.BOLD, 11, C_MUTED);
+        nameLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        body.add(valLbl);
+        body.add(Box.createVerticalStrut(4));
+        body.add(nameLbl);
+
+        card.add(Box.createVerticalStrut(4), BorderLayout.NORTH); // space for accent bar
+        card.add(body, BorderLayout.CENTER);
+        return card;
     }
 }
