@@ -557,19 +557,29 @@ public class AdminVehiclesScreen {
         tableLayer.add(tableCard, BorderLayout.CENTER);
 
         // ── Search + filter logic ─────────────────────────────────────────────
+        // Leftmost prefix rule: query "ab" matches any WORD that STARTS WITH "ab".
+        // e.g. searching "asher" matches "asher abesia" (word "asher" starts with it)
+        // but NOT "mark asher" when field is Owner — "mark" doesn't start with "asher"
+        // and "asher" is not the leftmost word... wait, it IS a word that starts with
+        // "asher" so it still matches. The rule is: ANY word in the cell value may
+        // match, as long as that word STARTS WITH the query token (leftmost prefix).
+        // "ab" → matches "abesia", "ab" — does NOT match "besia" or "mark" alone.
         Runnable applyFilter = () -> {
-            String raw        = searchField.getText();
-            String filterSel  = (String) filterBox.getSelectedItem();
-            String statusSel  = (String) statusBox.getSelectedItem();
+            String raw       = searchField.getText();
+            String filterSel = (String) filterBox.getSelectedItem();
+            String statusSel = (String) statusBox.getSelectedItem();
 
-            // Build combined row filter
             java.util.List<RowFilter<DefaultTableModel, Object>> filters = new java.util.ArrayList<>();
 
-            // Text filter
+            // ── Leftmost prefix text filter ───────────────────────────────────
             if (!raw.equals(PLACEHOLDER) && !raw.isBlank()) {
-                String regex = "(?i)" + java.util.regex.Pattern.quote(raw.trim());
+                final String query = raw.trim().toLowerCase();
+
+                // Determine which columns to search
+                final int[] searchCols;
                 if ("All".equals(filterSel)) {
-                    filters.add(RowFilter.regexFilter(regex));
+                    searchCols = new int[]{COL_PLATE, COL_OWNER, COL_USER,
+                                           COL_TYPE, COL_COLOR, COL_STATUS};
                 } else {
                     int col = switch (filterSel) {
                         case "Plate"          -> COL_PLATE;
@@ -580,12 +590,30 @@ public class AdminVehiclesScreen {
                         case "Parking Status" -> COL_STATUS;
                         default               -> -1;
                     };
-                    if (col >= 0) filters.add(RowFilter.regexFilter(regex, col));
-                    else          filters.add(RowFilter.regexFilter(regex));
+                    searchCols = col >= 0 ? new int[]{col}
+                                          : new int[]{COL_PLATE, COL_OWNER, COL_USER,
+                                                      COL_TYPE, COL_COLOR, COL_STATUS};
                 }
+
+                filters.add(new RowFilter<>() {
+                    @Override
+                    public boolean include(Entry<? extends DefaultTableModel, ? extends Object> entry) {
+                        for (int col : searchCols) {
+                            Object val = entry.getValue(col);
+                            if (val == null) continue;
+                            // Split cell value into words, check if ANY word
+                            // starts with the query (leftmost prefix per word)
+                            String[] words = val.toString().toLowerCase().split("\\s+");
+                            for (String word : words) {
+                                if (word.startsWith(query)) return true;
+                            }
+                        }
+                        return false;
+                    }
+                });
             }
 
-            // Status filter
+            // ── Status filter — exact match ───────────────────────────────────
             if (statusSel != null && !"All Status".equals(statusSel)) {
                 filters.add(RowFilter.regexFilter(
                     "(?i)^" + java.util.regex.Pattern.quote(statusSel) + "$", COL_STATUS));
