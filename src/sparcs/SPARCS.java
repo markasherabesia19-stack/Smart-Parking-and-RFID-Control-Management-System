@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 
+import db.DatabaseConfig;
 import model.AppState;
 import ui.admin.*;
 import ui.user.*;
@@ -67,6 +68,13 @@ public class SPARCS extends JFrame {
     public static void main(String[] args) {
         System.setProperty("awt.useSystemAAFontSettings", "on");
         System.setProperty("swing.aatext", "true");
+
+        try {
+            SwingUtilities.invokeAndWait(() -> DatabaseConfig.promptForCredentials(null));
+        } catch (Exception e) {
+            return;
+        }
+
         SwingUtilities.invokeLater(SPARCS::new);
     }
 }
