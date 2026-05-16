@@ -144,7 +144,10 @@ public class AdminRegisterScreen {
 
         // Steps
         String[] steps = {"Enter owner details", "Enter vehicle info", "Submit to register"};
-        Color[]  stepColors = {C_PURPLE, C_PINK, C_AVAILABLE};
+        Color[]  stepColors = {
+            new Color(29, 185, 84),    // #1DB954 Emerald Green  — step 1
+            new Color(255, 140, 66),   // #FF8C42 Amber Orange   — step 2
+            new Color(167, 139, 250)}; // #A78BFA Light Purple   — step 3
         for (int i = 0; i < steps.length; i++) {
             leftInner.add(makeStepRow(i + 1, steps[i], stepColors[i]));
             if (i < steps.length - 1) leftInner.add(Box.createVerticalStrut(10));
@@ -403,7 +406,7 @@ public class AdminRegisterScreen {
             @Override public boolean isOpaque() { return false; }
         };
         row.add(circle);
-        row.add(UIFactory.lbl(label, Font.PLAIN, 11, C_MUTED));
+        row.add(UIFactory.lbl(label, Font.PLAIN, 11, new Color(155, 143, 212))); // #9B8FD4
         return row;
     }
 }

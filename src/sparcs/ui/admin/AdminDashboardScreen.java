@@ -238,11 +238,52 @@ public class AdminDashboardScreen {
     }
 
     private static void buildStatsRow(JPanel statsRow, AppState state) {
-        // §3.5 Metric Cards: Available → #1DB954, Occupied → #E8365D, Revenue → #A855F7, Pending → #FF8C42
-        statsRow.add(UIFactory.statCard("AVAILABLE SLOTS", String.valueOf(state.availableSlots), new Color(29, 185, 84)));
-        statsRow.add(UIFactory.statCard("OCCUPIED",        String.valueOf(state.occupiedSlots),  new Color(232, 54, 93)));
-        statsRow.add(UIFactory.statCard("REVENUE TODAY",   calculateRevenue(),                    new Color(168, 85, 247)));
-        statsRow.add(UIFactory.statCard("PENDING FEES",    calculatePendingFees(),                new Color(255, 140, 66)));
+        // §3.5 Metric Cards with top accent bar — mirroring AdminSlotMapScreen.accentStatCard()
+        statsRow.add(accentStatCard("AVAILABLE SLOTS", String.valueOf(state.availableSlots), new Color(29, 185, 84)));   // #1DB954
+        statsRow.add(accentStatCard("OCCUPIED",        String.valueOf(state.occupiedSlots),  new Color(232, 54, 93)));   // #E8365D
+        statsRow.add(accentStatCard("REVENUE TODAY",   calculateRevenue(),                    new Color(168, 85, 247)));  // #A855F7
+        statsRow.add(accentStatCard("PENDING FEES",    calculatePendingFees(),                new Color(255, 140, 66)));  // #FF8C42
+    }
+
+    /**
+     * Stat card with a thin colored accent bar on top — copied from AdminSlotMapScreen.
+     * Layout: [accent bar 4px] / [value + label body]
+     */
+    private static JPanel accentStatCard(String label, String value, Color accentColor) {
+        JPanel card = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Card background
+                g2.setColor(C_BG_PANEL);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                // Accent bar — top 3px, rounded only on top corners
+                g2.setColor(accentColor);
+                g2.fillRoundRect(0, 0, getWidth(), 6, 10, 10);
+                g2.fillRect(0, 3, getWidth(), 3); // square off bottom half of accent
+                g2.dispose();
+            }
+        };
+        card.setOpaque(false);
+
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setOpaque(false);
+        body.setBorder(new EmptyBorder(10, 16, 14, 16));
+
+        JLabel valLbl = UIFactory.lbl(value, Font.BOLD, 22, accentColor);
+        valLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel nameLbl = UIFactory.lbl(label.toUpperCase(), Font.BOLD, 11, C_MUTED);
+        nameLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        body.add(valLbl);
+        body.add(Box.createVerticalStrut(4));
+        body.add(nameLbl);
+
+        card.add(Box.createVerticalStrut(4), BorderLayout.NORTH); // space for accent bar
+        card.add(body, BorderLayout.CENTER);
+        return card;
     }
 
     private static String calculateRevenue() {

@@ -37,11 +37,12 @@ public class AdminVehiclesScreen {
     private static final int COL_ID     = 7;   // hidden — vehicle_id
 
     // ── Design System: Row colors ─────────────────────────────────────────────
-    // Aligned to UIConstants layer hierarchy
-    private static final Color ROW_ODD      = new Color(13, 11, 31);       // Layer 0 — #0D0B1F
-    private static final Color ROW_EVEN     = new Color(18, 16, 58);       // Layer 1 — #12103A
-    private static final Color ROW_SELECTED = new Color(36, 30, 107);      // Layer 3 — #241E6B
-    private static final Color ROW_HOVER    = new Color(26, 22, 80);       // Layer 2 — #1A1650
+    // Aligned to Dashboard/Fees: rows start at Layer 1 (#12103A) not Layer 0
+    private static final Color PAGE_BG      = new Color(13, 11, 31);       // Layer 0 — #0D0B1F  (outer page bg only)
+    private static final Color ROW_ODD      = new Color(18, 16, 58);       // Layer 1 — #12103A  (base row, matches Dashboard/Fees)
+    private static final Color ROW_EVEN     = new Color(26, 22, 80);       // Layer 2 — #1A1650  (alternating stripe)
+    private static final Color ROW_SELECTED = new Color(36, 30, 107);      // Layer 3 — #241E6B  (selected)
+    private static final Color ROW_HOVER    = new Color(36, 30, 107);      // Layer 3 — #241E6B  (hover = selected shade)
 
     // ── Design System: Status badge colors ───────────────────────────────────
     // Exact values from SPARCS Design System doc
@@ -77,21 +78,21 @@ public class AdminVehiclesScreen {
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
         JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(ROW_ODD);
+        root.setBackground(PAGE_BG);
         root.setOpaque(true);
         root.setName("ADMIN_VEHICLES");
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_VEHICLES"), BorderLayout.WEST);
 
         JPanel content = new JPanel(new BorderLayout());
-        content.setBackground(ROW_ODD);
+        content.setBackground(PAGE_BG);
         content.setOpaque(true);
 
         // ── Top Bar ───────────────────────────────────────────────────────────
-        // Height fixed at 54px; background is Layer 2 (#1A1650) per design system
+        // Layer 1 (#12103A) — matches Dashboard/Fees top bar
         JPanel topBar = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.setColor(ROW_HOVER);                        // #1A1650
+                g2.setColor(ROW_ODD);                          // #12103A Layer 1
                 g2.fillRect(0, 0, getWidth(), getHeight());
                 g2.setColor(SEPARATOR);
                 g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
@@ -123,7 +124,7 @@ public class AdminVehiclesScreen {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(ROW_ODD);                           // input bg #0D0B1F
+                g2.setColor(PAGE_BG);                           // input bg #0D0B1F per §3.3
                 g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
                 g2.setColor(focused
                     ? new Color(124, 92, 191)                   // focus: #7C5CBF
@@ -428,7 +429,7 @@ public class AdminVehiclesScreen {
         JScrollPane scroll = new JScrollPane(table);
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(true);
-        scroll.getViewport().setBackground(ROW_ODD);
+        scroll.getViewport().setBackground(ROW_ODD);           // #12103A — empty area matches card
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
@@ -502,7 +503,7 @@ public class AdminVehiclesScreen {
         rowCountLabel.setForeground(new Color(74, 63, 138));    // #4A3F8A
         rowCountLabel.setBorder(new EmptyBorder(8, 14, 8, 14));
         rowCountLabel.setOpaque(true);
-        rowCountLabel.setBackground(ROW_ODD);
+        rowCountLabel.setBackground(ROW_ODD);                  // #12103A — matches card bg
 
         // ── Table card — JLayeredPane approach ────────────────────────────────
         // Layer DEFAULT (0)  : background + scroll pane + footer
@@ -518,7 +519,7 @@ public class AdminVehiclesScreen {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(ROW_ODD);
+                g2.setColor(ROW_ODD);                          // #12103A — card bg, matches table rows
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), ARC, ARC);
                 g2.dispose();
             }
@@ -539,31 +540,31 @@ public class AdminVehiclesScreen {
         // Sits in a higher layer so it is NEVER repainted over by the table.
         JPanel borderOverlay = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
-                // fully transparent background — only draws border on top
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                // Outer rounded border — always visible
-                g2.setStroke(new BasicStroke(1.5f));
-                g2.setColor(new Color(58, 52, 120));            // solid #3A3478
-                g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, ARC, ARC);
-
-                // Header separator
+                // Outer rounded border — #2D2860 per design system §1.4 Default border
                 g2.setStroke(new BasicStroke(1.0f));
-                g2.setColor(new Color(58, 52, 120, 200));
-                int headerH = table.getTableHeader().getPreferredSize().height;
-                g2.drawLine(2, headerH + 2, getWidth() - 3, headerH + 2);
+                g2.setColor(new Color(45, 40, 96));             // #2D2860
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, ARC, ARC);
 
-                // Row separator lines
+                // Footer separator — subtle #1E1C45 line above "Showing N vehicles"
+                int footerH = rowCountLabel.getPreferredSize().height;
+                int sepY    = getHeight() - footerH;
+                g2.setStroke(new BasicStroke(1.0f));
+                g2.setColor(new Color(30, 28, 69));             // #1E1C45 subtle border
+                g2.drawLine(1, sepY, getWidth() - 2, sepY);
+
+                // Row separator lines — #1E1C45 subtle
                 int scrollY  = scroll.getViewport().getViewPosition().y;
+                int headerH  = table.getTableHeader().getPreferredSize().height;
                 int rowH     = table.getRowHeight();
                 int rowCount = table.getRowCount();
-                int footerH  = rowCountLabel.getPreferredSize().height + 2;
                 for (int i = 1; i <= rowCount; i++) {
-                    int lineY = headerH + 2 + (i * rowH) - scrollY;
-                    if (lineY > headerH + 2 && lineY < getHeight() - footerH) {
-                        g2.setColor(new Color(36, 32, 80, 140));
-                        g2.drawLine(2, lineY, getWidth() - 3, lineY);
+                    int lineY = headerH + (i * rowH) - scrollY;
+                    if (lineY > headerH && lineY < sepY - 1) {
+                        g2.setColor(new Color(30, 28, 69, 160)); // #1E1C45 @ 63%
+                        g2.drawLine(1, lineY, getWidth() - 2, lineY);
                     }
                 }
                 g2.dispose();
@@ -591,8 +592,7 @@ public class AdminVehiclesScreen {
         layeredCard.add(borderOverlay, JLayeredPane.PALETTE_LAYER); // always on top
 
         JPanel tableLayer = new JPanel(new BorderLayout());
-        tableLayer.setOpaque(true);
-        tableLayer.setBackground(ROW_ODD);
+        tableLayer.setOpaque(false);                            // transparent — body's PAGE_BG shows through rounded corners cleanly
         tableLayer.add(layeredCard, BorderLayout.CENTER);
 
         // ── Search + filter logic ─────────────────────────────────────────────
@@ -697,7 +697,7 @@ public class AdminVehiclesScreen {
 
         // ── Layout assembly ───────────────────────────────────────────────────
         JPanel body = new JPanel(new BorderLayout());
-        body.setBackground(ROW_ODD);
+        body.setBackground(PAGE_BG);
         body.setOpaque(true);
         body.setBorder(new EmptyBorder(16, 20, 20, 20));
         body.add(noResultsLabel, BorderLayout.NORTH);
@@ -715,7 +715,7 @@ public class AdminVehiclesScreen {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(ROW_ODD);                          // #0D0B1F
+                g2.setColor(PAGE_BG);                          // input bg #0D0B1F per §3.3
                 g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
                 g2.setColor(new Color(45, 40, 96));            // #2D2860
                 g2.setStroke(new BasicStroke(1.5f));
@@ -761,8 +761,8 @@ public class AdminVehiclesScreen {
             @Override public Component getTableCellRendererComponent(JTable t, Object value,
                     boolean isSelected, boolean hasFocus, int row, int col) {
                 JLabel lbl = (JLabel) super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, col);
-                lbl.setBackground(ROW_ODD);
-                lbl.setForeground(HEADER_FG);               // #6B5FA0
+                lbl.setBackground(ROW_ODD);                    // header bg = card bg #12103A Layer 1
+                lbl.setForeground(HEADER_FG);                  // #6B5FA0
                 lbl.setFont(new Font("SansSerif", Font.BOLD, 10));
                 lbl.setBorder(new EmptyBorder(0, 14, 0, 14));
                 lbl.setHorizontalAlignment(SwingConstants.LEFT);
@@ -833,7 +833,27 @@ public class AdminVehiclesScreen {
             this.parent     = parent;
             this.state      = state;
 
-            btn = new JButton();
+            btn = new JButton() {
+                @Override protected void paintComponent(Graphics g) {
+                    // Paint identical to renderer so there's no flash when edit activates
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(ROW_HOVER);                    // #241E6B — active/clicked row color
+                    g2.fillRect(0, 0, getWidth(), getHeight());
+                    int cx = getWidth() / 2, cy = getHeight() / 2, r = 13;
+                    g2.setColor(new Color(232, 54, 93, 35));
+                    g2.fillOval(cx - r, cy - r, r * 2, r * 2);
+                    g2.setColor(new Color(232, 54, 93, 70));
+                    g2.setStroke(new BasicStroke(1f));
+                    g2.drawOval(cx - r, cy - r, r * 2, r * 2);
+                    g2.setFont(new Font("SansSerif", Font.PLAIN, 14));
+                    g2.setColor(new Color(232, 54, 93));
+                    FontMetrics fm = g2.getFontMetrics();
+                    String icon = "\uD83D\uDDD1";
+                    g2.drawString(icon, cx - fm.stringWidth(icon) / 2, cy + fm.getAscent() / 2 - 1);
+                    g2.dispose();
+                }
+            };
             btn.setOpaque(false);
             btn.setContentAreaFilled(false);
             btn.setBorderPainted(false);
@@ -915,6 +935,7 @@ public class AdminVehiclesScreen {
             for (Vehicle v : vehicles) {
                 String ownerName = "Unknown";
                 String username  = "—";
+                
                 try {
                     Optional<VehicleOwner> owner = ownerDAO.findById(v.getOwnerId());
                     if (owner.isPresent()) {
@@ -955,7 +976,7 @@ public class AdminVehiclesScreen {
 
     // ── Table styling ─────────────────────────────────────────────────────────
     private static void styleTable(JTable table) {
-        table.setBackground(ROW_ODD);
+        table.setBackground(ROW_ODD);                           // #12103A Layer 1 — matches Dashboard/Fees
         table.setForeground(new Color(196, 191, 237));          // #C4BFED
         table.setFont(new Font("SansSerif", Font.PLAIN, 13));
         table.setRowHeight(44);                                  // 44px restored
@@ -968,7 +989,7 @@ public class AdminVehiclesScreen {
 
         JTableHeader header = table.getTableHeader();
         header.setOpaque(true);
-        header.setBackground(ROW_ODD);
+        header.setBackground(ROW_ODD);                         // #12103A — card bg Layer 1
         header.setForeground(HEADER_FG);
         header.setFont(new Font("SansSerif", Font.BOLD, 10));
         header.setPreferredSize(new Dimension(0, 38));
