@@ -23,55 +23,90 @@ public class AdminAuditLogScreen {
 
     private static final DateTimeFormatter DT_FMT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DATE_FMT =
+            DateTimeFormatter.ofPattern("MMM dd, yyyy");
+    private static final DateTimeFormatter TIME_FMT =
+            DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    private static final Color ROW_EVEN   = new Color(28, 27, 51);
-    private static final Color ROW_ODD    = new Color(22, 21, 43);
-    private static final Color GRID_COLOR = new Color(48, 44, 78);
+    // Row colors — match Dashboard & Fees exactly
+    private static final Color ROW_BASE   = new Color(26, 22, 80);    // #1A1650  Layer 2 — same as Dashboard/Fees
+    private static final Color ROW_EVEN   = new Color(26, 22, 80);    // #1A1650  even rows
+    private static final Color ROW_ODD    = new Color(22, 18, 70);    // slightly darker alt
+    private static final Color ROW_HOVER  = new Color(36, 30, 107);   // #241E6B  hover
+    private static final Color ROW_SELECT = new Color(36, 30, 107);   // #241E6B  selected
+    private static final Color GRID_COLOR = new Color(30, 28, 69);    // #1E1C45  separator
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
         JPanel root = new JPanel(new BorderLayout());
-        root.setBackground(C_BG_DARK);
+        root.setBackground(Color.BLACK);
         root.setOpaque(true);
         root.setName("ADMIN_AUDIT_LOG");
         root.add(SidebarPanel.build(cardLayout, rootPanel, state, "ADMIN", "ADMIN_AUDIT_LOG"), BorderLayout.WEST);
 
         JPanel content = new JPanel(new BorderLayout());
-        content.setBackground(C_BG_DARK);
+        content.setBackground(Color.BLACK);
         content.setOpaque(true);
 
-        // ── Top bar ───────────────────────────────────────────────────────────
-        JPanel topBar = new JPanel(new BorderLayout(0, 8));
-        topBar.setBackground(C_BG_PANEL);
+        // ── Top bar — #1A1650 bg, 54px, bottom separator per design system ──
+        JPanel topBar = new JPanel(new BorderLayout(0, 8)) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setColor(C_BG_PANEL); // matches Slot Map / Register Vehicle topbar purple-blue
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.setColor(new Color(30, 28, 69)); // #1E1C45 separator
+                g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
+                g2.dispose();
+            }
+        };
+        topBar.setOpaque(false);
         topBar.setBorder(new EmptyBorder(12, 24, 12, 24));
 
         // Title row — "AUDIT LOG" uppercase, bold, no icon, no refresh button
-        JLabel titleLbl = UIFactory.lbl("AUDIT LOG", Font.BOLD, 20, C_WHITE);
+        JLabel titleLbl = UIFactory.lbl("AUDIT LOG", Font.BOLD, 18, new Color(240, 236, 255));
         topBar.add(titleLbl, BorderLayout.NORTH);
 
         // Filter row — search + dropdowns
         JPanel filterRow = new JPanel(new BorderLayout(8, 0));
         filterRow.setOpaque(false);
 
-        JTextField searchField = new JTextField();
-        searchField.setBackground(C_BG_CARD);
-        searchField.setForeground(C_MUTED);
-        searchField.setCaretColor(C_WHITE);
+        // Search field — bg #0D0B1F, border 1.5px #2D2860, focus #7C5CBF
+        JTextField searchField = new JTextField() {
+            private boolean focused = false;
+            {
+                addFocusListener(new java.awt.event.FocusAdapter() {
+                    @Override public void focusGained(java.awt.event.FocusEvent e) { focused = true; repaint(); }
+                    @Override public void focusLost(java.awt.event.FocusEvent e)   { focused = false; repaint(); }
+                });
+            }
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(18, 16, 58)); // #12103A input bg in topbar context
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                g2.setColor(focused ? new Color(124, 92, 191) : new Color(45, 40, 96));
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                super.paintComponent(g);
+                g2.dispose();
+            }
+        };
+        searchField.setOpaque(false);
+        searchField.setForeground(new Color(107, 95, 160));
+        searchField.setCaretColor(new Color(196, 191, 237));
         searchField.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        searchField.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(C_INPUT_BD),
-                new EmptyBorder(5, 10, 5, 10)));
+        searchField.setBorder(new EmptyBorder(5, 12, 5, 12));
         searchField.setText("Search by user, action, IP\u2026");
         searchField.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent e) {
                 if (searchField.getText().equals("Search by user, action, IP\u2026")) {
                     searchField.setText("");
-                    searchField.setForeground(C_WHITE);
+                    searchField.setForeground(new Color(196, 191, 237));
                 }
             }
             public void focusLost(java.awt.event.FocusEvent e) {
                 if (searchField.getText().isEmpty()) {
                     searchField.setText("Search by user, action, IP\u2026");
-                    searchField.setForeground(C_MUTED);
+                    searchField.setForeground(new Color(107, 95, 160));
                 }
             }
         });
@@ -103,38 +138,38 @@ public class AdminAuditLogScreen {
             public Component prepareRenderer(TableCellRenderer renderer, int row, int col) {
                 Component c = super.prepareRenderer(renderer, row, col);
                 if (!isRowSelected(row)) {
-                    c.setBackground(row % 2 == 0 ? ROW_EVEN : ROW_ODD);
+                    c.setBackground(new Color(26, 22, 80)); // C_BG_ROW #1A1650
                     c.setForeground(C_WHITE);
                 }
                 return c;
             }
         };
 
-        table.setBackground(ROW_EVEN);
-        table.setForeground(C_WHITE);
+        table.setBackground(C_BG_CARD); // matches Fees pendingScroll viewport
+        table.setForeground(new Color(196, 191, 237)); // #C4BFED
         table.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        table.setRowHeight(34);
+        table.setRowHeight(44);
         table.setGridColor(GRID_COLOR);
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(false);
-        table.setSelectionBackground(C_PURPLE);
+        table.setSelectionBackground(new Color(36, 30, 107)); // #241E6B
         table.setSelectionForeground(C_WHITE);
         table.setIntercellSpacing(new Dimension(0, 0));
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 
         // Header
         JTableHeader header = table.getTableHeader();
-        header.setBackground(C_BG_PANEL);
-        header.setForeground(C_MUTED);
-        header.setFont(new Font("SansSerif", Font.BOLD, 11));
+        header.setBackground(C_BG_PANEL); // matches Fees styleTable header
+        header.setForeground(C_MUTED); // matches Fees styleTable header fg
+        header.setFont(new Font("SansSerif", Font.BOLD, 10));
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, GRID_COLOR));
         header.setReorderingAllowed(false);
-        header.setPreferredSize(new Dimension(0, 30));
+        header.setPreferredSize(new Dimension(0, 38));
 
         DefaultTableCellRenderer headerRenderer = new DefaultTableCellRenderer();
-        headerRenderer.setBackground(C_BG_PANEL);
-        headerRenderer.setForeground(C_MUTED);
-        headerRenderer.setFont(new Font("SansSerif", Font.BOLD, 11));
+        headerRenderer.setBackground(C_BG_PANEL); // matches Fees styleTable
+        headerRenderer.setForeground(C_MUTED); // matches Fees
+        headerRenderer.setFont(new Font("SansSerif", Font.BOLD, 10));
         headerRenderer.setHorizontalAlignment(SwingConstants.LEFT);
         headerRenderer.setBorder(new EmptyBorder(0, 14, 0, 14));
         for (int i = 0; i < cols.length; i++) {
@@ -146,9 +181,44 @@ public class AdminAuditLogScreen {
         table.getColumnModel().getColumn(2).setCellRenderer(new BadgeRenderer());
         table.getColumnModel().getColumn(3).setCellRenderer(new EntityChipRenderer());
 
+        // Action + Entity Type headers — extra left padding to align with badge/chip content
+        DefaultTableCellRenderer paddedHeader = new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object value,
+                    boolean sel, boolean foc, int row, int col) {
+                super.getTableCellRendererComponent(t, value, sel, foc, row, col);
+                setText(value != null ? value.toString().toUpperCase() : "");
+                setFont(new Font("SansSerif", Font.BOLD, 10));
+                setForeground(C_MUTED);
+                setBackground(C_BG_PANEL);
+                setBorder(new EmptyBorder(0, 14, 0, 0)); // 14px — aligns closer to badge, matches other headers
+                setHorizontalAlignment(SwingConstants.LEFT);
+                setOpaque(true);
+                return this;
+            }
+        };
+        table.getColumnModel().getColumn(2).setHeaderRenderer(paddedHeader); // Action
+        table.getColumnModel().getColumn(3).setHeaderRenderer(paddedHeader); // Entity Type
+
+        // Timestamp header — 24px left to align with cell content padding
+        DefaultTableCellRenderer timestampHeader = new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object value,
+                    boolean sel, boolean foc, int row, int col) {
+                super.getTableCellRendererComponent(t, value, sel, foc, row, col);
+                setText(value != null ? value.toString() : "");
+                setFont(new Font("SansSerif", Font.BOLD, 10));
+                setForeground(C_MUTED);
+                setBackground(C_BG_PANEL);
+                setBorder(new EmptyBorder(0, 24, 0, 0)); // matches cell's 24px left padding
+                setHorizontalAlignment(SwingConstants.LEFT);
+                setOpaque(true);
+                return this;
+            }
+        };
+        table.getColumnModel().getColumn(0).setHeaderRenderer(timestampHeader);
+
         DefaultTableCellRenderer plain = new DefaultTableCellRenderer();
         plain.setBorder(new EmptyBorder(0, 14, 0, 14));
-        plain.setForeground(C_WHITE);
+        plain.setForeground(new Color(196, 191, 237)); // #C4BFED
         for (int i : new int[]{1, 4, 5}) {
             table.getColumnModel().getColumn(i).setCellRenderer(plain);
         }
@@ -163,15 +233,16 @@ public class AdminAuditLogScreen {
         // ── Scroll pane ───────────────────────────────────────────────────────
         JScrollPane scroll = new JScrollPane(table);
         scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
+        scroll.getViewport().setOpaque(true);
+        scroll.getViewport().setBackground(C_BG_CARD); // darker fill for empty rows — matches Fees
         scroll.setBorder(BorderFactory.createEmptyBorder());
 
         JScrollBar vBar = scroll.getVerticalScrollBar();
         vBar.setPreferredSize(new Dimension(6, 0));
-        vBar.setBackground(ROW_EVEN);
+        vBar.setBackground(new Color(26, 22, 80));
         vBar.setUI(new BasicScrollBarUI() {
-            private final Color THUMB = new Color(90, 80, 160);
-            private final Color TRACK = ROW_EVEN;
+            private final Color THUMB = new Color(124, 92, 191); // #7C5CBF thumb — accent purple
+            private final Color TRACK = C_BG_CARD.darker(); // darker track under thumb
             @Override protected void configureScrollBarColors() {
                 thumbColor = THUMB; trackColor = TRACK;
                 thumbHighlightColor = THUMB; thumbDarkShadowColor = THUMB;
@@ -198,25 +269,61 @@ public class AdminAuditLogScreen {
             }
         });
 
-        // Rounded wrapper
-        JPanel roundedWrap = new JPanel(new BorderLayout()) {
+        // Rounded wrapper — same JLayeredPane technique as Vehicles screen
+        // so the border is always on top and corners are always curved
+        final int ARC = 14;
+
+        JPanel contentPanel = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(ROW_EVEN);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 14, 14);
-                g2.setColor(GRID_COLOR);
-                g2.setStroke(new BasicStroke(1f));
-                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 14, 14);
+                g2.setColor(C_BG_CARD);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), ARC, ARC);
+                g2.dispose();
+            }
+            @Override protected void paintChildren(Graphics g) {
+                // Clip children 2px inside so scroll never covers the rounded corners
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setClip(new java.awt.geom.RoundRectangle2D.Float(
+                    2, 2, getWidth() - 4, getHeight() - 4, ARC, ARC));
+                super.paintChildren(g2);
                 g2.dispose();
             }
         };
-        roundedWrap.setOpaque(false);
-        roundedWrap.add(scroll, BorderLayout.CENTER);
+        contentPanel.setOpaque(false);
+        contentPanel.add(scroll, BorderLayout.CENTER);
+
+        // Border overlay — always drawn on top, so nothing covers the curved corners
+        JPanel borderOverlay = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.setColor(new Color(45, 40, 96)); // #2D2860
+                g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, ARC, ARC);
+                g2.dispose();
+            }
+        };
+        borderOverlay.setOpaque(false);
+
+        // Repaint overlay when viewport scrolls
+        scroll.getViewport().addChangeListener(e -> borderOverlay.repaint());
+
+        JLayeredPane roundedWrap = new JLayeredPane() {
+            @Override public void doLayout() {
+                int w = getWidth(), h = getHeight();
+                for (Component c : getComponents()) c.setBounds(0, 0, w, h);
+            }
+            @Override public Dimension getPreferredSize() {
+                return contentPanel.getPreferredSize();
+            }
+        };
+        roundedWrap.add(contentPanel,  JLayeredPane.DEFAULT_LAYER);
+        roundedWrap.add(borderOverlay, JLayeredPane.PALETTE_LAYER);
 
         JPanel body = new JPanel(new BorderLayout());
         body.setOpaque(true);
-        body.setBackground(C_BG_DARK);
+        body.setBackground(Color.BLACK);
         body.setBorder(new EmptyBorder(14, 20, 20, 20));
         body.add(roundedWrap, BorderLayout.CENTER);
 
@@ -297,7 +404,7 @@ public class AdminAuditLogScreen {
             @Override protected JButton createArrowButton() {
                 JButton btn = new JButton("\u25BE") { // small downward triangle ▾
                     @Override protected void paintComponent(Graphics g) {
-                        g.setColor(C_BG_CARD);
+                        g.setColor(new Color(26, 22, 80));
                         g.fillRect(0, 0, getWidth(), getHeight());
                         g.setColor(C_MUTED);
                         g.setFont(new Font("SansSerif", Font.PLAIN, 10));
@@ -316,16 +423,16 @@ public class AdminAuditLogScreen {
             }
 
             @Override public void paintCurrentValueBackground(Graphics g, Rectangle bounds, boolean hasFocus) {
-                g.setColor(C_BG_CARD);
+                g.setColor(new Color(26, 22, 80));
                 g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
             }
         });
 
-        cb.setBackground(C_BG_CARD);
-        cb.setForeground(C_WHITE);
+        cb.setBackground(new Color(26, 22, 80)); // #1A1650
+        cb.setForeground(new Color(155, 143, 212));
         cb.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        cb.setPreferredSize(new Dimension(128, 28));
-        cb.setBorder(BorderFactory.createLineBorder(GRID_COLOR));
+        cb.setPreferredSize(new Dimension(140, 34));
+        cb.setBorder(BorderFactory.createLineBorder(new Color(45, 40, 96)));
         cb.setFocusable(false);
 
         cb.setRenderer(new DefaultListCellRenderer() {
@@ -334,7 +441,7 @@ public class AdminAuditLogScreen {
                     JList<?> list, Object value, int index, boolean isSelected, boolean hasFocus) {
                 JLabel lbl = (JLabel) super.getListCellRendererComponent(
                         list, value, index, isSelected, hasFocus);
-                lbl.setBackground(isSelected ? C_PURPLE : C_BG_CARD);
+                lbl.setBackground(isSelected ? new Color(36, 30, 107) : new Color(26, 22, 80));
                 lbl.setForeground(C_WHITE);
                 lbl.setBorder(new EmptyBorder(5, 10, 5, 10));
                 lbl.setFont(new Font("SansSerif", Font.PLAIN, 12));
@@ -346,31 +453,36 @@ public class AdminAuditLogScreen {
         return cb;
     }
 
-    // ── Timestamp renderer ────────────────────────────────────────────────────
+    // ── Timestamp renderer — human readable: "May 17, 2026  00:31:56" ────────
     static class TimestampRenderer implements TableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(
                 JTable t, Object value, boolean sel, boolean foc, int row, int col) {
             String raw = value != null ? value.toString() : "—";
-            String timePart = raw, datePart = "";
-            if (raw.length() >= 19) {
-                timePart = raw.substring(11, 19);
-                datePart = raw.substring(0, 10);
+            String datePart = "—", timePart = "";
+            try {
+                java.time.LocalDateTime ldt = java.time.LocalDateTime.parse(raw, DT_FMT);
+                datePart = ldt.format(DATE_FMT); // e.g. "May 17, 2026"
+                timePart = ldt.format(TIME_FMT); // e.g. "00:31:56"
+            } catch (Exception ex) {
+                datePart = raw; // fallback — show raw if unparseable
             }
-            JLabel timeLbl = new JLabel(timePart);
-            timeLbl.setFont(new Font("Monospaced", Font.BOLD, 13));
-            timeLbl.setForeground(C_WHITE);
 
+            // Two-line layout: date (muted, small) on top, time (bold) below
             JLabel dateLbl = new JLabel(datePart);
-            dateLbl.setFont(new Font("Monospaced", Font.PLAIN, 10));
-            dateLbl.setForeground(C_MUTED);
+            dateLbl.setFont(new Font("SansSerif", Font.PLAIN, 11));
+            dateLbl.setForeground(new Color(107, 95, 160)); // #6B5FA0 muted
+
+            JLabel timeLbl = new JLabel(timePart);
+            timeLbl.setFont(new Font("SansSerif", Font.BOLD, 13));
+            timeLbl.setForeground(new Color(196, 191, 237)); // #C4BFED
 
             JPanel cell = new JPanel();
             cell.setLayout(new BoxLayout(cell, BoxLayout.Y_AXIS));
-            cell.setBorder(new EmptyBorder(4, 14, 4, 8));
-            cell.add(timeLbl);
-            cell.add(dateLbl);
-            cell.setBackground(sel ? C_PURPLE : (row % 2 == 0 ? ROW_EVEN : ROW_ODD));
+            cell.setBorder(new EmptyBorder(6, 24, 6, 8)); // 24px left — shifted right
+            cell.add(dateLbl);  // date on top — more familiar reading order
+            cell.add(timeLbl);  // time below
+            cell.setBackground(sel ? new Color(36, 30, 107) : new Color(26, 22, 80)); // C_BG_ROW
             cell.setOpaque(true);
             return cell;
         }
@@ -379,12 +491,13 @@ public class AdminAuditLogScreen {
     // ── Action badge renderer ─────────────────────────────────────────────────
     static class BadgeRenderer implements TableCellRenderer {
 
-        private static final Color[] LOGIN   = { new Color(30, 58, 138),  new Color(147, 197, 253) };
-        private static final Color[] LOGOUT  = { new Color(55, 55, 75),   new Color(180, 180, 200) };
-        private static final Color[] ENTRY   = { new Color(20, 83, 45),   new Color(134, 239, 172) };
-        private static final Color[] EXIT    = { new Color(124, 45, 18),  new Color(253, 186, 116) };
-        private static final Color[] FEE     = { new Color(113, 63, 18),  new Color(253, 224, 71)  };
-        private static final Color[] DEFAULT = { new Color(55, 48, 90),   new Color(196, 181, 253) };
+        // Badge colors — exact design system status colors
+        private static final Color[] LOGIN   = { new Color(79, 142, 247, 38),  new Color(79, 142, 247)  };  // #4F8EF7
+        private static final Color[] LOGOUT  = { new Color(107, 95, 160, 46),  new Color(155, 143, 212) };  // muted purple
+        private static final Color[] ENTRY   = { new Color(29, 185, 84, 38),   new Color(29, 185, 84)   };  // #1DB954
+        private static final Color[] EXIT    = { new Color(232, 54, 93, 38),   new Color(232, 54, 93)   };  // #E8365D
+        private static final Color[] FEE     = { new Color(245, 197, 24, 38),  new Color(245, 197, 24)  };  // #F5C518
+        private static final Color[] DEFAULT = { new Color(124, 92, 191, 38),  new Color(167, 139, 250) };  // purple
 
         @Override
         public Component getTableCellRendererComponent(
@@ -408,16 +521,17 @@ public class AdminAuditLogScreen {
             badge.setFont(new Font("SansSerif", Font.BOLD, 10));
             badge.setBorder(new EmptyBorder(2, 9, 2, 9));
 
-            JPanel left = new JPanel(new GridBagLayout());
-            left.setOpaque(false);
-            left.setBorder(new EmptyBorder(0, 14, 0, 0));
-            left.add(badge);
-
-            JPanel stretch = new JPanel(new BorderLayout());
-            stretch.setOpaque(true);
-            stretch.setBackground(sel ? C_PURPLE : (row % 2 == 0 ? ROW_EVEN : ROW_ODD));
-            stretch.add(left, BorderLayout.WEST);
-            return stretch;
+            // Center badge vertically + left-align with consistent 14px padding
+            JPanel cell = new JPanel(new GridBagLayout());
+            cell.setOpaque(true);
+            cell.setBackground(sel ? new Color(36, 30, 107) : new Color(26, 22, 80)); // C_BG_ROW
+            GridBagConstraints bgc = new GridBagConstraints();
+            bgc.anchor = GridBagConstraints.WEST;
+            bgc.insets = new Insets(0, 14, 0, 0);
+            bgc.weightx = 1.0;
+            bgc.fill = GridBagConstraints.NONE;
+            cell.add(badge, bgc);
+            return cell;
         }
 
         private Color[] colors(String action) {
@@ -435,9 +549,9 @@ public class AdminAuditLogScreen {
     // ── Entity chip renderer ──────────────────────────────────────────────────
     static class EntityChipRenderer implements TableCellRenderer {
 
-        private static final Color CHIP_BG = new Color(45, 42, 75);
-        private static final Color CHIP_BD = new Color(70, 65, 110);
-        private static final Color CHIP_FG = new Color(180, 175, 210);
+        private static final Color CHIP_BG = new Color(124, 92, 191, 46);  // #7C5CBF @18%
+        private static final Color CHIP_BD = new Color(107, 95, 160, 60);  // #6B5FA0
+        private static final Color CHIP_FG = new Color(155, 143, 212);     // #9B8FD4
 
         @Override
         public Component getTableCellRendererComponent(
@@ -462,16 +576,16 @@ public class AdminAuditLogScreen {
             chip.setFont(new Font("SansSerif", Font.PLAIN, 10));
             chip.setBorder(new EmptyBorder(2, 8, 2, 8));
 
-            JPanel left = new JPanel(new GridBagLayout());
-            left.setOpaque(false);
-            left.setBorder(new EmptyBorder(0, 14, 0, 0));
-            left.add(chip);
-
-            JPanel stretch = new JPanel(new BorderLayout());
-            stretch.setOpaque(true);
-            stretch.setBackground(sel ? C_PURPLE : (row % 2 == 0 ? ROW_EVEN : ROW_ODD));
-            stretch.add(left, BorderLayout.WEST);
-            return stretch;
+            JPanel cell = new JPanel(new GridBagLayout());
+            cell.setOpaque(true);
+            cell.setBackground(sel ? new Color(36, 30, 107) : new Color(26, 22, 80)); // C_BG_ROW
+            GridBagConstraints cgc = new GridBagConstraints();
+            cgc.anchor = GridBagConstraints.WEST;
+            cgc.insets = new Insets(0, 14, 0, 0);
+            cgc.weightx = 1.0;
+            cgc.fill = GridBagConstraints.NONE;
+            cell.add(chip, cgc);
+            return cell;
         }
     }
 }
