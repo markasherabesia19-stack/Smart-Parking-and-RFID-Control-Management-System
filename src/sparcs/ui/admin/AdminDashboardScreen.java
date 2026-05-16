@@ -41,28 +41,39 @@ public class AdminDashboardScreen {
         content.setBackground(C_BG_DARK);
         content.setOpaque(true);
 
-        // Top bar
-        JPanel topBar = new JPanel(new BorderLayout());
-        topBar.setBackground(C_BG_PANEL);
+        // Top bar — Layer 1 (#12103A) with bottom separator, 54px tall
+        JPanel topBar = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setColor(new Color(18, 16, 58));                    // #12103A Layer 1
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.setColor(new Color(30, 28, 69));                    // #1E1C45 separator
+                g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);
+                g2.dispose();
+            }
+        };
+        topBar.setOpaque(false);
+        topBar.setPreferredSize(new Dimension(0, 54));
         topBar.setBorder(new EmptyBorder(14, 24, 14, 24));
-        topBar.add(UIFactory.lbl("DASHBOARD", Font.BOLD, 20, C_WHITE), BorderLayout.WEST);
+        // Page Title: 22px 700 ALL CAPS #F0ECFF per design system §2
+        topBar.add(UIFactory.lbl("DASHBOARD", Font.BOLD, 22, new Color(240, 236, 255)), BorderLayout.WEST);
         content.add(topBar, BorderLayout.NORTH);
 
         // Stats row
-        JPanel statsRow = new JPanel(new GridLayout(1, 4, 12, 0));
+        JPanel statsRow = new JPanel(new GridLayout(1, 4, 16, 0));
         statsRow.setOpaque(false);
-        statsRow.setBorder(new EmptyBorder(20, 20, 10, 20));
+        statsRow.setBorder(new EmptyBorder(20, 20, 12, 20));
         buildStatsRow(statsRow, state);
 
         // Body
-        JPanel body = new JPanel(new GridLayout(1, 2, 14, 0));
+        JPanel body = new JPanel(new GridLayout(1, 2, 16, 0));
         body.setOpaque(false);
-        body.setBorder(new EmptyBorder(10, 20, 20, 20));
+        body.setBorder(new EmptyBorder(0, 20, 20, 20));
 
         // Vehicles Overview 
         JPanel vehiclesCard = UIFactory.cardPanel(new BorderLayout(0, 10));
         vehiclesCard.setBorder(new EmptyBorder(16, 16, 16, 16));
-        vehiclesCard.add(UIFactory.lbl("VEHICLES OVERVIEW", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
+        vehiclesCard.add(UIFactory.lbl("VEHICLES OVERVIEW", Font.BOLD, 14, new Color(232, 228, 255)), BorderLayout.NORTH);
         if (vehiclesModel == null) {
             String[] vCols = {"Plate", "Username", "Slot"};
             vehiclesModel = new DefaultTableModel(new Object[0][3], vCols) {
@@ -70,13 +81,31 @@ public class AdminDashboardScreen {
             };
         }
 
-        JTable vehiclesTable = new JTable(vehiclesModel);
+        JTable vehiclesTable = new JTable(vehiclesModel) {
+            @Override
+            public Component prepareRenderer(TableCellRenderer renderer, int row, int col) {
+                Component c = super.prepareRenderer(renderer, row, col);
+                c.setBackground(isRowSelected(row)
+                    ? new Color(36, 30, 107)                            // #241E6B selected
+                    : new Color(26, 22, 80));                           // #1A1650 base
+                if (col == 0) {
+                    // Plate — monospace #7C5CBF per §3.8
+                    c.setFont(new Font("Monospaced", Font.BOLD, 12));
+                    c.setForeground(new Color(124, 92, 191));
+                } else {
+                    c.setFont(new Font("SansSerif", Font.PLAIN, 13));
+                    c.setForeground(new Color(196, 191, 237));          // #C4BFED
+                }
+                return c;
+            }
+        };
         styleOverviewTable(vehiclesTable);
 
         JScrollPane vehiclesScroll = new JScrollPane(vehiclesTable);
-        vehiclesScroll.setBorder(null);
         vehiclesScroll.setOpaque(false);
-        vehiclesScroll.getViewport().setBackground(C_BG_CARD);
+        vehiclesScroll.setViewportBorder(null);
+        vehiclesScroll.getViewport().setBackground(new Color(26, 22, 80));   // #1A1650
+        vehiclesScroll.setBorder(BorderFactory.createLineBorder(new Color(45, 40, 96))); // #2D2860 C_INPUT_BD
 
         vehiclesCard.add(vehiclesScroll, BorderLayout.CENTER);
         body.add(vehiclesCard);
@@ -91,7 +120,7 @@ public class AdminDashboardScreen {
 
         JPanel actCard = UIFactory.cardPanel(new BorderLayout(0, 10));
         actCard.setBorder(new EmptyBorder(16, 16, 16, 16));
-        actCard.add(UIFactory.lbl("RECENT ACTIVITY", Font.BOLD, 12, C_MUTED), BorderLayout.NORTH);
+        actCard.add(UIFactory.lbl("RECENT ACTIVITY", Font.BOLD, 14, new Color(232, 228, 255)), BorderLayout.NORTH);
 
         // Use a JTable for proper column/row structure
         String[] actCols = {"Plate", "Action", "Slot", "Time"};
@@ -102,25 +131,70 @@ public class AdminDashboardScreen {
             @Override
             public Component prepareRenderer(TableCellRenderer renderer, int row, int col) {
                 Component c = super.prepareRenderer(renderer, row, col);
-                String action = (String) getModel().getValueAt(row, 1);
-                if (col == 1) {
-                    if ("ENTRY".equals(action))        c.setForeground(C_AVAILABLE);
-                    else if ("EXIT".equals(action))    c.setForeground(C_OCCUPIED);
-                    else if ("RESERVE".equals(action)) c.setForeground(C_RESERVED);
-                    else                               c.setForeground(C_WHITE);
-                } else {
-                    c.setForeground(C_WHITE);
+                c.setBackground(isRowSelected(row)
+                    ? new Color(36, 30, 107)                            // #241E6B selected
+                    : new Color(26, 22, 80));                           // #1A1650 base
+                if (col == 0) {
+                    // Plate — monospace #7C5CBF per §3.8
+                    c.setFont(new Font("Monospaced", Font.BOLD, 12));
+                    c.setForeground(new Color(124, 92, 191));
+                } else if (col != 1) {
+                    // Slot + Time — body text
+                    c.setFont(new Font("SansSerif", Font.PLAIN, 13));
+                    c.setForeground(new Color(196, 191, 237));          // #C4BFED
                 }
-                c.setBackground(C_BG_CARD);
                 return c;
             }
         };
+        // Action column — proper badge component per §3.2, replaces plain colored text
+        actTable.getColumnModel().getColumn(1).setCellRenderer((t, value, isSelected, hasFocus, row, col) -> {
+            final String action = value != null ? value.toString() : "";
+            return new JPanel() {
+                { setOpaque(true); }
+                @Override protected void paintComponent(Graphics g) {
+                    // Row bg
+                    g.setColor(t.isRowSelected(row)
+                        ? new Color(36, 30, 107)
+                        : new Color(26, 22, 80));
+                    g.fillRect(0, 0, getWidth(), getHeight());
+
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                    // Badge colors per §3.2
+                    Color bg, fg;
+                    switch (action) {
+                        case "ENTRY"   -> { bg = new Color(29,185,84,31);  fg = new Color(29,185,84);  }
+                        case "EXIT"    -> { bg = new Color(232,54,93,31);  fg = new Color(232,54,93);  }
+                        case "RESERVE" -> { bg = new Color(245,197,24,31); fg = new Color(245,197,24); }
+                        default        -> { bg = new Color(79,142,247,31); fg = new Color(79,142,247); }
+                    }
+
+                    Font f = new Font("SansSerif", Font.BOLD, 11);
+                    g2.setFont(f);
+                    FontMetrics fm = g2.getFontMetrics(f);
+                    int tw = fm.stringWidth(action);
+                    int ph = 20, pw = tw + 20;
+                    int px = 10, py = (getHeight() - ph) / 2;
+
+                    g2.setColor(bg);
+                    g2.fillRoundRect(px, py, pw, ph, 6, 6);
+                    g2.setColor(new Color(fg.getRed(), fg.getGreen(), fg.getBlue(), 80));
+                    g2.setStroke(new BasicStroke(1f));
+                    g2.drawRoundRect(px, py, pw - 1, ph - 1, 6, 6);
+                    g2.setColor(fg);
+                    g2.drawString(action, px + (pw - tw) / 2, py + (ph - fm.getHeight()) / 2 + fm.getAscent());
+                    g2.dispose();
+                }
+            };
+        });
         styleOverviewTable(actTable);
 
         JScrollPane actScroll = new JScrollPane(actTable);
-        actScroll.setBorder(null);
         actScroll.setOpaque(false);
-        actScroll.getViewport().setBackground(C_BG_CARD);
+        actScroll.setViewportBorder(null);
+        actScroll.getViewport().setBackground(new Color(26, 22, 80));        // #1A1650
+        actScroll.setBorder(BorderFactory.createLineBorder(new Color(45, 40, 96))); // #2D2860 C_INPUT_BD
         actCard.add(actScroll, BorderLayout.CENTER);
         body.add(actCard);
 
@@ -164,10 +238,11 @@ public class AdminDashboardScreen {
     }
 
     private static void buildStatsRow(JPanel statsRow, AppState state) {
-        statsRow.add(UIFactory.statCard("Available Slots", String.valueOf(state.availableSlots), C_AVAILABLE));
-        statsRow.add(UIFactory.statCard("Occupied",        String.valueOf(state.occupiedSlots),  C_OCCUPIED));
-        statsRow.add(UIFactory.statCard("Revenue Today",   calculateRevenue(),                    C_ACCENT));
-        statsRow.add(UIFactory.statCard("Pending Fees",    calculatePendingFees(),                C_RESERVED));
+        // §3.5 Metric Cards: Available → #1DB954, Occupied → #E8365D, Revenue → #A855F7, Pending → #FF8C42
+        statsRow.add(UIFactory.statCard("AVAILABLE SLOTS", String.valueOf(state.availableSlots), new Color(29, 185, 84)));
+        statsRow.add(UIFactory.statCard("OCCUPIED",        String.valueOf(state.occupiedSlots),  new Color(232, 54, 93)));
+        statsRow.add(UIFactory.statCard("REVENUE TODAY",   calculateRevenue(),                    new Color(168, 85, 247)));
+        statsRow.add(UIFactory.statCard("PENDING FEES",    calculatePendingFees(),                new Color(255, 140, 66)));
     }
 
     private static String calculateRevenue() {
@@ -234,19 +309,60 @@ public class AdminDashboardScreen {
     }
 
     private static void styleOverviewTable(JTable table) {
-        table.setBackground(C_BG_CARD);
-        table.setForeground(C_WHITE);
-        table.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        table.setRowHeight(28);
-        table.setGridColor(new Color(60, 50, 100));
-        table.setSelectionBackground(C_PURPLE);
-        table.setSelectionForeground(C_WHITE);
+        // Mirror exactly how AdminFeesScreen.styleTable() works:
+        // horizontal lines only via setGridColor — no custom cell border renderer needed
+        table.setBackground(new Color(26, 22, 80));              // #1A1650 C_BG_ROW
+        table.setForeground(new Color(196, 191, 237));           // #C4BFED C_BODY
+        table.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        table.setRowHeight(44);
+        table.setGridColor(new Color(30, 28, 69));               // #1E1C45 C_BORDER_SUBTLE
+        table.setShowHorizontalLines(true);                      // subtle row separators only
+        table.setShowVerticalLines(false);                       // no vertical column lines
+        table.setSelectionBackground(new Color(36, 30, 107));    // #241E6B
+        table.setSelectionForeground(new Color(240, 236, 255));  // #F0ECFF
+        table.setIntercellSpacing(new Dimension(0, 0));
         table.setOpaque(true);
+        table.setFillsViewportHeight(true);
+
+        // Body cell renderer — padding + bg, same as Fees bodyRenderer
+        DefaultTableCellRenderer bodyRenderer = new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int col) {
+                super.getTableCellRendererComponent(t, value, isSelected, hasFocus, row, col);
+                setBorder(new EmptyBorder(0, 12, 0, 12));
+                if (!isSelected) {
+                    setBackground(new Color(26, 22, 80));        // #1A1650
+                    setForeground(new Color(196, 191, 237));     // #C4BFED
+                }
+                return this;
+            }
+        };
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(bodyRenderer);
+        }
+
+        // Header — same bg as card so it blends flat, bright bold text, 1px bottom only
         JTableHeader header = table.getTableHeader();
-        header.setBackground(C_BG_PANEL);
-        header.setForeground(C_MUTED);
-        header.setFont(new Font("SansSerif", Font.BOLD, 11));
-        header.setBorder(BorderFactory.createLineBorder(C_INPUT_BD));
+        header.setOpaque(true);
+        header.setBackground(new Color(18, 16, 58));             // #12103A C_BG_PANEL
+        header.setForeground(new Color(232, 228, 255));          // #E8E4FF C_TEXT_SECONDARY
+        header.setFont(new Font("SansSerif", Font.BOLD, 13));
+        header.setPreferredSize(new Dimension(header.getPreferredSize().width, 38));
+        header.setReorderingAllowed(false);
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(45, 40, 96))); // #2D2860 C_INPUT_BD
+        header.setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object value,
+                    boolean sel, boolean focus, int row, int col) {
+                super.getTableCellRendererComponent(t, value, sel, focus, row, col);
+                setText(value != null ? value.toString().toUpperCase() : "");
+                setFont(new Font("SansSerif", Font.BOLD, 13));
+                setForeground(new Color(232, 228, 255));         // #E8E4FF
+                setBackground(new Color(18, 16, 58));            // #12103A
+                setBorder(new EmptyBorder(0, 12, 0, 12));
+                setHorizontalAlignment(SwingConstants.LEFT);
+                return this;
+            }
+        });
     }
 
     private static void reloadRecentActivity(DefaultTableModel model) {

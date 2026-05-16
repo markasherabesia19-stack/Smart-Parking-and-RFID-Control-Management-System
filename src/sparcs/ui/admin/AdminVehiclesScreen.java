@@ -504,57 +504,96 @@ public class AdminVehiclesScreen {
         rowCountLabel.setOpaque(true);
         rowCountLabel.setBackground(ROW_ODD);
 
-        // ── Table card — rounded card with separator lines ────────────────────
+        // ── Table card — JLayeredPane approach ────────────────────────────────
+        // Layer DEFAULT (0)  : background + scroll pane + footer
+        // Layer PALETTE (100): transparent border overlay — always on top
+        //
+        // Because the border overlay is a separate component in a higher layer,
+        // NO repaint from the table (hover, select, scroll) can ever paint over
+        // it. It is physically above the table in the Z-order.
         final int ARC = 14;
-        JPanel tableCard = new JPanel(new BorderLayout()) {
-            @Override public void paint(Graphics g) {
-                super.paint(g);
+
+        // Content panel — holds scroll + footer, clips content to rounded shape
+        JPanel contentPanel = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-                // Mask to rounded rect
                 g2.setColor(ROW_ODD);
-                java.awt.geom.Area full = new java.awt.geom.Area(
-                    new Rectangle(0, 0, getWidth(), getHeight()));
-                java.awt.geom.Area rounded = new java.awt.geom.Area(
-                    new java.awt.geom.RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), ARC, ARC));
-                full.subtract(rounded);
-                g2.fill(full);
-
-                // Card border — #2D2860
-                g2.setStroke(new BasicStroke(1.0f));
-                g2.setColor(CARD_BD);
-                g2.drawRoundRect(1, 1, getWidth() - 2, getHeight() - 2, ARC, ARC);
-
-                // Header separator
-                g2.setColor(SEPARATOR);
-                int headerH = table.getTableHeader().getPreferredSize().height;
-                g2.drawLine(1, headerH, getWidth() - 2, headerH);
-
-                // Row separator lines
-                int scrollY   = scroll.getViewport().getViewPosition().y;
-                int rowH      = table.getRowHeight();
-                int rowCount  = table.getRowCount();
-                for (int i = 1; i <= rowCount; i++) {
-                    int lineY = headerH + (i * rowH) - scrollY;
-                    if (lineY > headerH && lineY < getHeight() - rowCountLabel.getPreferredSize().height) {
-                        g2.setColor(SEPARATOR);
-                        g2.drawLine(1, lineY, getWidth() - 2, lineY);
-                    }
-                }
-
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), ARC, ARC);
+                g2.dispose();
+            }
+            @Override protected void paintChildren(Graphics g) {
+                // Clip children 2px inside border so rows never touch card edges
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setClip(new java.awt.geom.RoundRectangle2D.Float(
+                    2, 2, getWidth() - 4, getHeight() - 4, ARC, ARC));
+                super.paintChildren(g2);
                 g2.dispose();
             }
         };
-        tableCard.setOpaque(true);
-        tableCard.setBackground(ROW_ODD);
-        tableCard.add(scroll, BorderLayout.CENTER);
-        tableCard.add(rowCountLabel, BorderLayout.SOUTH);
+        contentPanel.setOpaque(false);
+        contentPanel.add(scroll, BorderLayout.CENTER);
+        contentPanel.add(rowCountLabel, BorderLayout.SOUTH);
+
+        // Border overlay — transparent except for the border + separators.
+        // Sits in a higher layer so it is NEVER repainted over by the table.
+        JPanel borderOverlay = new JPanel() {
+            @Override protected void paintComponent(Graphics g) {
+                // fully transparent background — only draws border on top
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                // Outer rounded border — always visible
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.setColor(new Color(58, 52, 120));            // solid #3A3478
+                g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, ARC, ARC);
+
+                // Header separator
+                g2.setStroke(new BasicStroke(1.0f));
+                g2.setColor(new Color(58, 52, 120, 200));
+                int headerH = table.getTableHeader().getPreferredSize().height;
+                g2.drawLine(2, headerH + 2, getWidth() - 3, headerH + 2);
+
+                // Row separator lines
+                int scrollY  = scroll.getViewport().getViewPosition().y;
+                int rowH     = table.getRowHeight();
+                int rowCount = table.getRowCount();
+                int footerH  = rowCountLabel.getPreferredSize().height + 2;
+                for (int i = 1; i <= rowCount; i++) {
+                    int lineY = headerH + 2 + (i * rowH) - scrollY;
+                    if (lineY > headerH + 2 && lineY < getHeight() - footerH) {
+                        g2.setColor(new Color(36, 32, 80, 140));
+                        g2.drawLine(2, lineY, getWidth() - 3, lineY);
+                    }
+                }
+                g2.dispose();
+            }
+        };
+        borderOverlay.setOpaque(false);
+
+        // Repaint border overlay whenever the viewport scrolls
+        scroll.getViewport().addChangeListener(e -> borderOverlay.repaint());
+
+        // Layered pane — overrides doLayout() so both children always fill
+        // the full pane from the very first paint. No componentListener needed,
+        // no race condition on first render, no ghost controls bleeding through.
+        JLayeredPane layeredCard = new JLayeredPane() {
+            @Override public void doLayout() {
+                int w = getWidth(), h = getHeight();
+                for (Component c : getComponents()) c.setBounds(0, 0, w, h);
+            }
+            @Override public Dimension getPreferredSize() {
+                return contentPanel.getPreferredSize();
+            }
+        };
+
+        layeredCard.add(contentPanel,  JLayeredPane.DEFAULT_LAYER);
+        layeredCard.add(borderOverlay, JLayeredPane.PALETTE_LAYER); // always on top
 
         JPanel tableLayer = new JPanel(new BorderLayout());
         tableLayer.setOpaque(true);
         tableLayer.setBackground(ROW_ODD);
-        tableLayer.add(tableCard, BorderLayout.CENTER);
+        tableLayer.add(layeredCard, BorderLayout.CENTER);
 
         // ── Search + filter logic ─────────────────────────────────────────────
         // Leftmost prefix rule: query "ab" matches any WORD that STARTS WITH "ab".
@@ -919,7 +958,7 @@ public class AdminVehiclesScreen {
         table.setBackground(ROW_ODD);
         table.setForeground(new Color(196, 191, 237));          // #C4BFED
         table.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        table.setRowHeight(44);                                  // 44px per design system
+        table.setRowHeight(44);                                  // 44px restored
         table.setShowGrid(false);
         table.setIntercellSpacing(new Dimension(0, 0));
         table.setSelectionBackground(ROW_SELECTED);
