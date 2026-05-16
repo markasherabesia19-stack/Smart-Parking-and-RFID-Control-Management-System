@@ -396,7 +396,7 @@ public class AdminEntryExitScreen {
     private static JPanel makeHint(String text, Color dotColor) {
         JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         row.setOpaque(false);
-        row.add(UIFactory.lbl("●", Font.PLAIN, 10, dotColor));
+        row.add(UIFactory.lbl("\u25CF", Font.PLAIN, 10, dotColor));
         row.add(UIFactory.lbl(text, Font.PLAIN, 11, C_MUTED));
         return row;
     }

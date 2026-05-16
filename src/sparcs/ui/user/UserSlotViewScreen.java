@@ -36,7 +36,7 @@ public class UserSlotViewScreen {
         // LEFT: "SLOT VIEW"
         topBar.add(UIFactory.lbl("SLOT VIEW", Font.BOLD, 20, C_WHITE), BorderLayout.WEST);
 
-        // RIGHT: ● Live
+        // RIGHT: \u25CF Live
         JPanel topBarRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         topBarRight.setOpaque(false);
         topBarRight.add(UIFactory.lbl("\u25CF Live", Font.PLAIN, 12, C_AVAILABLE));

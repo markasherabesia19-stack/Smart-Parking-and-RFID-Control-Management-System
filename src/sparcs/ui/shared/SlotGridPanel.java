@@ -131,6 +131,82 @@ public class SlotGridPanel {
         return wrapper;
     }
 
+    /**
+     * Clickable grid — each slot is a button that triggers the callback when clicked.
+     * userView hides the "reserved" state.
+     */
+    public static JPanel buildClickableGrid(AppState state, boolean userView, SlotClickListener listener) {
+        JPanel grid = new JPanel(new GridLayout(5, 8, 6, 6));
+        grid.setOpaque(false);
+        grid.setBorder(new EmptyBorder(10, 0, 0, 0));
+        for (int i = 0; i < TOTAL_SLOTS; i++) {
+            final int slotIndex = i;
+            Color c = slotColor(state.slotData[i], userView);
+            char zone = (char) ('A' + i / 8);
+            int  num  = (i % 8) + 1;
+            String slotCode  = zone + "-" + String.format("%02d", num);
+            String statusStr = state.slotData[i] == 0 ? "Available"
+                             : state.slotData[i] == 1 ? "Occupied"
+                             : "Reserved";
+            
+            // Check if slot is reserved (status code 2)
+            boolean isReserved = state.slotData[i] == 2;
+
+            JButton btn = new JButton() {
+                @Override protected void paintComponent(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    // Tinted background
+                    g2.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), 40));
+                    g2.fillRoundRect(0, 0, getWidth()-1, getHeight()-1, 8, 8);
+                    // Border
+                    g2.setColor(c);
+                    g2.setStroke(new BasicStroke(1.5f));
+                    g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 8, 8);
+                    // Status dot — top-right corner
+                    int dotSize = 7;
+                    g2.setColor(c);
+                    g2.fillOval(getWidth() - dotSize - 6, 6, dotSize, dotSize);
+                    g2.dispose();
+                    super.paintComponent(g);
+                }
+                @Override public void doLayout() {
+                    for (Component comp : getComponents())
+                        comp.setBounds(0, 0, getWidth(), getHeight());
+                }
+            };
+            btn.setLayout(null);
+            btn.setOpaque(false);
+            btn.setFocusPainted(false);
+            btn.setBorderPainted(false);
+            btn.setContentAreaFilled(false);
+            btn.setToolTipText(isReserved ? "This slot is RESERVED" : slotCode + " — " + statusStr);
+            btn.setEnabled(!isReserved); // Disable if reserved
+            btn.setCursor(isReserved ? new Cursor(Cursor.DEFAULT_CURSOR) : new Cursor(Cursor.HAND_CURSOR));
+
+            JLabel lbl = UIFactory.lbl(slotCode, Font.PLAIN, 12, isReserved ? new Color(150, 150, 150) : c);
+            lbl.setHorizontalAlignment(SwingConstants.CENTER);
+            lbl.setVerticalAlignment(SwingConstants.CENTER);
+            btn.add(lbl);
+
+            if (!isReserved) {
+                btn.addActionListener(e -> {
+                    if (listener != null) {
+                        listener.onSlotClicked(slotIndex, slotCode);
+                    }
+                });
+            }
+
+            grid.add(btn);
+        }
+        return grid;
+    }
+
+    /** Callback interface for slot clicks. */
+    public interface SlotClickListener {
+        void onSlotClicked(int slotIndex, String slotCode);
+    }
+
     private static Color slotColor(int status, boolean userView) {
         if (status == 0) return C_AVAILABLE;
         if (status == 1) return C_OCCUPIED;

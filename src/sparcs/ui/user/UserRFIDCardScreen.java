@@ -249,7 +249,7 @@ public class UserRFIDCardScreen {
             }
             @Override public boolean isOpaque() { return false; }
         };
-        JLabel dot = UIFactory.lbl("●", Font.PLAIN, 8, C_AVAILABLE);
+        JLabel dot = UIFactory.lbl("\u25CF", Font.PLAIN, 8, C_AVAILABLE);
         JLabel activeLbl = UIFactory.lbl("ACTIVE", Font.BOLD, 10, C_AVAILABLE);
         statusBadge.setPreferredSize(new Dimension(78, 26));
         statusBadge.setLayout(new BorderLayout());

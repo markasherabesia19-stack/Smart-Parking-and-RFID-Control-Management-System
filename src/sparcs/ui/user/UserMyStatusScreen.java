@@ -112,7 +112,7 @@ public class UserMyStatusScreen {
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         left.setOpaque(false);
 
-        JLabel dot = new JLabel("●");
+        JLabel dot = new JLabel("\u25CF");
         dot.setForeground(ACCENT_ACTIVE);
         dot.setFont(new Font("SansSerif", Font.PLAIN, 10));
 
@@ -270,7 +270,7 @@ public class UserMyStatusScreen {
         JPanel leftSide = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         leftSide.setOpaque(false);
 
-        JLabel dot = new JLabel("●");
+        JLabel dot = new JLabel("\u25CF");
         dot.setFont(new Font("SansSerif", Font.PLAIN, 9));
         dot.setForeground(accent);
 
@@ -378,7 +378,7 @@ public class UserMyStatusScreen {
         JPanel headerLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         headerLeft.setOpaque(false);
 
-        JLabel liveDot = new JLabel("●");
+        JLabel liveDot = new JLabel("\u25CF");
         liveDot.setFont(new Font("SansSerif", Font.PLAIN, 8));
         liveDot.setForeground(accent);
 

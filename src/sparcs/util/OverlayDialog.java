@@ -141,11 +141,11 @@ public class OverlayDialog extends JPanel {
         
         switch (messageType) {
             case JOptionPane.INFORMATION_MESSAGE:
-                icon = "●"; color = C_AVAILABLE; break;
+                icon = "\u25CF"; color = C_AVAILABLE; break;
             case JOptionPane.WARNING_MESSAGE:
-                icon = "⚠"; color = new Color(255, 165, 50); break;
+                icon = "\u26A0"; color = new Color(255, 165, 50); break;
             case JOptionPane.ERROR_MESSAGE:
-                icon = "●"; color = new Color(220, 70, 90); break;
+                icon = "\u25CF"; color = new Color(220, 70, 90); break;
             case JOptionPane.QUESTION_MESSAGE:
                 icon = "?"; color = C_PURPLE; break;
         }

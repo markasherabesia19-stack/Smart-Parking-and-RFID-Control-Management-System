@@ -64,7 +64,16 @@ public class AdminSlotMapScreen {
 
         JPanel gridWrapper = new JPanel(new BorderLayout());
         gridWrapper.setOpaque(false);
-        gridWrapper.add(SlotGridPanel.buildFullGrid(state, false), BorderLayout.CENTER);
+
+        // Callback to show slot action dialog when a slot is clicked
+        SlotGridPanel.SlotClickListener slotClickListener = (slotIndex, slotCode) -> {
+            // Find the parent JFrame
+            JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(root);
+            SlotActionDialog dialog = new SlotActionDialog(parentFrame, slotCode, state);
+            dialog.setVisible(true);
+        };
+
+        gridWrapper.add(SlotGridPanel.buildClickableGrid(state, false, slotClickListener), BorderLayout.CENTER);
 
         JPanel south = new JPanel(new BorderLayout());
         south.setOpaque(false);
@@ -91,7 +100,7 @@ public class AdminSlotMapScreen {
             statsRow.repaint();
 
             gridWrapper.removeAll();
-            gridWrapper.add(SlotGridPanel.buildFullGrid(state, false), BorderLayout.CENTER);
+            gridWrapper.add(SlotGridPanel.buildClickableGrid(state, false, slotClickListener), BorderLayout.CENTER);
             gridWrapper.revalidate();
             gridWrapper.repaint();
         };

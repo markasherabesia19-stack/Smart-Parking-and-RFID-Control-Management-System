@@ -53,7 +53,7 @@ public class UserHistoryScreen {
 
         JPanel topLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         topLeft.setOpaque(false);
-        JLabel dot = new JLabel("●");
+        JLabel dot = new JLabel("\u25CF");
         dot.setForeground(C_ACCENT);
         dot.setFont(new Font("SansSerif", Font.PLAIN, 10));
         JLabel title = new JLabel("PARKING HISTORY");

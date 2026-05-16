@@ -20,7 +20,6 @@ public class SidebarPanel {
         {"  Dashboard",           "ADMIN_DASHBOARD"},
         {"  Slot Map",            "ADMIN_SLOT_MAP"},
         {"Operations",            ""},
-        {"  Entry / Exit",        "ADMIN_ENTRY_EXIT"},
         {"  Vehicles",            "ADMIN_VEHICLES"},
         {"  Register Vehicle",    "ADMIN_REGISTER"},
         {"Admin Only",            ""},

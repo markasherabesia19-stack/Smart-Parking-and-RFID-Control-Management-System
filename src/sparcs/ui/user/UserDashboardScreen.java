@@ -662,13 +662,13 @@ public class UserDashboardScreen {
         String statusText;
         if (info.isParked()) {
             statusColor = C_AVAILABLE;
-            statusText  = "● PARKED";
+            statusText  = "\u25CF PARKED";
         } else if (info.isReserved()) {
             statusColor = C_RESERVED;
-            statusText  = "● RESERVED";
+            statusText  = "\u25CF RESERVED";
         } else {
             statusColor = C_MUTED;
-            statusText  = "● INACTIVE";
+            statusText  = "\u25CF INACTIVE";
         }
 
         JPanel badgeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));

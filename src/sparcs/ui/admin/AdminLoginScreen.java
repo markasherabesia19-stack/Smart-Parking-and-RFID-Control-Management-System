@@ -329,7 +329,7 @@ public class AdminLoginScreen {
                 if (field.getText().equals(placeholder)) {
                     field.setText("");
                     field.setForeground(Color.WHITE);
-                    if (isPassword) ((JPasswordField) field).setEchoChar('•');
+                    if (isPassword) ((JPasswordField) field).setEchoChar('\u2022');
                 }
             }
             public void focusLost(java.awt.event.FocusEvent e) {
