@@ -79,8 +79,8 @@ public class AdminReportsScreen {
         // ROW 1 — 4 metric cards
         JPanel metricsRow = new JPanel(new GridLayout(1, 4, 12, 0));
         metricsRow.setOpaque(false);
-        metricsRow.add(accentMetricCard("Daily Revenue",  String.format("P%.2f", dailyRevenue),  "today",                C_AVAILABLE));
-        metricsRow.add(accentMetricCard("Weekly Revenue", String.format("P%.2f", weeklyRevenue), "this week",            C_AVAILABLE));
+        metricsRow.add(accentMetricCard("Daily Revenue",  String.format("₱%.2f", dailyRevenue),  "today",                C_AVAILABLE));
+        metricsRow.add(accentMetricCard("Weekly Revenue", String.format("₱%.2f", weeklyRevenue), "this week",            C_AVAILABLE));
         metricsRow.add(accentMetricCard("Total Vehicles", String.valueOf(totalVehicles),          "registered in system", C_PURPLE));
         metricsRow.add(accentMetricCard("Avg. Duration",  formatDuration(avgDuration),            "per parking session",  C_RESERVED));
 
@@ -111,8 +111,8 @@ public class AdminReportsScreen {
         // ── Shared redraw: rebuilds metrics row + bar chart from latest data ──
         Runnable redraw = () -> {
             metricsRow.removeAll();
-            metricsRow.add(accentMetricCard("Daily Revenue",  String.format("P%.2f", dailyRevenue),  "today",                C_AVAILABLE));
-            metricsRow.add(accentMetricCard("Weekly Revenue", String.format("P%.2f", weeklyRevenue), "this week",            C_AVAILABLE));
+            metricsRow.add(accentMetricCard("Daily Revenue",  String.format("₱%.2f", dailyRevenue),  "today",                C_AVAILABLE));
+            metricsRow.add(accentMetricCard("Weekly Revenue", String.format("₱%.2f", weeklyRevenue), "this week",            C_AVAILABLE));
             metricsRow.add(accentMetricCard("Total Vehicles", String.valueOf(totalVehicles),          "registered in system", C_PURPLE));
             metricsRow.add(accentMetricCard("Avg. Duration",  formatDuration(avgDuration),            "per parking session",  C_RESERVED));
             metricsRow.revalidate();
@@ -252,7 +252,7 @@ public class AdminReportsScreen {
                     // label
                     g2.setStroke(new BasicStroke(1f));
                     g2.setColor(new Color(0x6B5FA0));
-                    String lbl = "P" + (int)(max * i / steps);
+                    String lbl = "₱" + (int)(max * i / steps);
                     FontMetrics fm = g2.getFontMetrics();
                     g2.drawString(lbl, padLeft - fm.stringWidth(lbl) - 4, y + 4);
                 }
@@ -283,7 +283,7 @@ public class AdminReportsScreen {
                     if (val > 0) {
                         g2.setFont(new Font("SansSerif", Font.PLAIN, 9));
                         g2.setColor(new Color(0x9B8FD4));
-                        String vs = "P" + (int)val;
+                        String vs = "₱" + (int)val;
                         g2.drawString(vs, x + (barW - fm9.stringWidth(vs)) / 2, y - 3);
                     }
 
@@ -550,7 +550,7 @@ public class AdminReportsScreen {
         return hours > 0 ? String.format("%dh %dm", hours, mins) : String.format("%dm", mins);
     }
 
-    // ── CSV export (unchanged logic, currency fixed to P) ─────────────────────
+    // ── CSV export (unchanged logic, currency fixed to ₱) ─────────────────────
     private static void exportToCSV() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
@@ -566,8 +566,8 @@ public class AdminReportsScreen {
                 writer.println("Report Generated: " + LocalDateTime.now());
                 writer.println();
                 writer.println("METRICS");
-                writer.println("Daily Revenue,"   + String.format("P%.2f", dailyRevenue));
-                writer.println("Weekly Revenue,"  + String.format("P%.2f", weeklyRevenue));
+                writer.println("Daily Revenue,"   + String.format("₱%.2f", dailyRevenue));
+                writer.println("Weekly Revenue,"  + String.format("₱%.2f", weeklyRevenue));
                 writer.println("Total Vehicles,"  + totalVehicles);
                 writer.println("Average Duration," + formatDuration(avgDuration));
                 writer.println();
@@ -581,7 +581,7 @@ public class AdminReportsScreen {
                         if (tx.getExitTime() != null && "COMPLETED".equals(tx.getTransactionStatus())) {
                             double fee = tx.getCalculatedFee() != null ? tx.getCalculatedFee().doubleValue() : 0;
                             if (fee <= 0) continue; // skip uncollected / zero-fee records
-                            writer.printf("%s,%d,%s,%s,%s,P%.2f,%s%n",
+                            writer.printf("%s,%d,%s,%s,%s,₱%.2f,%s%n",
                                     tx.getExitTime().toLocalDate(),
                                     tx.getTransactionId(),
                                     "Vehicle #" + tx.getVehicleId(),

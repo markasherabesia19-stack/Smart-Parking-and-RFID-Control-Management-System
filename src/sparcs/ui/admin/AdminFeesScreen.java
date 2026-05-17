@@ -104,9 +104,9 @@ public class AdminFeesScreen {
 
         String[] rateCols = {"Duration", "Rate"};
         Object[][] rateData = {
-            {"First hour",                 "P" + FIRST_HOUR_RATE},
-            {"Every succeeding hour",      "P" + SUCCEEDING_RATE + " / hr"},
-            {"Overnight (12 hrs or more)", "P" + OVERNIGHT_FLAT + " flat"},
+            {"First hour",                 "₱" + FIRST_HOUR_RATE},
+            {"Every succeeding hour",      "₱" + SUCCEEDING_RATE + " / hr"},
+            {"Overnight (12 hrs or more)", "₱" + OVERNIGHT_FLAT + " flat"},
         };
         JTable rateTable = new JTable(rateData, rateCols) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
@@ -126,7 +126,7 @@ public class AdminFeesScreen {
         rateTableWrap.add(rateTable, BorderLayout.CENTER);
         rateCard.add(rateTableWrap, BorderLayout.CENTER);
 
-        JLabel note = UIFactory.lbl("P30 first hr + P20/hr after · P150 flat if 12 hrs+", Font.ITALIC, 10, C_MUTED);
+        JLabel note = UIFactory.lbl("₱30 first hr + ₱20/hr after · ₱150 flat if 12 hrs+", Font.ITALIC, 10, C_MUTED);
         note.setBorder(new EmptyBorder(6, 0, 0, 0));
         rateCard.add(note, BorderLayout.SOUTH);
         leftCol.add(rateCard, lc);
@@ -270,7 +270,7 @@ public class AdminFeesScreen {
                     balanceLbl.setForeground(C_DANGER);
                 } else {
                     BigDecimal bal = userDAO.getWalletBalance(userOpt.get().getUserId());
-                    balanceLbl.setText("Current balance: P" + bal.toPlainString());
+                    balanceLbl.setText("Current balance: ₱" + bal.toPlainString());
                     balanceLbl.setForeground(C_INFO_BLUE);
                 }
             } catch (Exception ex) {
@@ -324,7 +324,7 @@ public class AdminFeesScreen {
                     cashInLog.setAction("CASH_IN");
                     cashInLog.setEntityType("USER_WALLET");
                     cashInLog.setEntityId(user.getUserId());
-                    cashInLog.setNewValue("P" + amount.toPlainString());
+                    cashInLog.setNewValue("₱" + amount.toPlainString());
                     cashInLog.setOldValue(username);
                     new AuditLogDAO().create(cashInLog);
                 } catch (Exception auditEx) {
@@ -332,8 +332,8 @@ public class AdminFeesScreen {
                 }
 
                 DialogUtil.showMessageDialog(null,
-                        "Successfully added P" + amount.toPlainString() +
-                        " to " + username + "'s wallet.\nNew balance: P" + newBal.toPlainString(),
+                        "Successfully added ₱" + amount.toPlainString() +
+                        " to " + username + "'s wallet.\nNew balance: ₱" + newBal.toPlainString(),
                         "Cash In Successful", JOptionPane.INFORMATION_MESSAGE);
 
                 // Clear all fields and reset balance label after successful transaction
@@ -380,7 +380,7 @@ public class AdminFeesScreen {
                 model.addRow(new Object[]{
                     plate, slotCode,
                     formatDuration(totalMinutes),
-                    "P" + computeFee(totalMinutes),
+                    "₱" + computeFee(totalMinutes),
                     "PENDING",
                     "COLLECT"
                 });
@@ -404,7 +404,7 @@ public class AdminFeesScreen {
                 model.addRow(new Object[]{
                     plate, slotCode,
                     formatDuration(totalMinutes),
-                    "P" + tx.getCalculatedFee().intValue(),
+                    "₱" + tx.getCalculatedFee().intValue(),
                     "COLLECTED",
                     "COLLECTED"
                 });
@@ -470,8 +470,8 @@ public class AdminFeesScreen {
                         // Skip vehicles whose owner has insufficient balance
                         skipped++;
                         skippedPlates.append("\n  • ").append(plate)
-                            .append(" (balance: P").append(balance.toPlainString())
-                            .append(", fee: P").append(fee).append(")");
+                            .append(" (balance: ₱").append(balance.toPlainString())
+                            .append(", fee: ₱").append(fee).append(")");
                         continue;
                     }
                     userDAO.deductWalletBalance(userOpt.get().getUserId(), feeDec);
@@ -492,7 +492,7 @@ public class AdminFeesScreen {
                     feeLog.setAction("FEE_COLLECTED");
                     feeLog.setEntityType("VEHICLE");
                     if (vOpt.isPresent()) feeLog.setEntityId(vOpt.get().getVehicleId());
-                    feeLog.setNewValue("P" + fee);
+                    feeLog.setNewValue("₱" + fee);
                     feeLog.setOldValue(plate);
                     new AuditLogDAO().create(feeLog);
                 } catch (Exception auditEx) {
@@ -734,7 +734,7 @@ public class AdminFeesScreen {
         private void collectOne(int row) {
             try {
                 String plate  = (String) model.getValueAt(row, 0);
-                String feeStr = ((String) model.getValueAt(row, 3)).replace("P", "");
+                String feeStr = ((String) model.getValueAt(row, 3)).replace("₱", "");
                 int    fee    = Integer.parseInt(feeStr);
                 BigDecimal feeDec = new BigDecimal(fee);
 
@@ -757,8 +757,8 @@ public class AdminFeesScreen {
                     if (balance.compareTo(feeDec) < 0) {
                         DialogUtil.showMessageDialog(null,
                             "Insufficient wallet balance for " + plate + ".\n"
-                            + "Current balance: P" + balance.toPlainString()
-                            + "  |  Fee: P" + fee,
+                            + "Current balance: ₱" + balance.toPlainString()
+                            + "  |  Fee: ₱" + fee,
                             "Insufficient Balance", JOptionPane.WARNING_MESSAGE);
                         return;
                     }
@@ -784,17 +784,17 @@ public class AdminFeesScreen {
                     feeLog.setAction("FEE_COLLECTED");
                     feeLog.setEntityType("VEHICLE");
                     feeLog.setEntityId(vehicle.getVehicleId());
-                    feeLog.setNewValue("P" + fee);
+                    feeLog.setNewValue("₱" + fee);
                     feeLog.setOldValue(plate);
                     new AuditLogDAO().create(feeLog);
                 } catch (Exception auditEx) {
                     auditEx.printStackTrace();
                 }
 
-                String successMsg = "Fee of P" + fee + " collected for " + plate + ".";
+                String successMsg = "Fee of ₱" + fee + " collected for " + plate + ".";
                 if (userOpt.isPresent()) {
                     BigDecimal newBal = userDAO.getWalletBalance(userOpt.get().getUserId());
-                    successMsg += "\nNew wallet balance: P" + newBal.toPlainString();
+                    successMsg += "\nNew wallet balance: ₱" + newBal.toPlainString();
                 }
 
                 DialogUtil.showMessageDialog(null, successMsg, "Collected", JOptionPane.INFORMATION_MESSAGE);

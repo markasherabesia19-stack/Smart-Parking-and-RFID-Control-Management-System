@@ -29,22 +29,21 @@ import java.util.Optional;
 
 public class UserMyStatusScreen {
 
-    // ── Palette ────────────────────────────────────────────────────────────────
-    private static final Color BG_BASE        = C_BG_DARK;                        // purple-dark base
-    private static final Color BG_SURFACE     = C_BG_PANEL;                       // purple panel surface
-    private static final Color BG_SURFACE_ALT = new Color(0x2A2340);              // lighter purple surface
-    private static final Color BORDER_LINE    = new Color(0x3D3060);              // purple-tinted border
-    private static final Color TEXT_PRIMARY   = C_WHITE;                          // main text
-    private static final Color TEXT_SECONDARY = C_MUTED;                          // muted label
-    private static final Color ACCENT_ACTIVE  = C_ACCENT;                         // accent — currently parked
-    private static final Color ACCENT_WARN    = new Color(0xF59E0B);              // amber — elapsed time highlight
-    private static final Color TAG_ACTIVE_BG  = new Color(0x251A45);              // purple accent tint
+    // ── Design-system palette (matches all other screens) ─────────────────────
+    private static final Color BG_BASE        = C_BG_DARK;
+    private static final Color BG_SURFACE     = C_BG_PANEL;
+    private static final Color BORDER_LINE    = new Color(0x2D2860);
+    private static final Color TEXT_PRIMARY   = new Color(0xF0ECFF);
+    private static final Color TEXT_SECONDARY = new Color(0x9B8FD4);
+    private static final Color ACCENT_ACTIVE  = new Color(0x1DB954);   // emerald green — parked/active
+    private static final Color ACCENT_WARN    = new Color(0xFF8C42);   // amber orange — elapsed time
+    private static final Color TAG_ACTIVE_BG  = new Color(29, 185, 84, 25);
 
-    private static final Font FONT_MONO   = new Font("Monospaced", Font.PLAIN, 11);
-    private static final Font FONT_LABEL  = new Font("SansSerif", Font.BOLD, 10);
-    private static final Font FONT_VALUE  = new Font("SansSerif", Font.PLAIN, 13);
-    private static final Font FONT_TITLE  = new Font("SansSerif", Font.BOLD, 20);
-    private static final Font FONT_SECTION= new Font("SansSerif", Font.BOLD, 11);
+    private static final Font FONT_MONO    = new Font("Monospaced", Font.PLAIN, 12);
+    private static final Font FONT_LABEL   = new Font("Inter", Font.BOLD,  11);
+    private static final Font FONT_VALUE   = new Font("Inter", Font.PLAIN, 13);
+    private static final Font FONT_TITLE   = new Font("Inter", Font.BOLD,  22);
+    private static final Font FONT_SECTION = new Font("Inter", Font.BOLD,  11);
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -108,21 +107,8 @@ public class UserMyStatusScreen {
                 new EmptyBorder(14, 24, 14, 24)
         ));
 
-        // Left: icon dot + title
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        left.setOpaque(false);
-
-        JLabel dot = new JLabel("\u25CF");
-        dot.setForeground(ACCENT_ACTIVE);
-        dot.setFont(new Font("SansSerif", Font.PLAIN, 10));
-
-        JLabel title = new JLabel("MY PARKING STATUS");
-        title.setFont(FONT_TITLE);
-        title.setForeground(TEXT_PRIMARY);
-
-        left.add(dot);
-        left.add(title);
-        bar.add(left, BorderLayout.WEST);
+        // Left: title only — no dot, matches all other screen topbars
+        bar.add(UIFactory.lbl("MY PARKING STATUS", Font.BOLD, 20, TEXT_PRIMARY), BorderLayout.WEST);
 
         // Right: refresh button — flat outlined style
         JButton refreshBtn = new JButton("↻  REFRESH") {
@@ -202,7 +188,7 @@ public class UserMyStatusScreen {
         card.setMaximumSize(new Dimension(460, Integer.MAX_VALUE));
 
         // Icon circle
-        JLabel icon = new JLabel("P", SwingConstants.CENTER) {
+        JLabel icon = new JLabel("₱", SwingConstants.CENTER) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -262,7 +248,7 @@ public class UserMyStatusScreen {
         header.setOpaque(false);
         header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
         header.setBorder(new CompoundBorder(
-                new MatteBorder(0, 3, 0, 0, accent),
+                new MatteBorder(0, 3, 0, 0, new Color(0x7C5CBF)),
                 new EmptyBorder(0, 10, 0, 0)
         ));
 
@@ -339,20 +325,21 @@ public class UserMyStatusScreen {
             txn.setCalculatedFee(new BigDecimal(computeLiveFee(mins)));
         }
 
-        // Outer card
+        // Outer card — with 3px accent bar on top (matches all other screens)
         JPanel card = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Card background
                 g2.setColor(BG_SURFACE);
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
-                g2.dispose();
-            }
-            @Override protected void paintBorder(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(accent);
-                g2.setStroke(new BasicStroke(1.2f));
+                // 3px accent bar — top only
+                g2.setColor(ACCENT_ACTIVE);
+                g2.fillRoundRect(0, 0, getWidth(), 6, 12, 12);
+                g2.fillRect(0, 3, getWidth(), 3);
+                // Border
+                g2.setColor(BORDER_LINE);
+                g2.setStroke(new BasicStroke(0.5f));
                 g2.drawRoundRect(0, 0, getWidth()-1, getHeight()-1, 12, 12);
                 g2.dispose();
             }
@@ -361,39 +348,31 @@ public class UserMyStatusScreen {
         card.setBorder(new EmptyBorder(0, 0, 0, 0));
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
-        // ── Card header: accent-tinted strip ─────────────────────────────────
-        JPanel cardHeader = new JPanel(new BorderLayout(12, 0)) {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(tagBg);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight() + 12, 12, 12);
-                g2.dispose();
-            }
-        };
+        // ── Card header — plate number + status badge ─────────────────────────
+        JPanel cardHeader = new JPanel(new BorderLayout(12, 0));
         cardHeader.setOpaque(false);
-        cardHeader.setBorder(new EmptyBorder(12, 18, 12, 18));
+        cardHeader.setBorder(new EmptyBorder(14, 18, 10, 18)); // top padding for accent bar
 
-        // Left: live dot + status label — reflects actual transaction state
+        // Left: live dot + "CURRENTLY PARKED" label
         JPanel headerLeft = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         headerLeft.setOpaque(false);
 
         JLabel liveDot = new JLabel("\u25CF");
         liveDot.setFont(new Font("SansSerif", Font.PLAIN, 8));
-        liveDot.setForeground(accent);
+        liveDot.setForeground(ACCENT_ACTIVE);
 
         boolean reserved = "RESERVED".equalsIgnoreCase(txn.getTransactionStatus());
         JLabel liveLabel = new JLabel(reserved ? "SLOT RESERVED" : "CURRENTLY PARKED");
-        liveLabel.setFont(new Font("SansSerif", Font.BOLD, 10));
-        liveLabel.setForeground(accent);
+        liveLabel.setFont(new Font("SansSerif", Font.BOLD, 11));
+        liveLabel.setForeground(new Color(0x6B5FA0)); // muted per design system
 
         headerLeft.add(liveDot);
         headerLeft.add(liveLabel);
 
-        // Right: plate number — large and prominent
+        // Right: plate number in monospace purple
         JLabel plateLabel = new JLabel(veh.getPlateNumber());
-        plateLabel.setFont(new Font("Monospaced", Font.BOLD, 16));
-        plateLabel.setForeground(TEXT_PRIMARY);
+        plateLabel.setFont(new Font("Monospaced", Font.BOLD, 15));
+        plateLabel.setForeground(new Color(0x7C5CBF)); // monospace purple from design system
 
         cardHeader.add(headerLeft, BorderLayout.WEST);
         cardHeader.add(plateLabel, BorderLayout.EAST);
@@ -409,8 +388,8 @@ public class UserMyStatusScreen {
         JPanel slotRow = new JPanel(new GridLayout(1, 2, 16, 0));
         slotRow.setOpaque(false);
         slotRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
-        slotRow.add(infoBlock("SLOT", slot.getSlotCode(), accent));
-        slotRow.add(infoBlock("ZONE", slot.getZone(), TEXT_SECONDARY));
+        slotRow.add(infoBlock("SLOT", slot.getSlotCode(), new Color(0x1DB954)));
+        slotRow.add(infoBlock("ZONE", slot.getZone(),     new Color(0xC4BFED)));
         body.add(slotRow);
         body.add(Box.createVerticalStrut(12));
 
@@ -419,15 +398,15 @@ public class UserMyStatusScreen {
         row2.setOpaque(false);
         row2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
         String entryStr = txn.getEntryTime() != null ? txn.getEntryTime().format(DATE_FORMAT) : "—";
-        row2.add(infoBlock("VEHICLE TYPE", veh.getVehicleType(), TEXT_SECONDARY));
-        row2.add(infoBlock("ENTRY TIME",   entryStr,            TEXT_SECONDARY));
+        row2.add(infoBlock("VEHICLE TYPE", veh.getVehicleType(), new Color(0xC4BFED)));
+        row2.add(infoBlock("ENTRY TIME",   entryStr,             new Color(0xC4BFED)));
         body.add(row2);
         body.add(Box.createVerticalStrut(12));
 
         // ─ Duration (full width, slightly highlighted) ─
         String durStr = txn.getDurationMinutes() != null
                 ? formatDuration(txn.getDurationMinutes()) : "0 min";
-        body.add(infoBlock("ELAPSED TIME", durStr, ACCENT_WARN));
+        body.add(infoBlock("ELAPSED TIME", durStr, new Color(0xFF8C42)));
         body.add(Box.createVerticalStrut(14));
 
         // ─ Divider ─
@@ -447,41 +426,41 @@ public class UserMyStatusScreen {
         return card;
     }
 
-    /** Two-line stacked label block: small grey label above, value below. */
+    /** Two-line stacked label block — design system: 11px 600 CAPS label, 13px body value. */
     private static JPanel infoBlock(String label, String value, Color valueColor) {
         JPanel block = new JPanel();
         block.setLayout(new BoxLayout(block, BoxLayout.Y_AXIS));
         block.setOpaque(false);
 
-        JLabel lbl = new JLabel(label);
-        lbl.setFont(FONT_LABEL);
-        lbl.setForeground(TEXT_SECONDARY);
+        JLabel lbl = new JLabel(label.toUpperCase());
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 11));
+        lbl.setForeground(new Color(0x6B5FA0)); // disabled/hint per design system
         lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel val = new JLabel(value);
-        val.setFont(FONT_VALUE);
+        val.setFont(new Font("SansSerif", Font.PLAIN, 13));
         val.setForeground(valueColor);
         val.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         block.add(lbl);
-        block.add(Box.createVerticalStrut(3));
+        block.add(Box.createVerticalStrut(4));
         block.add(val);
         return block;
     }
 
-    /** Full-width fee block with a large bold value. */
+    /** Full-width fee block — green value matching revenue style, ₱ currency. */
     private static JPanel accrualBlock(String label, String value) {
         JPanel block = new JPanel(new BorderLayout(8, 0));
         block.setOpaque(false);
-        block.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+        block.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
 
-        JLabel lbl = new JLabel(label);
-        lbl.setFont(FONT_LABEL);
-        lbl.setForeground(TEXT_SECONDARY);
+        JLabel lbl = new JLabel(label.toUpperCase());
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 11));
+        lbl.setForeground(new Color(0x6B5FA0));
 
         JLabel val = new JLabel(value);
-        val.setFont(new Font("Monospaced", Font.BOLD, 18));
-        val.setForeground(TEXT_PRIMARY);
+        val.setFont(new Font("SansSerif", Font.BOLD, 22));
+        val.setForeground(new Color(0x1DB954)); // emerald green — same as revenue values
         val.setHorizontalAlignment(SwingConstants.RIGHT);
 
         block.add(lbl, BorderLayout.WEST);

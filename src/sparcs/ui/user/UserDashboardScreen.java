@@ -70,14 +70,14 @@ public class UserDashboardScreen {
         topBar.add(UIFactory.lbl(greeting, Font.BOLD, 20, C_WHITE), BorderLayout.WEST);
         content.add(topBar, BorderLayout.NORTH);
 
-        // ── 3 Stat cards ─────────────────────────────────────────────────────
+        // ── 3 Stat cards with accent bars ────────────────────────────────────
         JPanel statsRow = new JPanel(new GridLayout(1, 3, 12, 0));
         statsRow.setOpaque(false);
         statsRow.setBorder(new EmptyBorder(20, 20, 10, 20));
 
-        JPanel walletCard        = UIFactory.statCard("Wallet Balance",   fetchWalletBalance(state), C_PINK);
-        JPanel rfidScansCard     = UIFactory.statCard("RFID Scans Today", "—",                       C_RESERVED);
-        JPanel sessionsCard      = UIFactory.statCard("Sessions / Month", "—",                       C_AVAILABLE);
+        JPanel walletCard    = accentStatCard("Wallet Balance",   fetchWalletBalance(state), C_AVAILABLE);  // #1DB954 green
+        JPanel rfidScansCard = accentStatCard("RFID Scans Today", "—",                       C_OCCUPIED);   // #E8365D red
+        JPanel sessionsCard  = accentStatCard("Sessions / Month", "—",                       C_RESERVED);   // #FF8C42 orange
 
         statsRow.add(walletCard);
         statsRow.add(rfidScansCard);
@@ -86,7 +86,7 @@ public class UserDashboardScreen {
         // ── Bottom body ───────────────────────────────────────────────────────
         JPanel body = new JPanel(new GridLayout(1, 2, 14, 0));
         body.setOpaque(false);
-        body.setBorder(new EmptyBorder(10, 20, 20, 20));
+        body.setBorder(new EmptyBorder(0, 20, 20, 20));
 
         // LEFT — Recent Activity
         JPanel actCard = UIFactory.cardPanel(new BorderLayout(0, 10));
@@ -152,9 +152,9 @@ public class UserDashboardScreen {
         plateField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
         plateField.setMinimumSize(new Dimension(100, 22));
         plateField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        plateField.setBackground(new Color(40, 35, 80));
-        plateField.setForeground(C_WHITE);
-        plateField.setBorder(new EmptyBorder(4, 6, 4, 6));
+        plateField.setBackground(new Color(0x1A1650));
+        plateField.setForeground(new Color(0xC4BFED));
+        plateField.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x2D2860)), new EmptyBorder(3, 8, 3, 8)));
         reservationForm.add(plateField);
         reservationForm.add(Box.createVerticalStrut(5));
 
@@ -166,9 +166,9 @@ public class UserDashboardScreen {
         slotField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
         slotField.setMinimumSize(new Dimension(100, 22));
         slotField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        slotField.setBackground(new Color(40, 35, 80));
-        slotField.setForeground(C_WHITE);
-        slotField.setBorder(new EmptyBorder(4, 6, 4, 6));
+        slotField.setBackground(new Color(0x1A1650));
+        slotField.setForeground(new Color(0xC4BFED));
+        slotField.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x2D2860)), new EmptyBorder(3, 8, 3, 8)));
         reservationForm.add(slotField);
         reservationForm.add(Box.createVerticalStrut(5));
 
@@ -187,9 +187,9 @@ public class UserDashboardScreen {
         JTextField dateField = new JTextField(LocalDateTime.now().format(dateFmt));
         dateField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
         dateField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        dateField.setBackground(new Color(40, 35, 80));
-        dateField.setForeground(C_WHITE);
-        dateField.setBorder(new EmptyBorder(4, 6, 4, 6));
+        dateField.setBackground(new Color(0x1A1650));
+        dateField.setForeground(new Color(0xC4BFED));
+        dateField.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x2D2860)), new EmptyBorder(3, 8, 3, 8)));
         datePanel.add(dateField);
         reservationForm.add(datePanel);
         reservationForm.add(Box.createVerticalStrut(5));
@@ -211,9 +211,9 @@ public class UserDashboardScreen {
         JTextField timeFromField = new JTextField(LocalDateTime.now().format(timeFmt24));
         timeFromField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
         timeFromField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        timeFromField.setBackground(new Color(40, 35, 80));
-        timeFromField.setForeground(C_WHITE);
-        timeFromField.setBorder(new EmptyBorder(4, 6, 4, 6));
+        timeFromField.setBackground(new Color(0x1A1650));
+        timeFromField.setForeground(new Color(0xC4BFED));
+        timeFromField.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x2D2860)), new EmptyBorder(3, 8, 3, 8)));
         fromPanel.add(timeFromField);
 
         // To field (manual)
@@ -227,9 +227,9 @@ public class UserDashboardScreen {
         JTextField timeToField = new JTextField();
         timeToField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
         timeToField.setAlignmentX(Component.LEFT_ALIGNMENT);
-        timeToField.setBackground(new Color(40, 35, 80));
-        timeToField.setForeground(C_WHITE);
-        timeToField.setBorder(new EmptyBorder(4, 6, 4, 6));
+        timeToField.setBackground(new Color(0x1A1650));
+        timeToField.setForeground(new Color(0xC4BFED));
+        timeToField.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(0x2D2860)), new EmptyBorder(3, 8, 3, 8)));
         toPanel.add(timeToField);
 
         timeRow.add(fromPanel);
@@ -801,47 +801,57 @@ public class UserDashboardScreen {
         p.setOpaque(false);
         p.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
         p.setAlignmentX(Component.LEFT_ALIGNMENT);
-        p.setBorder(new EmptyBorder(6, 0, 6, 0));
+        p.setBorder(new EmptyBorder(8, 0, 8, 0));
 
-        Color iconBg  = row.isEntry() ? new Color(27, 58, 45)  : new Color(58, 27, 27);
-        Color iconClr = row.isEntry() ? C_AVAILABLE             : new Color(255, 107, 107);
-        JLabel icon = new JLabel(row.isEntry() ? "▲" : "▼", SwingConstants.CENTER) {
+        // Clean rounded-rect badge: "IN" green / "OUT" red
+        Color badgeColor = row.isEntry() ? C_AVAILABLE : C_OCCUPIED;
+        Color badgeBg    = row.isEntry()
+                ? new Color(29, 185, 84, 30)
+                : new Color(232, 54, 93, 30);
+        String badgeText = row.isEntry() ? "IN" : "OUT";
+
+        JLabel badge = new JLabel(badgeText, SwingConstants.CENTER) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(iconBg);
-                g2.fillOval(0, 0, getWidth(), getHeight());
+                // filled tint bg
+                g2.setColor(badgeBg);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                // border
+                g2.setColor(badgeColor);
+                g2.setStroke(new BasicStroke(1.2f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
                 g2.dispose();
                 super.paintComponent(g);
             }
         };
-        icon.setForeground(iconClr);
-        icon.setFont(new Font("Dialog", Font.BOLD, 10));
-        icon.setPreferredSize(new Dimension(28, 28));
-        icon.setMinimumSize(new Dimension(28, 28));
-        icon.setMaximumSize(new Dimension(28, 28));
-        icon.setOpaque(false);
+        badge.setForeground(badgeColor);
+        badge.setFont(new Font("SansSerif", Font.BOLD, 10));
+        badge.setPreferredSize(new Dimension(36, 22));
+        badge.setMinimumSize(new Dimension(36, 22));
+        badge.setMaximumSize(new Dimension(36, 22));
+        badge.setOpaque(false);
 
-        // Wrap icon in a fixed panel so BorderLayout.WEST doesn't stretch it vertically
-        JPanel iconWrap = new JPanel(new GridBagLayout());
-        iconWrap.setOpaque(false);
-        iconWrap.setPreferredSize(new Dimension(36, 36));
-        iconWrap.setMinimumSize(new Dimension(36, 36));
-        iconWrap.setMaximumSize(new Dimension(36, 36));
-        iconWrap.add(icon);
+        // Vertically center badge
+        JPanel badgeWrap = new JPanel(new GridBagLayout());
+        badgeWrap.setOpaque(false);
+        badgeWrap.setPreferredSize(new Dimension(44, 44));
+        badgeWrap.setMinimumSize(new Dimension(44, 44));
+        badgeWrap.setMaximumSize(new Dimension(44, 44));
+        badgeWrap.add(badge, new GridBagConstraints());
 
         JPanel info = new JPanel(new BorderLayout(0, 2));
         info.setOpaque(false);
         String title = (row.isEntry() ? "Entry" : "Exit") + " — Slot " + row.slot();
-        info.add(UIFactory.lbl(title,          Font.BOLD,  12, new Color(197, 194, 224)), BorderLayout.NORTH);
-        info.add(UIFactory.lbl(row.timeLabel(), Font.PLAIN, 11, C_MUTED),                 BorderLayout.SOUTH);
+        info.add(UIFactory.lbl(title,          Font.BOLD,  13, new Color(0xC4BFED)), BorderLayout.NORTH);
+        info.add(UIFactory.lbl(row.timeLabel(), Font.PLAIN, 11, C_MUTED),             BorderLayout.SOUTH);
 
         JLabel feeLbl = UIFactory.lbl(row.fee(), Font.BOLD, 12, C_ACCENT);
         feeLbl.setHorizontalAlignment(SwingConstants.RIGHT);
 
-        p.add(iconWrap, BorderLayout.WEST);
-        p.add(info,     BorderLayout.CENTER);
-        p.add(feeLbl,   BorderLayout.EAST);
+        p.add(badgeWrap, BorderLayout.WEST);
+        p.add(info,      BorderLayout.CENTER);
+        p.add(feeLbl,    BorderLayout.EAST);
 
         JPanel wrap = new JPanel(new BorderLayout());
         wrap.setOpaque(false);
@@ -870,12 +880,23 @@ public class UserDashboardScreen {
         }
     }
 
-    /** Updates the CENTER label of a UIFactory.statCard(). */
+    /** Updates the value label of an accentStatCard(). */
     private static void setStatCardValue(JPanel card, String value) {
-        Component c = ((BorderLayout) card.getLayout()).getLayoutComponent(BorderLayout.CENTER);
-        if (c instanceof JLabel lbl) lbl.setText(value);
-        card.revalidate();
-        card.repaint();
+        // accentStatCard structure: card → [strut NORTH, body CENTER]
+        // body is a BoxLayout panel: [label, strut, valueLbl, strut, subLbl]
+        for (Component c : card.getComponents()) {
+            if (c instanceof JPanel body) {
+                for (Component bc : body.getComponents()) {
+                    if (bc instanceof JLabel lbl && lbl.getFont().getStyle() == Font.BOLD
+                            && lbl.getFont().getSize() == 22) {
+                        lbl.setText(value);
+                        card.revalidate();
+                        card.repaint();
+                        return;
+                    }
+                }
+            }
+        }
     }
 
     private static String formatTimeLabel(LocalDate date, LocalDate today, String timeStr) {
@@ -895,5 +916,49 @@ public class UserDashboardScreen {
         sep.setForeground(new Color(60, 50, 100));
         sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
         return sep;
+    }
+
+    // =========================================================================
+    // Accent stat card — matches Admin screens design
+    // =========================================================================
+
+    private static JPanel accentStatCard(String label, String value, Color accentColor) {
+        JPanel card = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(C_BG_PANEL);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                // 3px accent bar — rounded top, square bottom
+                g2.setColor(accentColor);
+                g2.fillRoundRect(0, 0, getWidth(), 6, 12, 12);
+                g2.fillRect(0, 3, getWidth(), 3);
+                // border
+                g2.setColor(new Color(0x2D2860));
+                g2.setStroke(new BasicStroke(0.5f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
+                g2.dispose();
+            }
+        };
+        card.setOpaque(false);
+
+        JPanel body = new JPanel();
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setOpaque(false);
+        body.setBorder(new EmptyBorder(12, 16, 14, 16));
+
+        JLabel lblLabel = UIFactory.lbl(label.toUpperCase(), Font.BOLD, 11, C_MUTED);
+        lblLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel lblValue = UIFactory.lbl(value, Font.BOLD, 22, accentColor);
+        lblValue.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        body.add(lblLabel);
+        body.add(Box.createVerticalStrut(6));
+        body.add(lblValue);
+
+        card.add(Box.createVerticalStrut(3), BorderLayout.NORTH);
+        card.add(body, BorderLayout.CENTER);
+        return card;
     }
 }

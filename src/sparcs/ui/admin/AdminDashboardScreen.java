@@ -296,7 +296,7 @@ public class AdminDashboardScreen {
                     totalRevenue += tx.getCalculatedFee().intValue();
                 }
             }
-            return "P" + totalRevenue;
+            return "₱" + totalRevenue;
         } catch (Exception e) {
             e.printStackTrace();
             return "0";
