@@ -122,7 +122,7 @@ public class AdminManageAccountsScreen {
         controlRow.setOpaque(false);
         controlRow.setBorder(new EmptyBorder(14, 16, 14, 16));
 
-        JTextField searchField = buildSearchField("Search by name, username, or email\u2026");
+        JTextField searchField = buildSearchField("Search by username or email…");
         searchField.setPreferredSize(new Dimension(340, 38));
 
         JButton createBtn = buildGradientButton("+ Create Account");
@@ -136,7 +136,7 @@ public class AdminManageAccountsScreen {
         card.add(controlRow, BorderLayout.NORTH);
 
         // ── Table ─────────────────────────────────────────────────────────────
-        String[] columns = {"ID", "Full Name", "Username", "Email", "Role", "Status"};
+        String[] columns = {"ID", "Username", "Email", "Role", "Status"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
@@ -205,19 +205,19 @@ public class AdminManageAccountsScreen {
             }
         });
 
-        // Column widths
-        int[] widths = {55, 160, 120, 200, 90, 100};
+        // Column widths — ID, Username, Email, Role, Status
+        int[] widths = {55, 200, 320, 90, 100};
         for (int i = 0; i < widths.length; i++) {
             TableColumn col = table.getColumnModel().getColumn(i);
             col.setPreferredWidth(widths[i]);
             col.setMinWidth(widths[i] / 2);
         }
 
-        // Custom renderers
-        table.getColumnModel().getColumn(4).setCellRenderer(new RoleBadgeRenderer());   // Role
-        table.getColumnModel().getColumn(5).setCellRenderer(new StatusBadgeRenderer()); // Status
+        // Custom renderers — Role=col3, Status=col4
+        table.getColumnModel().getColumn(3).setCellRenderer(new RoleBadgeRenderer());   // Role
+        table.getColumnModel().getColumn(4).setCellRenderer(new StatusBadgeRenderer()); // Status
 
-        // Default text renderer with left padding
+        // Default text renderer with left padding — cols 0..2 (ID, Username, Email)
         DefaultTableCellRenderer paddedRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(
@@ -230,7 +230,7 @@ public class AdminManageAccountsScreen {
             }
         };
         paddedRenderer.setOpaque(true);
-        for (int i = 0; i < 4; i++) table.getColumnModel().getColumn(i).setCellRenderer(paddedRenderer);
+        for (int i = 0; i < 3; i++) table.getColumnModel().getColumn(i).setCellRenderer(paddedRenderer);
 
         // Scroll pane — no border, clip corners inside card
         JScrollPane scrollPane = new JScrollPane(table);
@@ -350,9 +350,9 @@ public class AdminManageAccountsScreen {
         try {
             List<UserAccount> accounts = userDAO.findAllIncludingInactive();
             for (UserAccount a : accounts) {
+                if (!"ADMIN".equalsIgnoreCase(a.getRole())) continue; // admins only
                 tableModel.addRow(new Object[]{
                     a.getUserId(),
-                    a.getFullName()  != null ? a.getFullName()  : "",
                     a.getUsername(),
                     a.getEmail()     != null ? a.getEmail()     : "",
                     a.getRole(),
@@ -371,13 +371,12 @@ public class AdminManageAccountsScreen {
             List<UserAccount> accounts = userDAO.findAllIncludingInactive();
             String q = query.toLowerCase();
             for (UserAccount a : accounts) {
-                boolean nameMatch  = a.getFullName()  != null && a.getFullName().toLowerCase().contains(q);
+                if (!"ADMIN".equalsIgnoreCase(a.getRole())) continue; // admins only
                 boolean userMatch  = a.getUsername().toLowerCase().contains(q);
                 boolean emailMatch = a.getEmail()     != null && a.getEmail().toLowerCase().contains(q);
-                if (q.isEmpty() || nameMatch || userMatch || emailMatch) {
+                if (q.isEmpty() || userMatch || emailMatch) {
                     tableModel.addRow(new Object[]{
                         a.getUserId(),
-                        a.getFullName()  != null ? a.getFullName()  : "",
                         a.getUsername(),
                         a.getEmail()     != null ? a.getEmail()     : "",
                         a.getRole(),
@@ -440,18 +439,26 @@ public class AdminManageAccountsScreen {
 
     // ── Dialogs ───────────────────────────────────────────────────────────────
     private static void showCreateAccountDialog(AppState state) {
-        JDialog dialog = buildStyledDialog("Create Account", 420, 420);
+        JDialog dialog = buildStyledDialog("Create Account", 440, 0); // height via pack()
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(C_BG_DARK);
-        panel.setBorder(new EmptyBorder(24, 24, 24, 24));
+        panel.setBackground(new Color(18, 16, 58));              // #12103A — card bg
+        panel.setBorder(new EmptyBorder(28, 28, 24, 28));
 
+        // Title — 22px #F0ECFF per design system §2
         addDialogTitle(panel, "Create New Account");
-        addVGap(panel, 16);
+        addVGap(panel, 4);
 
-        JTextField fullNameField = addLabeledField(panel, "FULL NAME", "");
-        addVGap(panel, 12);
+        // Subtitle
+        JLabel sub = new JLabel("Fill in the fields below to register an account.");
+        sub.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        sub.setForeground(new Color(107, 95, 160));              // #6B5FA0 muted
+        sub.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(sub);
+        addVGap(panel, 20);
+
+        // Fields — no Full Name (admins don't use it per DB schema)
         JTextField emailField    = addLabeledField(panel, "EMAIL", "");
         addVGap(panel, 12);
         JTextField usernameField = addLabeledField(panel, "USERNAME", "");
@@ -465,7 +472,15 @@ public class AdminManageAccountsScreen {
         roleCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
         roleCombo.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(roleCombo);
-        addVGap(panel, 20);
+        addVGap(panel, 24);
+
+        // Separator
+        JSeparator sep = new JSeparator();
+        sep.setForeground(new Color(30, 28, 69));                // #1E1C45
+        sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        sep.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(sep);
+        addVGap(panel, 16);
 
         // Buttons
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -479,8 +494,14 @@ public class AdminManageAccountsScreen {
         panel.add(btnRow);
 
         cancelBtn.addActionListener(e -> dialog.dispose());
+
+        // Enter on any text field fires create — set as dialog default button
+        emailField.addActionListener(e -> createBtn.doClick());
+        usernameField.addActionListener(e -> createBtn.doClick());
+        pwdField.addActionListener(e -> createBtn.doClick());
+        dialog.getRootPane().setDefaultButton(createBtn);
+
         createBtn.addActionListener(e -> {
-            String fullName = fullNameField.getText().trim();
             String email    = emailField.getText().trim();
             String username = usernameField.getText().trim();
             String password = new String(pwdField.getPassword());
@@ -493,7 +514,8 @@ public class AdminManageAccountsScreen {
             }
             try {
                 UserAccount a = new UserAccount();
-                a.setFullName(fullName); a.setEmail(email);
+                a.setFullName(null);                             // not used for admin accounts
+                a.setEmail(email);
                 a.setUsername(username);
                 a.setPasswordHash(PasswordUtil.hashPassword(password));
                 a.setRole(role); a.setActive(true);
@@ -516,28 +538,42 @@ public class AdminManageAccountsScreen {
             }
         });
 
-        dialog.add(panel);
+        dialog.add(wrapInCard(panel));
+        dialog.pack();                                           // auto-size — no cut-off
+        dialog.setLocationRelativeTo(null);
         dialog.setVisible(true);
     }
 
     private static void showResetPasswordDialog(int userId, String username, AppState state) {
-        JDialog dialog = buildStyledDialog("Reset Password", 380, 240);
+        JDialog dialog = buildStyledDialog("Reset Password", 420, 0); // height via pack()
 
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(C_BG_DARK);
-        panel.setBorder(new EmptyBorder(24, 24, 24, 24));
+        panel.setBackground(new Color(18, 16, 58));              // #12103A — card bg
+        panel.setBorder(new EmptyBorder(28, 28, 24, 28));
 
+        // Title — 22px #F0ECFF per design system §2
         addDialogTitle(panel, "Reset Password");
-        JLabel subLbl = new JLabel("for " + username);
-        subLbl.setFont(new Font("Inter", Font.PLAIN, 13));
-        subLbl.setForeground(C_TEXT_MUTED);
+        addVGap(panel, 4);
+
+        // Subtitle — who we're resetting for
+        JLabel subLbl = new JLabel("Resetting password for:  " + username);
+        subLbl.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        subLbl.setForeground(new Color(107, 95, 160));           // #6B5FA0 muted
         subLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(subLbl);
-        addVGap(panel, 16);
+        addVGap(panel, 20);
 
         JPasswordField pwdField = addLabeledPassword(panel, "NEW PASSWORD");
-        addVGap(panel, 20);
+        addVGap(panel, 24);
+
+        // Separator
+        JSeparator sep = new JSeparator();
+        sep.setForeground(new Color(30, 28, 69));                // #1E1C45
+        sep.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
+        sep.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(sep);
+        addVGap(panel, 16);
 
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         btnRow.setOpaque(false);
@@ -550,6 +586,11 @@ public class AdminManageAccountsScreen {
         panel.add(btnRow);
 
         cancelBtn.addActionListener(e -> dialog.dispose());
+
+        // Enter on the password field fires reset — and set as dialog default button
+        pwdField.addActionListener(e -> resetBtn.doClick());
+        dialog.getRootPane().setDefaultButton(resetBtn);
+
         resetBtn.addActionListener(e -> {
             String newPwd = new String(pwdField.getPassword());
             if (newPwd.isEmpty()) {
@@ -557,6 +598,29 @@ public class AdminManageAccountsScreen {
                         "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+
+            // ── Same-password check ───────────────────────────────────────────
+            // Fetch the account's current password hash and compare against new input.
+            // If they match, reject — password must be different from the old one.
+            try {
+                List<UserAccount> accounts = userDAO.findAllIncludingInactive();
+                String currentHash = null;
+                for (UserAccount a : accounts) {
+                    if (a.getUserId() == userId) {
+                        currentHash = a.getPasswordHash();
+                        break;
+                    }
+                }
+                if (currentHash != null && PasswordUtil.verifyPassword(newPwd, currentHash)) {
+                    DialogUtil.showMessageDialog(dialog,
+                        "New password cannot be the same as the current password.\nPlease choose a different one.",
+                        "Same Password", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            } catch (Exception ex) {
+                // If we can't verify, proceed — don't block the reset on a lookup failure
+            }
+
             try {
                 userDAO.updatePassword(userId, PasswordUtil.hashPassword(newPwd));
                 AuditLog log = new AuditLog();
@@ -574,25 +638,50 @@ public class AdminManageAccountsScreen {
             }
         });
 
-        dialog.add(panel);
+        dialog.add(wrapInCard(panel));
+        dialog.pack();                                           // auto-size — no cut-off
+        dialog.setLocationRelativeTo(null);
         dialog.setVisible(true);
     }
 
     // ── Dialog builder helpers ────────────────────────────────────────────────
     private static JDialog buildStyledDialog(String title, int w, int h) {
         JDialog d = new JDialog((Frame) null, title, true);
-        d.setSize(w, h);
-        d.setLocationRelativeTo(null);
+        d.setUndecorated(true);                                  // remove native title bar
+        d.setMinimumSize(new Dimension(w, 200));
         d.setResizable(false);
-        d.getRootPane().setBackground(C_BG_DARK);
-        d.getContentPane().setBackground(C_BG_DARK);
+        d.setBackground(new Color(0, 0, 0, 0));
+        d.getRootPane().setOpaque(false);
+        d.getRootPane().setBackground(new Color(0, 0, 0, 0));
         return d;
+    }
+
+    /** Wraps the form panel in a DialogUtil-style card with rounded corners + purple border glow. */
+    private static JPanel wrapInCard(JPanel inner) {
+        JPanel card = new JPanel(new BorderLayout()) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Same bg as DialogUtil card
+                g2.setColor(new Color(22, 14, 56));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 16, 16);
+                // Purple border glow — matches DialogUtil exactly
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.setColor(new Color(80, 60, 160, 180));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+                g2.dispose();
+            }
+        };
+        card.setOpaque(false);
+        inner.setOpaque(false);                                  // let card bg show through
+        card.add(inner, BorderLayout.CENTER);
+        return card;
     }
 
     private static void addDialogTitle(JPanel panel, String text) {
         JLabel lbl = new JLabel(text);
-        lbl.setFont(new Font("Inter", Font.BOLD, 18));
-        lbl.setForeground(new Color(240, 236, 255));
+        lbl.setFont(new Font("SansSerif", Font.BOLD, 16));       // matches DialogUtil title 16px bold
+        lbl.setForeground(new Color(240, 235, 255));             // #F0EBFF — DialogUtil C_WHITE
         lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(lbl);
     }

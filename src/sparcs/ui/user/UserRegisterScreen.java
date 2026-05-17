@@ -385,18 +385,18 @@ public class UserRegisterScreen {
     static JTextField makeField(String placeholder) {
         JTextField field = new JTextField() {
             @Override protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(30, 15, 70, 140));
+                g2.setColor(new Color(40, 20, 90, 200));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
                 g2.dispose();
+                super.paintComponent(g); // text renders on top of background
             }
         };
         field.setOpaque(false);
         field.setBackground(new Color(0, 0, 0, 0));
         field.setText(placeholder);
-        field.setForeground(new Color(150, 140, 180)); // Dim placeholder
+        field.setForeground(new Color(180, 170, 210)); // brighter placeholder
         field.setFont(new Font("Dialog", Font.PLAIN, 13));
         field.setCaretColor(Color.WHITE);
         field.setBorder(new javax.swing.border.CompoundBorder(
@@ -404,7 +404,7 @@ public class UserRegisterScreen {
                 @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setColor(new Color(180, 160, 255, 110));
+                    g2.setColor(new Color(180, 160, 255, 160)); // brighter border
                     g2.setStroke(new BasicStroke(1f));
                     g2.drawRoundRect(x, y, w - 1, h - 1, 10, 10);
                     g2.dispose();
@@ -416,15 +416,15 @@ public class UserRegisterScreen {
         field.setPreferredSize(new Dimension(220, 38));
         field.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override public void focusGained(java.awt.event.FocusEvent e) {
-                if (field.getText().equals(placeholder)) {
-                    field.setText("");
-                    field.setForeground(Color.WHITE); // Bright white when typing
-                }
+                if (field.getText().equals(placeholder)) field.setText("");
+                field.setForeground(Color.WHITE); // always white when typing
             }
             @Override public void focusLost(java.awt.event.FocusEvent e) {
                 if (field.getText().isEmpty()) {
                     field.setText(placeholder);
-                    field.setForeground(new Color(150, 140, 180)); // Dim placeholder
+                    field.setForeground(new Color(180, 170, 210));
+                } else {
+                    field.setForeground(new Color(230, 225, 255)); // bright when has content
                 }
             }
         });
@@ -434,24 +434,24 @@ public class UserRegisterScreen {
     static JPasswordField makePasswordField(String placeholder) {
         JPasswordField field = new JPasswordField() {
             @Override protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(30, 15, 70, 140));
+                g2.setColor(new Color(40, 20, 90, 200));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
                 g2.dispose();
+                super.paintComponent(g); // text renders on top of background
             }
         };
         field.setFont(new Font("Dialog", Font.PLAIN, 13));
         field.setOpaque(false);
         field.setBackground(new Color(0, 0, 0, 0));
-        field.setCaretColor(new Color(200, 180, 255));
+        field.setCaretColor(Color.WHITE);
         field.setBorder(new javax.swing.border.CompoundBorder(
             new javax.swing.border.AbstractBorder() {
                 @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setColor(new Color(180, 160, 255, 110));
+                    g2.setColor(new Color(180, 160, 255, 160)); // brighter border
                     g2.setStroke(new BasicStroke(1f));
                     g2.drawRoundRect(x, y, w - 1, h - 1, 10, 10);
                     g2.dispose();
@@ -461,29 +461,31 @@ public class UserRegisterScreen {
             new EmptyBorder(8, 10, 8, 10)
         ));
         field.setPreferredSize(new Dimension(220, 38));
-        
+
         // Set initial placeholder state
         field.setText(placeholder);
-        field.setForeground(new Color(150, 140, 180)); // Dim placeholder
+        field.setForeground(new Color(180, 170, 210)); // brighter placeholder
         field.setEchoChar((char) 0); // No echo for placeholder
-        
+
         field.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override public void focusGained(java.awt.event.FocusEvent e) {
                 if (new String(field.getPassword()).equals(placeholder)) {
                     field.setText("");
-                    field.setForeground(Color.WHITE); // Bright white when typing
-                    field.setEchoChar('\u2022'); // Show bullets for actual input
+                    field.setEchoChar('\u2022');
                 }
+                field.setForeground(Color.WHITE); // always white when typing
             }
             @Override public void focusLost(java.awt.event.FocusEvent e) {
                 if (field.getPassword().length == 0) {
                     field.setText(placeholder);
-                    field.setForeground(new Color(150, 140, 180)); // Dim placeholder
-                    field.setEchoChar((char) 0); // No echo for placeholder
+                    field.setForeground(new Color(180, 170, 210));
+                    field.setEchoChar((char) 0);
+                } else {
+                    field.setForeground(new Color(230, 225, 255)); // bright when has content
                 }
             }
         });
-        
+
         return field;
     }
 

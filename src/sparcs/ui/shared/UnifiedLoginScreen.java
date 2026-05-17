@@ -184,7 +184,7 @@ public class UnifiedLoginScreen {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(new Color(30, 15, 70, 140));
+                g2.setColor(new Color(12, 6, 45, 220));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
                 g2.dispose();
                 super.paintComponent(g);
@@ -200,7 +200,7 @@ public class UnifiedLoginScreen {
                 @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
                     Graphics2D g2 = (Graphics2D) g.create();
                     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2.setColor(new Color(180, 160, 255, 110));
+                    g2.setColor(new Color(180, 160, 255, 180));
                     g2.setStroke(new BasicStroke(1f));
                     g2.drawRoundRect(x, y, w-1, h-1, 10, 10);
                     g2.dispose();
@@ -313,7 +313,7 @@ public class UnifiedLoginScreen {
                             "Authentication Failed", JOptionPane.ERROR_MESSAGE);
                     resetToPlaceholder(usernameField, "e.g. user123");
                     passwordField.setText(passwordPlaceholder);
-                    passwordField.setForeground(new Color(185, 175, 255, 145));
+                    passwordField.setForeground(new Color(200, 190, 255, 200));
                 }
             } catch (SQLException ex) {
                 DialogUtil.showMessageDialog(null, "Database error: " + ex.getMessage(),
@@ -336,7 +336,7 @@ public class UnifiedLoginScreen {
                     && p.isShowing()) {
                 resetToPlaceholder(usernameField, "e.g. user123");
                 passwordField.setText(passwordPlaceholder);
-                passwordField.setForeground(new Color(185, 175, 255, 145));
+                passwordField.setForeground(new Color(200, 190, 255, 200));
             }
         });
 
@@ -349,7 +349,7 @@ public class UnifiedLoginScreen {
     /** Resets a text field to its placeholder state cleanly — no ghost text. */
     static void resetToPlaceholder(JTextField field, String placeholder) {
         field.setText(placeholder);
-        field.setForeground(new Color(185, 175, 255, 145));
+        field.setForeground(new Color(200, 190, 255, 200));
         // Move caret to start so placeholder isn't shown selected
         field.setCaretPosition(0);
     }
@@ -379,12 +379,12 @@ public class UnifiedLoginScreen {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 // Rounded bg — matches password field
-                g2.setColor(new Color(30, 15, 70, 140));
+                g2.setColor(new Color(12, 6, 45, 220));
                 g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
                 // Border — brightens on focus
                 g2.setColor(focused
                         ? new Color(180, 160, 255, 200)
-                        : new Color(180, 160, 255, 110));
+                        : new Color(180, 160, 255, 180));
                 g2.setStroke(new BasicStroke(1f));
                 g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
                 g2.dispose();
@@ -393,7 +393,7 @@ public class UnifiedLoginScreen {
         };
         field.setOpaque(false);
         field.setBackground(new Color(0, 0, 0, 0));
-        field.setForeground(new Color(185, 175, 255, 145)); // placeholder colour
+        field.setForeground(new Color(200, 190, 255, 200)); // placeholder colour
         field.setCaretColor(new Color(200, 180, 255));
         field.setFont(new Font("Inter", Font.PLAIN, 13));
         field.setBorder(new EmptyBorder(8, 10, 8, 10));
@@ -410,7 +410,7 @@ public class UnifiedLoginScreen {
             @Override public void focusLost(java.awt.event.FocusEvent e) {
                 if (field.getText().isEmpty()) {
                     field.setText(placeholder);
-                    field.setForeground(new Color(185, 175, 255, 145));
+                    field.setForeground(new Color(200, 190, 255, 200));
                 }
             }
         });
