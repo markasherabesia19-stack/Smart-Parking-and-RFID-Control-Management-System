@@ -202,14 +202,14 @@ public class UserRegisterScreen {
         cc.gridy = 6; cc.insets = new Insets(0, 0, 4, 0);
         card.add(makeLabel("PASSWORD"), cc);
         cc.gridy = 7; cc.insets = new Insets(0, 0, 12, 0);
-        JPasswordField passwordField = makePasswordField();
+        JPasswordField passwordField = makePasswordField("••••••••");
         card.add(passwordField, cc);
 
         // Confirm Password
         cc.gridy = 8; cc.insets = new Insets(0, 0, 4, 0);
         card.add(makeLabel("CONFIRM PASSWORD"), cc);
         cc.gridy = 9; cc.insets = new Insets(0, 0, 20, 0);
-        JPasswordField confirmPasswordField = makePasswordField();
+        JPasswordField confirmPasswordField = makePasswordField("••••••••");
         card.add(confirmPasswordField, cc);
 
         // Register button
@@ -245,9 +245,11 @@ public class UserRegisterScreen {
             String cleanFullName = rawFullName.equals("e.g. Juan dela Cruz") ? "" : rawFullName;
             String cleanEmail    = rawEmail.equals("e.g. juan@email.com")    ? "" : rawEmail;
             String cleanUsername = rawUsername.equals("e.g. user123")        ? "" : rawUsername;
+            String cleanPassword = password.equals("••••••••")        ? "" : password;
+            String cleanConfirm  = confirm.equals("••••••••")        ? "" : confirm;
 
             // Validation
-            if (cleanFullName.isEmpty() || cleanEmail.isEmpty() || cleanUsername.isEmpty() || password.isEmpty()) {
+            if (cleanFullName.isEmpty() || cleanEmail.isEmpty() || cleanUsername.isEmpty() || cleanPassword.isEmpty()) {
                 DialogUtil.showMessageDialog(null, "Please fill in all fields.",
                         "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
@@ -265,13 +267,13 @@ public class UserRegisterScreen {
                 return;
             }
 
-            if (password.length() < 6) {
+            if (cleanPassword.length() < 6) {
                 DialogUtil.showMessageDialog(null, "Password must be at least 6 characters.",
                         "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            if (!password.equals(confirm)) {
+            if (!cleanPassword.equals(cleanConfirm)) {
                 DialogUtil.showMessageDialog(null, "Passwords do not match.",
                         "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
@@ -297,7 +299,7 @@ public class UserRegisterScreen {
                 newUser.setUsername(cleanUsername);
                 newUser.setFullName(cleanFullName);
                 newUser.setEmail(cleanEmail);
-                newUser.setPasswordHash(PasswordUtil.hashPassword(password));
+                newUser.setPasswordHash(PasswordUtil.hashPassword(cleanPassword));
                 newUser.setRole("USER");
                 newUser.setActive(true);
 
@@ -360,13 +362,15 @@ public class UserRegisterScreen {
                                     JTextField username, JPasswordField pass,
                                     JPasswordField confirm) {
         fullName.setText("e.g. Juan dela Cruz");
-        fullName.setForeground(new Color(185, 175, 255, 145));
+        fullName.setForeground(new Color(150, 140, 180)); // Dim placeholder
         email.setText("e.g. juan@email.com");
-        email.setForeground(new Color(185, 175, 255, 145));
+        email.setForeground(new Color(150, 140, 180)); // Dim placeholder
         username.setText("e.g. user123");
-        username.setForeground(new Color(185, 175, 255, 145));
-        pass.setText("");
-        confirm.setText("");
+        username.setForeground(new Color(150, 140, 180)); // Dim placeholder
+        pass.setText("••••••••");
+        pass.setForeground(new Color(150, 140, 180)); // Dim placeholder
+        confirm.setText("••••••••");
+        confirm.setForeground(new Color(150, 140, 180)); // Dim placeholder
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -392,9 +396,9 @@ public class UserRegisterScreen {
         field.setOpaque(false);
         field.setBackground(new Color(0, 0, 0, 0));
         field.setText(placeholder);
-        field.setForeground(new Color(185, 175, 255, 145));
+        field.setForeground(new Color(150, 140, 180)); // Dim placeholder
         field.setFont(new Font("Dialog", Font.PLAIN, 13));
-        field.setCaretColor(new Color(200, 180, 255));
+        field.setCaretColor(Color.WHITE);
         field.setBorder(new javax.swing.border.CompoundBorder(
             new javax.swing.border.AbstractBorder() {
                 @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
@@ -414,20 +418,20 @@ public class UserRegisterScreen {
             @Override public void focusGained(java.awt.event.FocusEvent e) {
                 if (field.getText().equals(placeholder)) {
                     field.setText("");
-                    field.setForeground(new Color(200, 180, 255));
+                    field.setForeground(Color.WHITE); // Bright white when typing
                 }
             }
             @Override public void focusLost(java.awt.event.FocusEvent e) {
                 if (field.getText().isEmpty()) {
                     field.setText(placeholder);
-                    field.setForeground(new Color(185, 175, 255, 145));
+                    field.setForeground(new Color(150, 140, 180)); // Dim placeholder
                 }
             }
         });
         return field;
     }
 
-    static JPasswordField makePasswordField() {
+    static JPasswordField makePasswordField(String placeholder) {
         JPasswordField field = new JPasswordField() {
             @Override protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
@@ -438,7 +442,6 @@ public class UserRegisterScreen {
                 g2.dispose();
             }
         };
-        field.setForeground(new Color(200, 180, 255));
         field.setFont(new Font("Dialog", Font.PLAIN, 13));
         field.setOpaque(false);
         field.setBackground(new Color(0, 0, 0, 0));
@@ -458,7 +461,29 @@ public class UserRegisterScreen {
             new EmptyBorder(8, 10, 8, 10)
         ));
         field.setPreferredSize(new Dimension(220, 38));
-        field.setEchoChar('\u2022');
+        
+        // Set initial placeholder state
+        field.setText(placeholder);
+        field.setForeground(new Color(150, 140, 180)); // Dim placeholder
+        field.setEchoChar((char) 0); // No echo for placeholder
+        
+        field.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override public void focusGained(java.awt.event.FocusEvent e) {
+                if (new String(field.getPassword()).equals(placeholder)) {
+                    field.setText("");
+                    field.setForeground(Color.WHITE); // Bright white when typing
+                    field.setEchoChar('\u2022'); // Show bullets for actual input
+                }
+            }
+            @Override public void focusLost(java.awt.event.FocusEvent e) {
+                if (field.getPassword().length == 0) {
+                    field.setText(placeholder);
+                    field.setForeground(new Color(150, 140, 180)); // Dim placeholder
+                    field.setEchoChar((char) 0); // No echo for placeholder
+                }
+            }
+        });
+        
         return field;
     }
 

@@ -392,6 +392,23 @@ public class SidebarPanel {
                 g.drawLine(9, 25, 17, 25);
                 break;
 
+            case "ADMIN_MANAGE_ACCOUNTS":
+                // Person head (circle)
+                g.drawOval(8, 2, 10, 10);
+                // Person body / shoulders arc
+                g.drawArc(2, 16, 20, 18, 0, 180);
+                // Gear / cog — small, bottom-right quadrant (admin/settings badge)
+                // Outer circle
+                g.drawOval(18, 18, 11, 11);
+                // Gear teeth — 4 short lines at N/S/E/W outside the circle
+                g.drawLine(23, 15, 23, 18);   // top tooth
+                g.drawLine(23, 29, 23, 32);   // bottom tooth (clipped to canvas edge)
+                g.drawLine(15, 23, 18, 23);   // left tooth
+                g.drawLine(29, 23, 32, 23);   // right tooth (clipped)
+                // Inner dot of gear
+                g.fillOval(21, 21, 5, 5);
+                break;
+
             case "USER_MY_STATUS":
                 g.drawOval(11, 2, 10, 10);
                 g.drawArc(3, 16, 26, 18, 0, 180);

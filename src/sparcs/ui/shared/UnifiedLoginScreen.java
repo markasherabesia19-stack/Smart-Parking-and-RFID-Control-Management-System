@@ -134,8 +134,8 @@ public class UnifiedLoginScreen {
         logoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel titleLbl = new JLabel("Sign In", SwingConstants.CENTER);
-        titleLbl.setFont(new Font("Serif", Font.BOLD, 25));
-        titleLbl.setForeground(Color.WHITE);
+        titleLbl.setFont(new Font("Inter", Font.BOLD, 24));
+        titleLbl.setForeground(new Color(240, 236, 255));
         titleLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         center.add(Box.createVerticalStrut(38));
@@ -172,13 +172,14 @@ public class UnifiedLoginScreen {
         cc.gridy = 0; cc.insets = new Insets(0, 0, 4, 0);
         card.add(makeLabel("USERNAME"), cc);
         cc.gridy = 1; cc.insets = new Insets(0, 0, 12, 0);
-        JTextField usernameField = makeField("e.g. user123", false);
+        JTextField usernameField = makeStyledTextField("e.g. user123");
         card.add(usernameField, cc);
 
         // Password
         cc.gridy = 2; cc.insets = new Insets(0, 0, 4, 0);
         card.add(makeLabel("PASSWORD"), cc);
         cc.gridy = 3; cc.insets = new Insets(0, 0, 20, 0);
+        String passwordPlaceholder = "••••••••";
         JPasswordField passwordField = new JPasswordField() {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
@@ -190,7 +191,7 @@ public class UnifiedLoginScreen {
             }
         };
         passwordField.setForeground(new Color(200, 180, 255));
-        passwordField.setFont(new Font("Dialog", Font.PLAIN, 13));
+        passwordField.setFont(new Font("Inter", Font.PLAIN, 13));
         passwordField.setOpaque(false);
         passwordField.setBackground(new Color(0, 0, 0, 0));
         passwordField.setCaretColor(new Color(200, 180, 255));
@@ -210,6 +211,29 @@ public class UnifiedLoginScreen {
         ));
         passwordField.setPreferredSize(new Dimension(220, 38));
         passwordField.setEchoChar('\u2022');
+        
+        // Add placeholder support
+        passwordField.setText(passwordPlaceholder);
+        passwordField.setForeground(new Color(200, 180, 255)); // Brighter for visibility
+        passwordField.setEchoChar((char) 0); // No echo for placeholder
+        
+        passwordField.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override public void focusGained(java.awt.event.FocusEvent e) {
+                if (new String(passwordField.getPassword()).equals(passwordPlaceholder)) {
+                    passwordField.setText("");
+                    passwordField.setForeground(new Color(200, 180, 255));
+                    passwordField.setEchoChar('\u2022'); // Show bullets for actual input
+                }
+            }
+            @Override public void focusLost(java.awt.event.FocusEvent e) {
+                if (new String(passwordField.getPassword()).isEmpty()) {
+                    passwordField.setText(passwordPlaceholder);
+                    passwordField.setForeground(new Color(200, 180, 255)); // Keep bright
+                    passwordField.setEchoChar((char) 0); // No echo for placeholder
+                }
+            }
+        });
+        
         card.add(passwordField, cc);
 
         // Sign in button
@@ -227,7 +251,7 @@ public class UnifiedLoginScreen {
         // ── Footer ───────────────────────────────────────────────────────────
         center.add(Box.createVerticalStrut(18));
         JLabel footer = new JLabel("Smart Parking & RFID Control System", SwingConstants.CENTER);
-        footer.setFont(new Font("Dialog", Font.PLAIN, 11));
+        footer.setFont(new Font("Inter", Font.PLAIN, 11));
         footer.setForeground(new Color(220, 210, 255, 140));
         footer.setAlignmentX(Component.CENTER_ALIGNMENT);
         center.add(footer);
@@ -239,6 +263,7 @@ public class UnifiedLoginScreen {
 
             // treat placeholder text as empty
             if (username.equals("e.g. user123")) username = "";
+            if (password.equals(passwordPlaceholder)) password = "";
 
             if (username.isEmpty() || password.isEmpty()) {
                 DialogUtil.showMessageDialog(null, "Please enter both username and password.",
@@ -286,9 +311,9 @@ public class UnifiedLoginScreen {
                 } else {
                     DialogUtil.showMessageDialog(null, "Invalid username or password.",
                             "Authentication Failed", JOptionPane.ERROR_MESSAGE);
-                    usernameField.setText("e.g. user123");
-                    usernameField.setForeground(new Color(185, 175, 255, 145));
-                    passwordField.setText("");
+                    resetToPlaceholder(usernameField, "e.g. user123");
+                    passwordField.setText(passwordPlaceholder);
+                    passwordField.setForeground(new Color(185, 175, 255, 145));
                 }
             } catch (SQLException ex) {
                 DialogUtil.showMessageDialog(null, "Database error: " + ex.getMessage(),
@@ -309,9 +334,9 @@ public class UnifiedLoginScreen {
         p.addHierarchyListener(e -> {
             if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0
                     && p.isShowing()) {
-                usernameField.setText("e.g. user123");
-                usernameField.setForeground(new Color(185, 175, 255, 145));
-                passwordField.setText("");
+                resetToPlaceholder(usernameField, "e.g. user123");
+                passwordField.setText(passwordPlaceholder);
+                passwordField.setForeground(new Color(185, 175, 255, 145));
             }
         });
 
@@ -321,23 +346,59 @@ public class UnifiedLoginScreen {
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
+    /** Resets a text field to its placeholder state cleanly — no ghost text. */
+    static void resetToPlaceholder(JTextField field, String placeholder) {
+        field.setText(placeholder);
+        field.setForeground(new Color(185, 175, 255, 145));
+        // Move caret to start so placeholder isn't shown selected
+        field.setCaretPosition(0);
+    }
+
     static JLabel makeLabel(String text) {
         JLabel lbl = new JLabel(text);
-        lbl.setFont(new Font("Dialog", Font.BOLD, 10));
+        lbl.setFont(new Font("Inter", Font.BOLD, 11));
         lbl.setForeground(new Color(210, 200, 255, 210));
         return lbl;
     }
 
-    static JTextField makeField(String placeholder, boolean isPassword) {
-        JTextField field = new JTextField();
-
-        field.setText(placeholder);
-        field.setForeground(new Color(185, 175, 255, 145));
-        field.setFont(new Font("Dialog", Font.PLAIN, 13));
-        field.setBackground(new Color(25, 10, 60, 120));
+    /**
+     * Consistent styled text field — matches password field visually.
+     * Uses custom paintComponent for rounded bg + border so there's no
+     * opaque rectangle bleed-through (the ghost text artifact).
+     */
+    static JTextField makeStyledTextField(String placeholder) {
+        JTextField field = new JTextField() {
+            private boolean focused = false;
+            {
+                addFocusListener(new java.awt.event.FocusAdapter() {
+                    @Override public void focusGained(java.awt.event.FocusEvent e) { focused = true;  repaint(); }
+                    @Override public void focusLost (java.awt.event.FocusEvent e) { focused = false; repaint(); }
+                });
+            }
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                // Rounded bg — matches password field
+                g2.setColor(new Color(30, 15, 70, 140));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                // Border — brightens on focus
+                g2.setColor(focused
+                        ? new Color(180, 160, 255, 200)
+                        : new Color(180, 160, 255, 110));
+                g2.setStroke(new BasicStroke(1f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        field.setOpaque(false);
+        field.setBackground(new Color(0, 0, 0, 0));
+        field.setForeground(new Color(185, 175, 255, 145)); // placeholder colour
         field.setCaretColor(new Color(200, 180, 255));
+        field.setFont(new Font("Inter", Font.PLAIN, 13));
         field.setBorder(new EmptyBorder(8, 10, 8, 10));
         field.setPreferredSize(new Dimension(220, 38));
+        field.setText(placeholder);
 
         field.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override public void focusGained(java.awt.event.FocusEvent e) {
@@ -353,8 +414,12 @@ public class UnifiedLoginScreen {
                 }
             }
         });
-
         return field;
+    }
+
+    /** @deprecated Use makeStyledTextField() for text fields instead. */
+    static JTextField makeField(String placeholder, boolean isPassword) {
+        return makeStyledTextField(placeholder);
     }
 
     static JButton makePrimaryButton(String text) {
