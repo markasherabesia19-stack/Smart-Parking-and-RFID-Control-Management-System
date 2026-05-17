@@ -17,12 +17,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.sql.SQLException;
 
-/**
- * SPARCS — Force Change Password Screen (v1)
- * Shown to admin user logging in with default password (admin/admin123).
- * Cannot be skipped — no back button.
- * After successful change, navigates to ADMIN_DASHBOARD.
- */
 public class ForceChangePasswordScreen {
 
     private static BufferedImage bgImage;

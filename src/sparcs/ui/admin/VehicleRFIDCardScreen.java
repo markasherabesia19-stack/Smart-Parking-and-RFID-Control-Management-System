@@ -22,10 +22,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * Displays the RFID card for a single Vehicle.
- * The barcode renders the rfid_tag stored in rfid_mapping — the DB is the source of truth.
- */
 public class VehicleRFIDCardScreen {
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state,

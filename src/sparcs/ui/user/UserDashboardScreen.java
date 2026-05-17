@@ -34,25 +34,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * SPARCS — Redesigned User Dashboard.
- *
- * Top row (3 stat cards):
- *   1. Wallet Balance    — loaded from DB
- *   2. RFID Scans Today  — count of entry transactions today
- *   3. Sessions / Month  — count of parking sessions this calendar month
- *
- * Bottom row (2 panels):
- *   LEFT  — Recent Activity  (last 5 entry/exit events)
- *   RIGHT — RFID Card info + Fee Schedule (replaces standalone Fee Schedule screen on dashboard)
- */
 public class UserDashboardScreen {
 
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("hh:mm a");
-
-    // =========================================================================
-    // Build
-    // =========================================================================
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
         JPanel root = new JPanel(new BorderLayout());

@@ -8,9 +8,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-/**
- * SPARCS — Reusable slot grid components.
- */
 public class SlotGridPanel {
 
     /** Compact mini grid (no labels). userView hides the "reserved" state. */

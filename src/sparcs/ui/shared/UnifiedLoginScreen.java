@@ -17,12 +17,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.sql.SQLException;
 
-/**
- * SPARCS — Unified Login Screen (v1)
- * Replaces separate AdminLoginScreen and UserLoginScreen.
- * After authentication, checks role and navigates accordingly.
- * If admin with default password, forces password change first.
- */
 public class UnifiedLoginScreen {
 
     private static BufferedImage bgImage;

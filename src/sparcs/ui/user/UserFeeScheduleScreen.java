@@ -10,11 +10,6 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 
-/**
- * SPARCS — User fee schedule screen.
- * Shows the current parking rate schedule for reference.
- * TODO (back-end): Load fee schedule from the fees table in DB.
- */
 public class UserFeeScheduleScreen {
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {

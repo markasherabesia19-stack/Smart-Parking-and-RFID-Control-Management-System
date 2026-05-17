@@ -28,8 +28,6 @@ import java.util.List;
 import java.util.Optional;
 
 public class UserMyStatusScreen {
-
-    // ── Design-system palette (matches all other screens) ─────────────────────
     private static final Color BG_BASE        = C_BG_DARK;
     private static final Color BG_SURFACE     = C_BG_PANEL;
     private static final Color BORDER_LINE    = new Color(0x2D2860);
