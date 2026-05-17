@@ -71,6 +71,26 @@ public class UserAccountDAO {
         return Optional.empty();
     }
 
+    /**
+     * Finds a user by username including inactive accounts.
+     * Used for login authentication to check and show deactivation message.
+     */
+    public Optional<UserAccount> findByUsernameAny(String username) throws SQLException {
+        String sql = "SELECT * FROM user_account WHERE username = ?";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, username);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapResultSetToUserAccountIncludingInactive(rs));
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
     public boolean existsByUsername(String username) throws SQLException {
         String sql = "SELECT 1 FROM user_account WHERE LOWER(username) = LOWER(?) AND is_active = TRUE";
 
@@ -112,7 +132,26 @@ public class UserAccountDAO {
         return accounts;
     }
 
-    public void update(UserAccount userAccount) throws SQLException {
+    /**
+     * Finds all user accounts, including inactive ones.
+     * Used for admin account management.
+     */
+    public List<UserAccount> findAllIncludingInactive() throws SQLException {
+        String sql = "SELECT * FROM user_account ORDER BY created_at DESC";
+        List<UserAccount> accounts = new ArrayList<>();
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                accounts.add(mapResultSetToUserAccountIncludingInactive(rs));
+            }
+        }
+        return accounts;
+    }
+
+    /**
         String sql = "UPDATE user_account SET username = ?, role = ?, email = ?, full_name = ?, is_active = ? " +
                 "WHERE user_id = ?";
 
@@ -129,6 +168,26 @@ public class UserAccountDAO {
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
                 throw new SQLException("Updating user account failed, no rows affected.");
+            }
+        }
+    }
+
+    /**
+     * Updates only the password for a user.
+     * Used for password change operations.
+     */
+    public void updatePassword(int userId, String passwordHash) throws SQLException {
+        String sql = "UPDATE user_account SET password_hash = ? WHERE user_id = ?";
+
+        try (Connection conn = DatabaseConfig.getInstance().getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, passwordHash);
+            stmt.setInt(2, userId);
+
+            int affectedRows = stmt.executeUpdate();
+            if (affectedRows == 0) {
+                throw new SQLException("Updating password failed, user not found.");
             }
         }
     }
@@ -278,6 +337,35 @@ public class UserAccountDAO {
     }
 
     private UserAccount mapResultSetToUserAccount(ResultSet rs) throws SQLException {
+        UserAccount account = new UserAccount();
+        account.setUserId(rs.getInt("user_id"));
+        account.setUsername(rs.getString("username"));
+        account.setPasswordHash(rs.getString("password_hash"));
+        account.setRole(rs.getString("role"));
+        account.setEmail(rs.getString("email"));
+        account.setFullName(rs.getString("full_name"));
+        account.setActive(rs.getBoolean("is_active"));
+
+        try {
+            account.setWalletBalance(rs.getBigDecimal("wallet_balance"));
+        } catch (SQLException e) {
+            if (e.getMessage().contains("wallet_balance") || e.getMessage().contains("not found")) {
+                account.setWalletBalance(new java.math.BigDecimal(0));
+            } else {
+                throw e;
+            }
+        }
+
+        Timestamp createdAt = rs.getTimestamp("created_at");
+        if (createdAt != null) account.setCreatedAt(createdAt.toLocalDateTime());
+
+        Timestamp updatedAt = rs.getTimestamp("updated_at");
+        if (updatedAt != null) account.setUpdatedAt(updatedAt.toLocalDateTime());
+
+        return account;
+    }
+
+    private UserAccount mapResultSetToUserAccountIncludingInactive(ResultSet rs) throws SQLException {
         UserAccount account = new UserAccount();
         account.setUserId(rs.getInt("user_id"));
         account.setUsername(rs.getString("username"));

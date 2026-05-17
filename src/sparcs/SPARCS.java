@@ -41,10 +41,10 @@ public class SPARCS extends JFrame {
         //Shared/Auth
         rootPanel.add(SplashPanel.build(cardLayout, rootPanel),                        "SPLASH");
         rootPanel.add(AnimationPanel.build(cardLayout, rootPanel),                     "ANIMATION");
-        rootPanel.add(RolePickerScreen.build(cardLayout, rootPanel, state),             "ROLE_PICKER");
+        rootPanel.add(UnifiedLoginScreen.build(cardLayout, rootPanel, state),           "UNIFIED_LOGIN");
+        rootPanel.add(ForceChangePasswordScreen.build(cardLayout, rootPanel, state),    "FORCE_CHANGE_PASSWORD");
 
         //Admin 
-        rootPanel.add(AdminLoginScreen.build(cardLayout, rootPanel, state),             "ADMIN_LOGIN");
         rootPanel.add(AdminDashboardScreen.build(cardLayout, rootPanel, state),         "ADMIN_DASHBOARD");
         rootPanel.add(AdminSlotMapScreen.build(cardLayout, rootPanel, state),           "ADMIN_SLOT_MAP");
         rootPanel.add(AdminEntryExitScreen.build(cardLayout, rootPanel, state),         "ADMIN_ENTRY_EXIT");
@@ -53,9 +53,9 @@ public class SPARCS extends JFrame {
         rootPanel.add(AdminFeesScreen.build(cardLayout, rootPanel, state),              "ADMIN_FEES");
         rootPanel.add(AdminReportsScreen.build(cardLayout, rootPanel, state),           "ADMIN_REPORTS");
         rootPanel.add(AdminAuditLogScreen.build(cardLayout, rootPanel, state),          "ADMIN_AUDIT_LOG");
+        rootPanel.add(AdminManageAccountsScreen.build(cardLayout, rootPanel, state),    "ADMIN_MANAGE_ACCOUNTS");
         
         //User
-        rootPanel.add(UserLoginScreen.build(cardLayout, rootPanel, state),              "USER_LOGIN");
         rootPanel.add(UserRegisterScreen.build(cardLayout, rootPanel),                  "USER_REGISTER");
         rootPanel.add(UserDashboardScreen.build(cardLayout, rootPanel, state),          "USER_DASHBOARD");
         rootPanel.add(UserMyStatusScreen.build(cardLayout, rootPanel, state),           "USER_MY_STATUS");

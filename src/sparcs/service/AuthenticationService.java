@@ -20,9 +20,10 @@ public class AuthenticationService {
 
     /**
      * Authenticate user with username and password
+     * Includes checking inactive accounts to provide proper feedback
      */
     public boolean authenticate(String username, String password) throws SQLException {
-        Optional<UserAccount> user = userAccountDAO.findByUsername(username);
+        Optional<UserAccount> user = userAccountDAO.findByUsernameAny(username);
 
         if (user.isPresent()) {
             UserAccount account = user.get();

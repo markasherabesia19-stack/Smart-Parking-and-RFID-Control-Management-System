@@ -135,21 +135,31 @@ public class SlotActionDialog extends JDialog {
         Color entryGreen = new Color(15, 110, 86);
         Color exitRed = new Color(180, 30, 50);
 
-        // Buttons container - will show 1 or 2 buttons based on slot status
-        JPanel buttonContainer = new JPanel(new GridLayout(1, 2, 12, 0));
+        // Buttons container — FlowLayout CENTER so the single visible button
+        // is always perfectly centered regardless of which one is shown
+        JPanel buttonContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
         buttonContainer.setOpaque(false);
 
         // ── ENTRY button ──────────────────────────────────────────────────────
-        JButton entryBtn = new JButton("RECORD ENTRY");
-        entryBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        JButton entryBtn = new JButton("RECORD ENTRY") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getModel().isPressed() ? entryGreen.darker() : entryGreen);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+            @Override public boolean isOpaque() { return false; }
+        };
+        entryBtn.setFont(new Font("SansSerif", Font.BOLD, 13));
         entryBtn.setForeground(Color.WHITE);
-        entryBtn.setBackground(entryGreen);
-        entryBtn.setOpaque(true);
+        entryBtn.setContentAreaFilled(false);
         entryBtn.setBorderPainted(false);
         entryBtn.setFocusPainted(false);
         entryBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        entryBtn.setPreferredSize(new Dimension(0, 40));
-        entryBtn.setVisible(!isSlotOccupied); // Only show if slot is empty
+        entryBtn.setPreferredSize(new Dimension(320, 42));
+        entryBtn.setVisible(!isSlotOccupied);
 
         entryBtn.addActionListener(e -> {
             String plateInput = rfidField.getText().trim();
@@ -220,16 +230,25 @@ public class SlotActionDialog extends JDialog {
         });
 
         // ── EXIT button ───────────────────────────────────────────────────────
-        JButton exitBtn = new JButton("RECORD EXIT");
-        exitBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        JButton exitBtn = new JButton("RECORD EXIT") {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getModel().isPressed() ? exitRed.darker() : exitRed);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+            @Override public boolean isOpaque() { return false; }
+        };
+        exitBtn.setFont(new Font("SansSerif", Font.BOLD, 13));
         exitBtn.setForeground(Color.WHITE);
-        exitBtn.setBackground(exitRed);
-        exitBtn.setOpaque(true);
+        exitBtn.setContentAreaFilled(false);
         exitBtn.setBorderPainted(false);
         exitBtn.setFocusPainted(false);
         exitBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        exitBtn.setPreferredSize(new Dimension(0, 40));
-        exitBtn.setVisible(isSlotOccupied); // Only show if slot is occupied
+        exitBtn.setPreferredSize(new Dimension(320, 42));
+        exitBtn.setVisible(isSlotOccupied);
 
         exitBtn.addActionListener(e -> {
             String plateInput = rfidField.getText().trim();

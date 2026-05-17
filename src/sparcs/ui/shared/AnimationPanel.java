@@ -47,10 +47,10 @@ public class AnimationPanel {
         
         backgroundPanel.add(centerPanel, BorderLayout.CENTER);
         
-        // Auto-transition to role picker after animation completes
+        // Auto-transition to unified login after animation completes
         Timer transition = new Timer(ANIMATION_DURATION_MS, e -> {
-            System.out.println("[AnimationPanel] Transitioning to ROLE_PICKER");
-            cardLayout.show(rootPanel, "ROLE_PICKER");
+            System.out.println("[AnimationPanel] Transitioning to UNIFIED_LOGIN");
+            cardLayout.show(rootPanel, "UNIFIED_LOGIN");
         });
         transition.setRepeats(false);
         transition.start();

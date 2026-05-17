@@ -26,6 +26,7 @@ public class SidebarPanel {
         {"  Fees",                "ADMIN_FEES"},
         {"  Reports",             "ADMIN_REPORTS"},
         {"  Audit Log",           "ADMIN_AUDIT_LOG"},
+        {"  Manage Accounts",     "ADMIN_MANAGE_ACCOUNTS"},
     };
 
     private static final String[][] USER_ITEMS = {
@@ -310,7 +311,7 @@ public class SidebarPanel {
                     }
                 } catch (Exception ex) { ex.printStackTrace(); }
                 state.clearSession();
-                cardLayout.show(rootPanel, "ROLE_PICKER");
+                cardLayout.show(rootPanel, "UNIFIED_LOGIN");
             }
         });
 
