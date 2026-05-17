@@ -45,7 +45,7 @@ public class AdminDashboardScreen {
         JPanel topBar = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.setColor(new Color(18, 16, 58));                    // #12103A Layer 1
+                g2.setColor(C_BG_PANEL);                               // brighter purple, matches other screens
                 g2.fillRect(0, 0, getWidth(), getHeight());
                 g2.setColor(new Color(30, 28, 69));                    // #1E1C45 separator
                 g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);

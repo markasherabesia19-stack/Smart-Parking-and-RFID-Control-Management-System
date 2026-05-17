@@ -88,11 +88,11 @@ public class AdminVehiclesScreen {
         content.setOpaque(true);
 
         // ── Top Bar ───────────────────────────────────────────────────────────
-        // Layer 1 (#12103A) — matches Dashboard/Fees top bar
+        // C_BG_PANEL (#2D1B6E) — matches Dashboard/Reports/Fees top bar
         JPanel topBar = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.setColor(ROW_ODD);                          // #12103A Layer 1
+                g2.setColor(C_BG_PANEL);                       // brighter purple, matches other screens
                 g2.fillRect(0, 0, getWidth(), getHeight());
                 g2.setColor(SEPARATOR);
                 g2.drawLine(0, getHeight() - 1, getWidth(), getHeight() - 1);

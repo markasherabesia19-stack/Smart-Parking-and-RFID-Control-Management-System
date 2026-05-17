@@ -256,7 +256,7 @@ public class AdminFeesScreen {
         card.add(cashInBtn, cc);
 
         // ── Check balance action ──────────────────────────────────────────────
-        checkBtn.addActionListener(e -> {
+        Runnable checkBalanceAction = () -> {
             String username = usernameField.getText().trim();
             if (username.isEmpty()) {
                 DialogUtil.showMessageDialog(null, "Enter a username first.", "Validation", JOptionPane.WARNING_MESSAGE);
@@ -277,10 +277,14 @@ public class AdminFeesScreen {
                 ex.printStackTrace();
                 DialogUtil.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-        });
+        };
+
+        checkBtn.addActionListener(e -> checkBalanceAction.run());
+        // Enter on username field triggers check balance
+        usernameField.addActionListener(e -> checkBalanceAction.run());
 
         // ── Cash-in action ────────────────────────────────────────────────────
-        cashInBtn.addActionListener(e -> {
+        Runnable cashInAction = () -> {
             String username  = usernameField.getText().trim();
             String amountStr = amountField.getText().trim();
 
@@ -310,8 +314,6 @@ public class AdminFeesScreen {
                 userDAO.addWalletBalance(user.getUserId(), amount);
 
                 BigDecimal newBal = userDAO.getWalletBalance(user.getUserId());
-                balanceLbl.setText("Current balance: P" + newBal.toPlainString());
-                balanceLbl.setForeground(C_INFO_BLUE);
 
                 // Log cash-in to audit log
                 try {
@@ -329,17 +331,26 @@ public class AdminFeesScreen {
                     auditEx.printStackTrace();
                 }
 
-                amountField.setText("");
                 DialogUtil.showMessageDialog(null,
                         "Successfully added P" + amount.toPlainString() +
                         " to " + username + "'s wallet.\nNew balance: P" + newBal.toPlainString(),
                         "Cash In Successful", JOptionPane.INFORMATION_MESSAGE);
 
+                // Clear all fields and reset balance label after successful transaction
+                usernameField.setText("");
+                amountField.setText("");
+                balanceLbl.setText("Current balance: —");
+                balanceLbl.setForeground(C_MUTED);
+
             } catch (Exception ex) {
                 ex.printStackTrace();
                 DialogUtil.showMessageDialog(null, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-        });
+        };
+
+        cashInBtn.addActionListener(e -> cashInAction.run());
+        // Enter on amount field triggers cash in
+        amountField.addActionListener(e -> cashInAction.run());
 
         return card;
     }

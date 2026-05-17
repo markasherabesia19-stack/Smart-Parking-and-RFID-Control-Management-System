@@ -84,27 +84,17 @@ public class AdminReportsScreen {
         metricsRow.add(accentMetricCard("Total Vehicles", String.valueOf(totalVehicles),          "registered in system", C_PURPLE));
         metricsRow.add(accentMetricCard("Avg. Duration",  formatDuration(avgDuration),            "per parking session",  C_RESERVED));
 
-        // ROW 2 — bar chart + donut, fixed height wrapper so CENTER doesn't stretch
-        JPanel row2 = new JPanel(new BorderLayout(14, 0));
+        // ROW 2 — bar chart full width, fixed height wrapper
+        JPanel row2 = new JPanel(new BorderLayout());
         row2.setOpaque(false);
         row2.add(buildBarChartCard(), BorderLayout.CENTER);
 
-        // Build donut card and keep reference to inner donut panel for live repainting
-        JPanel[] donutRef = new JPanel[1];
-        JPanel donutCard = buildDonutCard(state, donutRef);
-        row2.add(donutCard, BorderLayout.EAST);
-
-        // Wrap row2 in a fixed-height container so BorderLayout.CENTER can't expand it
         JPanel row2Wrap = new JPanel(new BorderLayout());
         row2Wrap.setOpaque(false);
-        row2Wrap.setPreferredSize(new Dimension(Integer.MAX_VALUE, 250));
-        row2Wrap.setMaximumSize(new Dimension(Integer.MAX_VALUE, 250));
+        row2Wrap.setPreferredSize(new Dimension(100, 260));
+        row2Wrap.setMaximumSize(new Dimension(Integer.MAX_VALUE, 260));
+        row2Wrap.setMinimumSize(new Dimension(100, 260));
         row2Wrap.add(row2, BorderLayout.CENTER);
-
-        // ── Live update: repaint entire donut card on every slot change ───────
-        state.addSlotChangeListener(() -> SwingUtilities.invokeLater(() -> {
-            donutCard.repaint();
-        }));
 
         // ROW 3 — Export CSV bottom-right (ghost button, same as before)
         JPanel exportRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
@@ -118,8 +108,8 @@ public class AdminReportsScreen {
         main.add(row2Wrap,   BorderLayout.CENTER);
         main.add(exportRow,  BorderLayout.SOUTH);
 
-        refreshBtn.addActionListener(e -> {
-            try { loadReportMetrics(); } catch (Exception ex) { ex.printStackTrace(); }
+        // ── Shared redraw: rebuilds metrics row + bar chart from latest data ──
+        Runnable redraw = () -> {
             metricsRow.removeAll();
             metricsRow.add(accentMetricCard("Daily Revenue",  String.format("P%.2f", dailyRevenue),  "today",                C_AVAILABLE));
             metricsRow.add(accentMetricCard("Weekly Revenue", String.format("P%.2f", weeklyRevenue), "this week",            C_AVAILABLE));
@@ -127,6 +117,27 @@ public class AdminReportsScreen {
             metricsRow.add(accentMetricCard("Avg. Duration",  formatDuration(avgDuration),            "per parking session",  C_RESERVED));
             metricsRow.revalidate();
             metricsRow.repaint();
+
+            BorderLayout bl = (BorderLayout) row2.getLayout();
+            Component oldChart = bl.getLayoutComponent(BorderLayout.CENTER);
+            if (oldChart != null) row2.remove(oldChart);
+            row2.add(buildBarChartCard(), BorderLayout.CENTER);
+            row2.revalidate();
+            row2.repaint();
+        };
+
+        // REFRESH button
+        refreshBtn.addActionListener(e -> {
+            try { loadReportMetrics(); } catch (Exception ex) { ex.printStackTrace(); }
+            redraw.run();
+        });
+
+        // Auto-reload whenever user navigates to this screen
+        root.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override public void componentShown(java.awt.event.ComponentEvent e) {
+                try { loadReportMetrics(); } catch (Exception ex) { ex.printStackTrace(); }
+                redraw.run();
+            }
         });
 
         content.add(main, BorderLayout.CENTER);
@@ -495,6 +506,7 @@ public class AdminReportsScreen {
                     if (tx.getExitTime() != null && "COMPLETED".equals(tx.getTransactionStatus())) {
                         try {
                             double amount = tx.getCalculatedFee() != null ? tx.getCalculatedFee().doubleValue() : 0;
+                            if (amount <= 0) continue; // skip zero-fee / uncollected records
                             LocalDate txDate = tx.getExitTime().toLocalDate();
 
                             if (txDate.equals(today)) dailyRevenue += amount;
@@ -568,6 +580,7 @@ public class AdminReportsScreen {
                     for (ParkingTransaction tx : transactions) {
                         if (tx.getExitTime() != null && "COMPLETED".equals(tx.getTransactionStatus())) {
                             double fee = tx.getCalculatedFee() != null ? tx.getCalculatedFee().doubleValue() : 0;
+                            if (fee <= 0) continue; // skip uncollected / zero-fee records
                             writer.printf("%s,%d,%s,%s,%s,P%.2f,%s%n",
                                     tx.getExitTime().toLocalDate(),
                                     tx.getTransactionId(),
