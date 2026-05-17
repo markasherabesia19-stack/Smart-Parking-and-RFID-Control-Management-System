@@ -1,38 +1,56 @@
 package ui.user;
 
-import dao.UserAccountDAO;
+import model.AppState;
 import model.UserAccount;
+import dao.UserAccountDAO;
+import dao.AuditLogDAO;
+import model.AuditLog;
 import util.PasswordUtil;
-import util.UIFactory;
 import util.DialogUtil;
-import static util.UIConstants.*;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.sql.SQLException;
-import java.util.regex.Pattern;
 
-/**
- * SPARCS — User register screen (v5).
- * Fixes: logo no longer clipped, input fields have no opaque dark rectangle.
- */
 public class UserRegisterScreen {
 
-    private static final Pattern EMAIL_PATTERN = Pattern.compile(
-        "^[A-Za-z0-9+_-]+(\\.[A-Za-z0-9+_-]+)*"
-        + "@"
-        + "[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?"
-        + "(\\.[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?)*"
-        + "\\.[A-Za-z]{2,}$"
-    );
+    private static BufferedImage bgImage;
+    private static BufferedImage logoImage;
 
-    public static JPanel build(CardLayout cardLayout, JPanel rootPanel) {
+    static {
+        bgImage   = tryLoadFile("src/assets/gradientbg.png", "assets/gradientbg.png",
+                                "src/main/resources/assets/gradientbg.png", "resources/gradientbg.png");
+        logoImage = tryLoadFile("src/assets/logo.png", "assets/logo.png",
+                                "src/main/resources/assets/logo.png", "resources/logo.png");
+        if (bgImage   == null) bgImage   = tryLoadClasspath("/assets/gradientbg.png", "/gradientbg.png");
+        if (logoImage == null) logoImage = tryLoadClasspath("/assets/logo.png", "/logo.png");
+    }
 
-        final BufferedImage bgImage   = UserLoginScreen.getBgImage();
-        final BufferedImage logoImage = UserLoginScreen.getLogoImage();
+    private static BufferedImage tryLoadFile(String... paths) {
+        for (String path : paths) {
+            File f = new File(path);
+            if (f.exists()) { try { return ImageIO.read(f); } catch (IOException ignored) {} }
+        }
+        return null;
+    }
+
+    private static BufferedImage tryLoadClasspath(String... paths) {
+        for (String path : paths) {
+            try {
+                URL u = UserRegisterScreen.class.getResource(path);
+                if (u != null) return ImageIO.read(u);
+            } catch (IOException ignored) {}
+        }
+        return null;
+    }
+
+    public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
 
         // ── Outer background panel ───────────────────────────────────────────
         JPanel p = new JPanel(new GridBagLayout()) {
@@ -65,18 +83,18 @@ public class UserRegisterScreen {
 
         GridBagConstraints gc = new GridBagConstraints();
         gc.gridx = 0; gc.gridy = 0;
+        gc.anchor = GridBagConstraints.CENTER;
 
-        // ── Centre column — no fixed height so nothing gets clipped ──────────
+        // ── Centre column ────────────────────────────────────────────────────
         JPanel center = new JPanel();
         center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
         center.setOpaque(false);
-        // Width fixed to 430; height tall enough for logo (68) + title + card (~490) + padding
-        center.setPreferredSize(new Dimension(430, 660));
-        center.setMinimumSize(new Dimension(430, 660));
-        center.setMaximumSize(new Dimension(430, 660));
+        center.setPreferredSize(new Dimension(370, 660));
+        center.setMinimumSize(new Dimension(370, 660));
+        center.setMaximumSize(new Dimension(370, 660));
 
-        // ── Logo — drawn at natural aspect ratio ─────────────────────────────
-        final int MAX_H = 68;
+        // ── Logo ─────────────────────────────────────────────────────────────
+        final int MAX_H = 80;
         final int[] logoDim = new int[2];
         if (logoImage != null) {
             int iw = logoImage.getWidth(), ih = logoImage.getHeight();
@@ -99,7 +117,7 @@ public class UserRegisterScreen {
                 } else {
                     g2.setColor(new Color(130, 100, 230));
                     g2.fillOval(x, y, logoDim[0], logoDim[1]);
-                    g2.setFont(new Font("Dialog", Font.BOLD, 24));
+                    g2.setFont(new Font("Dialog", Font.BOLD, 28));
                     g2.setColor(Color.WHITE);
                     FontMetrics fm = g2.getFontMetrics();
                     g2.drawString("S",
@@ -116,21 +134,29 @@ public class UserRegisterScreen {
         logoPanel.setMaximumSize(logoPanelSize);
         logoPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JLabel titleLbl = new JLabel("Create account", SwingConstants.CENTER);
-        titleLbl.setFont(new Font("Serif", Font.BOLD, 24));
+        JLabel titleLbl = new JLabel("Create Account", SwingConstants.CENTER);
+        titleLbl.setFont(new Font("Serif", Font.BOLD, 25));
         titleLbl.setForeground(Color.WHITE);
         titleLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        center.add(Box.createVerticalStrut(38));
+        JLabel subtitleLbl = new JLabel("Register as a new user", SwingConstants.CENTER);
+        subtitleLbl.setFont(new Font("Dialog", Font.PLAIN, 11));
+        subtitleLbl.setForeground(new Color(200, 180, 220));
+        subtitleLbl.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        center.add(Box.createVerticalStrut(28));
         center.add(logoPanel);
-        center.add(Box.createVerticalStrut(12));
+        center.add(Box.createVerticalStrut(8));
         center.add(titleLbl);
-        center.add(Box.createVerticalStrut(22));
+        center.add(Box.createVerticalStrut(4));
+        center.add(subtitleLbl);
+        center.add(Box.createVerticalStrut(16));
 
         // ── Frosted card ─────────────────────────────────────────────────────
         JPanel card = new JPanel(new GridBagLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(new Color(15, 8, 55, 170));
@@ -142,155 +168,165 @@ public class UserRegisterScreen {
             }
         };
         card.setOpaque(false);
-        card.setBorder(new EmptyBorder(24, 28, 24, 28));
-        card.setMaximumSize(new Dimension(430, 999));
+        card.setBorder(new EmptyBorder(24, 32, 24, 32));
+        card.setMaximumSize(new Dimension(370, 999));
         card.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         GridBagConstraints cc = new GridBagConstraints();
-        cc.fill = GridBagConstraints.HORIZONTAL; cc.weightx = 1.0;
+        cc.gridx = 0;
+        cc.fill  = GridBagConstraints.HORIZONTAL;
+        cc.weightx = 1.0;
 
-        // ── First + Last name side by side ───────────────────────────────────
-        cc.gridx = 0; cc.gridy = 0; cc.gridwidth = 2; cc.insets = new Insets(0, 0, 12, 0);
-        JPanel nameRow = new JPanel(new GridLayout(1, 2, 10, 0));
-        nameRow.setOpaque(false);
+        // Full Name
+        cc.gridy = 0; cc.insets = new Insets(0, 0, 4, 0);
+        card.add(makeLabel("FULL NAME"), cc);
+        cc.gridy = 1; cc.insets = new Insets(0, 0, 12, 0);
+        JTextField fullNameField = makeField("e.g. Juan dela Cruz");
+        card.add(fullNameField, cc);
 
-        JPanel firstCol = new JPanel(new BorderLayout(0, 5)); firstCol.setOpaque(false);
-        firstCol.add(makeLabel("FIRST NAME"), BorderLayout.NORTH);
-        JTextField firstNameField = makeField("Juan", false);
-        firstCol.add(firstNameField, BorderLayout.CENTER);
-
-        JPanel lastCol = new JPanel(new BorderLayout(0, 5)); lastCol.setOpaque(false);
-        lastCol.add(makeLabel("LAST NAME"), BorderLayout.NORTH);
-        JTextField lastNameField = makeField("dela Cruz", false);
-        lastCol.add(lastNameField, BorderLayout.CENTER);
-
-        nameRow.add(firstCol); nameRow.add(lastCol);
-        card.add(nameRow, cc);
-
-        // ── Username ─────────────────────────────────────────────────────────
-        cc.gridy = 1; cc.insets = new Insets(0, 0, 5, 0);
-        card.add(makeLabel("USERNAME"), cc);
-        cc.gridy = 2; cc.insets = new Insets(0, 0, 12, 0);
-        JTextField usernameField = makeField("juandelacruz", false);
-        card.add(usernameField, cc);
-
-        // ── Email ─────────────────────────────────────────────────────────────
-        cc.gridy = 3; cc.insets = new Insets(0, 0, 5, 0);
+        // Email
+        cc.gridy = 2; cc.insets = new Insets(0, 0, 4, 0);
         card.add(makeLabel("EMAIL"), cc);
-        cc.gridy = 4; cc.insets = new Insets(0, 0, 12, 0);
-        JTextField emailField = makeField("juan@email.com", false);
+        cc.gridy = 3; cc.insets = new Insets(0, 0, 12, 0);
+        JTextField emailField = makeField("e.g. juan@email.com");
         card.add(emailField, cc);
 
-        // ── Password + Confirm side by side ──────────────────────────────────
-        cc.gridy = 5; cc.insets = new Insets(0, 0, 22, 0);
-        JPanel passRow = new JPanel(new GridLayout(1, 2, 10, 0));
-        passRow.setOpaque(false);
+        // Username
+        cc.gridy = 4; cc.insets = new Insets(0, 0, 4, 0);
+        card.add(makeLabel("USERNAME"), cc);
+        cc.gridy = 5; cc.insets = new Insets(0, 0, 12, 0);
+        JTextField usernameField = makeField("e.g. user123");
+        card.add(usernameField, cc);
 
-        JPanel passCol = new JPanel(new BorderLayout(0, 5)); passCol.setOpaque(false);
-        passCol.add(makeLabel("PASSWORD"), BorderLayout.NORTH);
-        JPasswordField passwordField = (JPasswordField) makeField("••••••••", true);
-        passCol.add(passwordField, BorderLayout.CENTER);
+        // Password
+        cc.gridy = 6; cc.insets = new Insets(0, 0, 4, 0);
+        card.add(makeLabel("PASSWORD"), cc);
+        cc.gridy = 7; cc.insets = new Insets(0, 0, 12, 0);
+        JPasswordField passwordField = makePasswordField();
+        card.add(passwordField, cc);
 
-        JPanel confirmCol = new JPanel(new BorderLayout(0, 5)); confirmCol.setOpaque(false);
-        confirmCol.add(makeLabel("CONFIRM"), BorderLayout.NORTH);
-        JPasswordField confirmField = (JPasswordField) makeField("••••••••", true);
-        confirmCol.add(confirmField, BorderLayout.CENTER);
+        // Confirm Password
+        cc.gridy = 8; cc.insets = new Insets(0, 0, 4, 0);
+        card.add(makeLabel("CONFIRM PASSWORD"), cc);
+        cc.gridy = 9; cc.insets = new Insets(0, 0, 20, 0);
+        JPasswordField confirmPasswordField = makePasswordField();
+        card.add(confirmPasswordField, cc);
 
-        passRow.add(passCol); passRow.add(confirmCol);
-        card.add(passRow, cc);
-
-        // ── Buttons ───────────────────────────────────────────────────────────
-        cc.gridy = 6; cc.insets = new Insets(0, 0, 9, 0);
-        JButton registerBtn = makePrimaryButton("Register");
+        // Register button
+        cc.gridy = 10; cc.insets = new Insets(0, 0, 10, 0);
+        JButton registerBtn = makePrimaryButton("Create Account");
         card.add(registerBtn, cc);
 
-        cc.gridy = 7; cc.insets = new Insets(0, 0, 0, 0);
-        JButton backBtn = makeSecondaryButton("Back to login");
+        // Back to Login button
+        cc.gridy = 11; cc.insets = new Insets(0, 0, 0, 0);
+        JButton backBtn = makeSecondaryButton("Back to Login");
         card.add(backBtn, cc);
 
         center.add(card);
-        center.add(Box.createVerticalStrut(18));
 
+        // ── Footer ───────────────────────────────────────────────────────────
+        center.add(Box.createVerticalStrut(16));
         JLabel footer = new JLabel("Smart Parking & RFID Control System", SwingConstants.CENTER);
         footer.setFont(new Font("Dialog", Font.PLAIN, 11));
-        footer.setForeground(new Color(220, 215, 255, 120));
+        footer.setForeground(new Color(220, 210, 255, 140));
         footer.setAlignmentX(Component.CENTER_ALIGNMENT);
         center.add(footer);
-        center.add(Box.createVerticalStrut(20));
 
-        // ── Actions ───────────────────────────────────────────────────────────
-        // Wire Enter key on all fields to trigger the Register button
-        java.awt.event.KeyAdapter enterKey = new java.awt.event.KeyAdapter() {
-            @Override public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) registerBtn.doClick();
-            }
-        };
-        firstNameField.addKeyListener(enterKey);
-        lastNameField.addKeyListener(enterKey);
-        usernameField.addKeyListener(enterKey);
-        emailField.addKeyListener(enterKey);
-        passwordField.addKeyListener(enterKey);
-        confirmField.addKeyListener(enterKey);
-
+        // ── Actions ──────────────────────────────────────────────────────────
         registerBtn.addActionListener(e -> {
-            String firstName   = firstNameField.getText().trim();
-            String lastName    = lastNameField.getText().trim();
-            String username    = usernameField.getText().trim();
-            String email       = emailField.getText().trim();
+            // Read raw values
+            String rawFullName = fullNameField.getText().trim();
+            String rawEmail    = emailField.getText().trim();
+            String rawUsername = usernameField.getText().trim();
             String password    = new String(passwordField.getPassword());
-            String confirmPass = new String(confirmField.getPassword());
+            String confirm     = new String(confirmPasswordField.getPassword());
 
-            if (firstName.equals("Juan"))        firstName = "";
-            if (lastName.equals("dela Cruz"))    lastName = "";
-            if (username.equals("juandelacruz")) username = "";
-            if (email.equals("juan@email.com"))  email = "";
+            // Strip placeholders into new effectively-final variables
+            String cleanFullName = rawFullName.equals("e.g. Juan dela Cruz") ? "" : rawFullName;
+            String cleanEmail    = rawEmail.equals("e.g. juan@email.com")    ? "" : rawEmail;
+            String cleanUsername = rawUsername.equals("e.g. user123")        ? "" : rawUsername;
 
-            if (firstName.isEmpty() || lastName.isEmpty() || username.isEmpty()
-                    || email.isEmpty() || password.isEmpty() || confirmPass.isEmpty()) {
+            // Validation
+            if (cleanFullName.isEmpty() || cleanEmail.isEmpty() || cleanUsername.isEmpty() || password.isEmpty()) {
                 DialogUtil.showMessageDialog(null, "Please fill in all fields.",
-                        "Registration Error", JOptionPane.ERROR_MESSAGE); return;
+                        "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
             }
-            if (!EMAIL_PATTERN.matcher(email).matches()) {
-                DialogUtil.showMessageDialog(null,
-                        "Please enter a valid email address.\nExample: john.doe@example.com",
-                        "Invalid Email", JOptionPane.ERROR_MESSAGE); return;
+
+            if (!cleanEmail.contains("@") || !cleanEmail.contains(".")) {
+                DialogUtil.showMessageDialog(null, "Please enter a valid email address.",
+                        "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
             }
-            if (!password.equals(confirmPass)) {
+
+            if (cleanUsername.length() < 4) {
+                DialogUtil.showMessageDialog(null, "Username must be at least 4 characters.",
+                        "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (password.length() < 6) {
+                DialogUtil.showMessageDialog(null, "Password must be at least 6 characters.",
+                        "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (!password.equals(confirm)) {
                 DialogUtil.showMessageDialog(null, "Passwords do not match.",
-                        "Registration Error", JOptionPane.ERROR_MESSAGE); return;
+                        "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
             }
-            if (password.length() < 5) {
-                DialogUtil.showMessageDialog(null, "Password must be at least 5 characters.",
-                        "Registration Error", JOptionPane.ERROR_MESSAGE); return;
-            }
+
             try {
-                UserAccountDAO dao = new UserAccountDAO();
-                if (dao.existsByUsername(username)) {
-                    DialogUtil.showMessageDialog(null, "Username is already taken.",
-                            "Registration Error", JOptionPane.ERROR_MESSAGE); return;
+                UserAccountDAO userDAO = new UserAccountDAO();
+
+                if (userDAO.existsByUsername(cleanUsername)) {
+                    DialogUtil.showMessageDialog(null, "Username is already taken. Please choose another.",
+                            "Registration Error", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
-                if (dao.existsByEmail(email)) {
-                    DialogUtil.showMessageDialog(null, "Email is already registered.",
-                            "Registration Error", JOptionPane.ERROR_MESSAGE); return;
+
+                if (userDAO.existsByEmail(cleanEmail)) {
+                    DialogUtil.showMessageDialog(null, "An account with that email already exists.",
+                            "Registration Error", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
+
+                // Build and save new user account
                 UserAccount newUser = new UserAccount();
-                newUser.setUsername(username);
+                newUser.setUsername(cleanUsername);
+                newUser.setFullName(cleanFullName);
+                newUser.setEmail(cleanEmail);
                 newUser.setPasswordHash(PasswordUtil.hashPassword(password));
-                newUser.setEmail(email);
-                newUser.setFullName(firstName + " " + lastName);
                 newUser.setRole("USER");
                 newUser.setActive(true);
-                dao.create(newUser);
+
+                userDAO.create(newUser);
+
+                // Audit log — fetch created user to get their generated ID
+                try {
+                    new UserAccountDAO().findByUsername(cleanUsername).ifPresent(created -> {
+                        try {
+                            AuditLog log = new AuditLog();
+                            log.setUserId(created.getUserId());
+                            log.setAction("REGISTER");
+                            log.setEntityType("USER");
+                            log.setEntityId(created.getUserId());
+                            log.setNewValue(cleanUsername);
+                            new AuditLogDAO().create(log);
+                        } catch (Exception ignored) {}
+                    });
+                } catch (Exception auditEx) {
+                    auditEx.printStackTrace();
+                }
+
                 DialogUtil.showMessageDialog(null,
-                        "Account created successfully! Please sign in.",
-                        "Success", JOptionPane.INFORMATION_MESSAGE);
-                Color ph = new Color(185, 175, 255, 145);
-                firstNameField.setText("Juan");        firstNameField.setForeground(ph);
-                lastNameField.setText("dela Cruz");    lastNameField.setForeground(ph);
-                usernameField.setText("juandelacruz"); usernameField.setForeground(ph);
-                emailField.setText("juan@email.com");  emailField.setForeground(ph);
-                passwordField.setText(""); confirmField.setText("");
-                cardLayout.show(rootPanel, "USER_LOGIN");
+                        "Account created successfully! You can now log in.",
+                        "Registration Successful", JOptionPane.INFORMATION_MESSAGE);
+
+                clearFields(fullNameField, emailField, usernameField, passwordField, confirmPasswordField);
+                cardLayout.show(rootPanel, "UNIFIED_LOGIN");
+
             } catch (SQLException ex) {
                 DialogUtil.showMessageDialog(null, "Database error: " + ex.getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
@@ -298,22 +334,20 @@ public class UserRegisterScreen {
             }
         });
 
-        backBtn.addActionListener(e -> cardLayout.show(rootPanel, "USER_LOGIN"));
+        // ── Back to Login ─────────────────────────────────────────────────────
+        backBtn.addActionListener(e -> {
+            clearFields(fullNameField, emailField, usernameField, passwordField, confirmPasswordField);
+            cardLayout.show(rootPanel, "UNIFIED_LOGIN");
+        });
 
-        // Reset all fields every time this screen becomes visible
+        // Enter key on confirm field triggers register
+        confirmPasswordField.addActionListener(e -> registerBtn.doClick());
+
+        // ── Clear fields when screen becomes visible ──────────────────────────
         p.addHierarchyListener(e -> {
-            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0 && p.isShowing()) {
-                Color ph = new Color(185, 175, 255, 145);
-                firstNameField.setText("Juan");        firstNameField.setForeground(ph);
-                lastNameField.setText("dela Cruz");    lastNameField.setForeground(ph);
-                usernameField.setText("juandelacruz"); usernameField.setForeground(ph);
-                emailField.setText("juan@email.com");  emailField.setForeground(ph);
-                passwordField.setText("••••••••");
-                passwordField.setForeground(ph);
-                ((JPasswordField) passwordField).setEchoChar((char) 0);
-                confirmField.setText("••••••••");
-                confirmField.setForeground(ph);
-                ((JPasswordField) confirmField).setEchoChar((char) 0);
+            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0
+                    && p.isShowing()) {
+                clearFields(fullNameField, emailField, usernameField, passwordField, confirmPasswordField);
             }
         });
 
@@ -321,9 +355,182 @@ public class UserRegisterScreen {
         return p;
     }
 
-    // ── Delegate to UserLoginScreen helpers for consistent style ─────────────
-    private static JLabel     makeLabel(String t)             { return UserLoginScreen.makeLabel(t); }
-    private static JTextField makeField(String p, boolean pw) { return UserLoginScreen.makeField(p, pw); }
-    private static JButton    makePrimaryButton(String t)     { return UserLoginScreen.makePrimaryButton(t); }
-    private static JButton    makeSecondaryButton(String t)   { return UserLoginScreen.makeSecondaryButton(t); }
+    // ── Helper: reset all fields to placeholder state ─────────────────────────
+    private static void clearFields(JTextField fullName, JTextField email,
+                                    JTextField username, JPasswordField pass,
+                                    JPasswordField confirm) {
+        fullName.setText("e.g. Juan dela Cruz");
+        fullName.setForeground(new Color(185, 175, 255, 145));
+        email.setText("e.g. juan@email.com");
+        email.setForeground(new Color(185, 175, 255, 145));
+        username.setText("e.g. user123");
+        username.setForeground(new Color(185, 175, 255, 145));
+        pass.setText("");
+        confirm.setText("");
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    static JLabel makeLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("Dialog", Font.BOLD, 10));
+        lbl.setForeground(new Color(210, 200, 255, 210));
+        return lbl;
+    }
+
+    static JTextField makeField(String placeholder) {
+        JTextField field = new JTextField() {
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(30, 15, 70, 140));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.dispose();
+            }
+        };
+        field.setOpaque(false);
+        field.setBackground(new Color(0, 0, 0, 0));
+        field.setText(placeholder);
+        field.setForeground(new Color(185, 175, 255, 145));
+        field.setFont(new Font("Dialog", Font.PLAIN, 13));
+        field.setCaretColor(new Color(200, 180, 255));
+        field.setBorder(new javax.swing.border.CompoundBorder(
+            new javax.swing.border.AbstractBorder() {
+                @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(new Color(180, 160, 255, 110));
+                    g2.setStroke(new BasicStroke(1f));
+                    g2.drawRoundRect(x, y, w - 1, h - 1, 10, 10);
+                    g2.dispose();
+                }
+                @Override public Insets getBorderInsets(Component c) { return new Insets(1, 1, 1, 1); }
+            },
+            new EmptyBorder(8, 10, 8, 10)
+        ));
+        field.setPreferredSize(new Dimension(220, 38));
+        field.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override public void focusGained(java.awt.event.FocusEvent e) {
+                if (field.getText().equals(placeholder)) {
+                    field.setText("");
+                    field.setForeground(new Color(200, 180, 255));
+                }
+            }
+            @Override public void focusLost(java.awt.event.FocusEvent e) {
+                if (field.getText().isEmpty()) {
+                    field.setText(placeholder);
+                    field.setForeground(new Color(185, 175, 255, 145));
+                }
+            }
+        });
+        return field;
+    }
+
+    static JPasswordField makePasswordField() {
+        JPasswordField field = new JPasswordField() {
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(new Color(30, 15, 70, 140));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+                g2.dispose();
+            }
+        };
+        field.setForeground(new Color(200, 180, 255));
+        field.setFont(new Font("Dialog", Font.PLAIN, 13));
+        field.setOpaque(false);
+        field.setBackground(new Color(0, 0, 0, 0));
+        field.setCaretColor(new Color(200, 180, 255));
+        field.setBorder(new javax.swing.border.CompoundBorder(
+            new javax.swing.border.AbstractBorder() {
+                @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                    g2.setColor(new Color(180, 160, 255, 110));
+                    g2.setStroke(new BasicStroke(1f));
+                    g2.drawRoundRect(x, y, w - 1, h - 1, 10, 10);
+                    g2.dispose();
+                }
+                @Override public Insets getBorderInsets(Component c) { return new Insets(1, 1, 1, 1); }
+            },
+            new EmptyBorder(8, 10, 8, 10)
+        ));
+        field.setPreferredSize(new Dimension(220, 38));
+        field.setEchoChar('\u2022');
+        return field;
+    }
+
+    static JButton makePrimaryButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("SansSerif", Font.BOLD, 13));
+        btn.setForeground(Color.WHITE);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
+        btn.setPreferredSize(new Dimension(220, 38));
+        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                AbstractButton b = (AbstractButton) c;
+                GradientPaint gp = b.getModel().isPressed() || b.getModel().isRollover()
+                    ? new GradientPaint(0, 0, new Color(210, 50, 140), c.getWidth(), 0, new Color(127, 119, 221))
+                    : new GradientPaint(0, 0, new Color(127, 119, 221), c.getWidth(), 0, new Color(210, 50, 140));
+                g2.setPaint(gp);
+                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 8, 8);
+                g2.setColor(Color.WHITE);
+                g2.setFont(b.getFont());
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (c.getWidth() - fm.stringWidth(b.getText())) / 2;
+                int y = (c.getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(b.getText(), x, y);
+                g2.dispose();
+            }
+        });
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
+    static JButton makeSecondaryButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        btn.setForeground(new Color(200, 185, 255));
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setOpaque(false);
+        btn.setContentAreaFilled(false);
+        btn.setPreferredSize(new Dimension(220, 38));
+        btn.setUI(new javax.swing.plaf.basic.BasicButtonUI() {
+            @Override
+            public void paint(Graphics g, JComponent c) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                AbstractButton b = (AbstractButton) c;
+                if (b.getModel().isPressed()) {
+                    g2.setColor(new Color(127, 119, 221, 70));
+                } else if (b.getModel().isRollover()) {
+                    g2.setColor(new Color(127, 119, 221, 45));
+                } else {
+                    g2.setColor(new Color(127, 119, 221, 20));
+                }
+                g2.fillRoundRect(0, 0, c.getWidth(), c.getHeight(), 8, 8);
+                g2.setColor(new Color(160, 140, 220, 170));
+                g2.setStroke(new BasicStroke(1.2f));
+                g2.drawRoundRect(0, 0, c.getWidth() - 1, c.getHeight() - 1, 8, 8);
+                g2.setColor(new Color(200, 185, 255));
+                g2.setFont(b.getFont());
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (c.getWidth() - fm.stringWidth(b.getText())) / 2;
+                int y = (c.getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(b.getText(), x, y);
+                g2.dispose();
+            }
+        });
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
 }

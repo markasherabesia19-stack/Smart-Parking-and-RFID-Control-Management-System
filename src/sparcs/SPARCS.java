@@ -56,7 +56,7 @@ public class SPARCS extends JFrame {
         rootPanel.add(AdminManageAccountsScreen.build(cardLayout, rootPanel, state),    "ADMIN_MANAGE_ACCOUNTS");
         
         //User
-        rootPanel.add(UserRegisterScreen.build(cardLayout, rootPanel),                  "USER_REGISTER");
+        rootPanel.add(UserRegisterScreen.build(cardLayout, rootPanel, state),           "USER_REGISTER");  // FIX: was missing — caused "Create Account" button to do nothing
         rootPanel.add(UserDashboardScreen.build(cardLayout, rootPanel, state),          "USER_DASHBOARD");
         rootPanel.add(UserMyStatusScreen.build(cardLayout, rootPanel, state),           "USER_MY_STATUS");
         rootPanel.add(UserSlotViewScreen.build(cardLayout, rootPanel, state),           "USER_SLOT_VIEW");

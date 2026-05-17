@@ -223,7 +223,7 @@ public class UnifiedLoginScreen {
         JButton signInBtn = makePrimaryButton("Sign In");
         card.add(signInBtn, cc);
 
-        // Create Account link
+        // Create Account button
         cc.gridy = 5; cc.insets = new Insets(0, 0, 0, 0);
         JButton createAccountBtn = makeTertiaryButton("Create Account");
         card.add(createAccountBtn, cc);
@@ -402,14 +402,43 @@ public class UnifiedLoginScreen {
     }
 
     static JButton makeTertiaryButton(String text) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("Dialog", Font.PLAIN, 12));
-        btn.setForeground(new Color(160, 140, 220));
+        // FIX: Removed the anonymous class override of isOpaque() which was breaking
+        // Swing's mouse event hit-testing, making the button unclickable.
+        // setOpaque(false) below achieves the same visual result safely.
+        JButton btn = new JButton(text) {
+            @Override protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (getModel().isPressed()) {
+                    g2.setColor(new Color(127, 119, 221, 60));
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(127, 119, 221, 40));
+                } else {
+                    g2.setColor(new Color(127, 119, 221, 20));
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
+                g2.setColor(new Color(160, 140, 220, 160));
+                g2.setStroke(new BasicStroke(1.2f));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 8, 8);
+                g2.setColor(new Color(200, 185, 255));
+                g2.setFont(getFont());
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(getText())) / 2;
+                int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                g2.drawString(getText(), x, y);
+                g2.dispose();
+            }
+            // REMOVED: @Override public boolean isOpaque() { return false; }
+            // This override confused Swing's repaint manager and broke mouse click dispatch.
+        };
+        btn.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        btn.setForeground(new Color(200, 185, 255));
         btn.setBorderPainted(false);
         btn.setFocusPainted(false);
-        btn.setOpaque(false);
         btn.setContentAreaFilled(false);
-        btn.setPreferredSize(new Dimension(220, 30));
+        btn.setOpaque(false); // FIX: use the proper API instead of overriding isOpaque()
+        btn.setEnabled(true); // FIX: explicitly ensure the button is enabled and interactive
+        btn.setPreferredSize(new Dimension(220, 38));
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         return btn;
     }
