@@ -414,10 +414,6 @@ public class AdminFeesScreen {
         }
     }
 
-    /**
-     * Resolves the UserAccount that owns the given vehicle.
-     * Returns empty if the chain vehicle → owner → user cannot be completed.
-     */
     private static Optional<UserAccount> resolveUserForVehicle(Vehicle vehicle) {
         try {
             VehicleOwnerDAO ownerDAO = new VehicleOwnerDAO();

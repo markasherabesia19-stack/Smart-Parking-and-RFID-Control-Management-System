@@ -7,13 +7,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Vehicle Data Access Object
- */
+// Vehicle Data Access Object
+
 public class VehicleDAO {
 
     public void create(Vehicle vehicle) throws SQLException {
-        String sql = "INSERT INTO vehicle (owner_id, plate_number, rfid_tag_id, vehicle_type, model, color, is_active, parking_status) " +
+        String sql = "INSERT INTO vehicle (owner_id, plate_number, rfid_tag_number, vehicle_type, model, color, is_active, parking_status) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -90,10 +89,8 @@ public class VehicleDAO {
         return vehicles;
     }
 
-    /**
-     * Fetches all active vehicles for a given user_id by joining across all owner rows.
-     * Use this instead of chaining findAllByUserId + findByOwnerId when you only need vehicles.
-     */
+    // Fetches all active vehicles for a given user_id by joining across all owner rows.
+     
     public List<Vehicle> findAllByUserId(int userId) throws SQLException {
         String sql = "SELECT v.* FROM vehicle v " +
                 "INNER JOIN vehicle_owner vo ON v.owner_id = vo.owner_id " +
@@ -130,7 +127,7 @@ public class VehicleDAO {
     }
 
     public void update(Vehicle vehicle) throws SQLException {
-        String sql = "UPDATE vehicle SET owner_id = ?, plate_number = ?, rfid_tag_id = ?, " +
+        String sql = "UPDATE vehicle SET owner_id = ?, plate_number = ?, rfid_tag_number = ?, " +
                 "vehicle_type = ?, model = ?, color = ?, is_active = ?, parking_status = ? WHERE vehicle_id = ?";
 
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
@@ -207,7 +204,7 @@ public class VehicleDAO {
         vehicle.setOwnerId(rs.getInt("owner_id"));
         vehicle.setPlateNumber(rs.getString("plate_number"));
 
-        Integer rfidTagId = rs.getInt("rfid_tag_id");
+        Integer rfidTagId = rs.getInt("rfid_tag_number");
         if (!rs.wasNull()) {
             vehicle.setRfidTagId(rfidTagId);
         }

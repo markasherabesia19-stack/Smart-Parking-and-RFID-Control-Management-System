@@ -3,9 +3,7 @@ package model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Fee Schedule Model
- */
+// Fee Schedule Model
 public class FeeSchedule {
     private int feeId;
     private BigDecimal ratePerHour;

@@ -2,9 +2,8 @@
 import util.PasswordUtil;
 import java.util.Scanner;
 
-/**
- * Helper tool to generate password hashes for database updates
- */
+// Helper tool to generate password hashes for database updates
+
 public class UpdatePasswordHash {
     public static void main(String[] args) {
         System.out.println("=== SPARCS Password Hash Generator ===\n");

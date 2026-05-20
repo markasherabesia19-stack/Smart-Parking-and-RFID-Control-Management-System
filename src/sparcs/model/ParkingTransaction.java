@@ -3,9 +3,8 @@ package model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Parking Transaction Model
- */
+// Parking Transaction Model
+
 public class ParkingTransaction {
     private int transactionId;
     private int vehicleId;

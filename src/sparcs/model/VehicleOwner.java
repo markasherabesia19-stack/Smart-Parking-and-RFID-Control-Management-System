@@ -2,9 +2,8 @@ package model;
 
 import java.time.LocalDateTime;
 
-/**
- * Vehicle Owner Model
- */
+// Vehicle Owner Model
+
 public class VehicleOwner {
     private int ownerId;
     private Integer userId;

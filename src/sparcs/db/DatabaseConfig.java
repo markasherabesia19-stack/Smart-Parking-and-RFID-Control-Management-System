@@ -77,7 +77,11 @@ public class DatabaseConfig {
             if (!configured || JDBC_URL == null || USERNAME == null || PASSWORD == null) {
                 throw new SQLException("Database credentials are not configured");
             }
-            return DriverManager.getConnection(JDBC_URL, USERNAME, PASSWORD);
+            Connection conn = DriverManager.getConnection(JDBC_URL, USERNAME, PASSWORD);
+            // Force READ COMMITTED so every query sees the latest committed data
+            conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+            conn.setAutoCommit(true);
+            return conn;
         } catch (SQLException e) {
             System.err.println("Failed to get database connection: " + e.getMessage());
             throw e;
@@ -342,7 +346,7 @@ public class DatabaseConfig {
             builder.append(database);
         }
 
-        builder.append("?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC");
+        builder.append("?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&useLocalSessionState=false&useLocalTransactionState=false&autoReconnect=true&failOverReadOnly=false&cachePrepStmts=false&cacheResultSetMetadata=false");
         return builder.toString();
     }
 

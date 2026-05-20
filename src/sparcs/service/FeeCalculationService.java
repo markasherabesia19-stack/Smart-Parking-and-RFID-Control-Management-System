@@ -10,10 +10,9 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
-/**
- * Fee Calculation Service
- * Handles parking fee calculations
- */
+// Fee Calculation Service
+// Handles parking fee calculations
+
 public class FeeCalculationService {
     private FeeScheduleDAO feeScheduleDAO;
 
@@ -21,12 +20,6 @@ public class FeeCalculationService {
         this.feeScheduleDAO = new FeeScheduleDAO();
     }
 
-    /**
-     * Calculate parking fee for a transaction.
-     * Returns ZERO immediately for RESERVED transactions (vehicle not yet parked).
-     * For IN_PROGRESS / COMPLETED sessions the fee is:
-     *   ceil(billable_hours) × ratePerHour, capped at ratePerDay × number_of_days.
-     */
     public BigDecimal calculateFee(ParkingTransaction transaction) throws SQLException {
         // No entry yet — nothing to charge
         if (transaction.getEntryTime() == null) {
@@ -73,9 +66,7 @@ public class FeeCalculationService {
         return fee.setScale(2, RoundingMode.HALF_UP);
     }
 
-    /**
-     * Calculate duration in minutes between two times
-     */
+    // Calculate duration in minutes between two times
     public static long calculateDurationMinutes(LocalDateTime entryTime, LocalDateTime exitTime) {
         if (entryTime == null) {
             return 0;
@@ -84,16 +75,12 @@ public class FeeCalculationService {
         return ChronoUnit.MINUTES.between(entryTime, exit);
     }
 
-    /**
-     * Get current fee schedule
-     */
+    // Get current fee schedule
     public Optional<FeeSchedule> getCurrentFeeSchedule() throws SQLException {
         return feeScheduleDAO.findCurrentActive();
     }
 
-    /**
-     * Get fee per hour
-     */
+    // Get fee per hour
     public BigDecimal getFeePerHour() throws SQLException {
         Optional<FeeSchedule> schedule = feeScheduleDAO.findCurrentActive();
         if (schedule.isPresent()) {
@@ -102,9 +89,7 @@ public class FeeCalculationService {
         return BigDecimal.ZERO;
     }
 
-    /**
-     * Get grace period in minutes
-     */
+    // Get grace period in minutes
     public int getGracePeriodMinutes() throws SQLException {
         Optional<FeeSchedule> schedule = feeScheduleDAO.findCurrentActive();
         if (schedule.isPresent()) {

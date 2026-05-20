@@ -22,10 +22,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Modal overlay dialog for quick entry/exit actions on a selected parking slot.
- * Appears when a slot is clicked from the slot map.
- */
+// Modal overlay dialog for quick entry/exit actions on a selected parking slot.
+// Appears when a slot is clicked from the slot map.
+
 public class SlotActionDialog extends JDialog {
 
     public SlotActionDialog(JFrame parent, String slotCode, AppState state) {

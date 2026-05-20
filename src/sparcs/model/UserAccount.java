@@ -3,9 +3,8 @@ package model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * User Account Model
- */
+// User Account Model
+
 public class UserAccount {
     private int userId;
     private String username;

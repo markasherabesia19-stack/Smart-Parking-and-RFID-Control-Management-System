@@ -25,10 +25,9 @@ import java.time.temporal.WeekFields;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * SPARCS — Admin reports screen.
- * Displays parking analytics and provides CSV export functionality.
- */
+// SPARCS — Admin reports screen.
+// Displays parking analytics and provides CSV export functionality.
+
 public class AdminReportsScreen {
     private static final ParkingTransactionDAO transactionDAO = new ParkingTransactionDAO();
     private static final VehicleDAO vehicleDAO = new VehicleDAO();

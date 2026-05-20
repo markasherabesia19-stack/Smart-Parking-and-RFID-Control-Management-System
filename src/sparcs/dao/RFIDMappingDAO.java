@@ -7,10 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * RFID Mapping Data Access Object
- * Each RFID tag maps to a unique Vehicle (vehicle_id), not an owner.
- */
+// RFID Mapping Data Access Object Each RFID tag maps to a unique Vehicle (vehicle_id), not an owner.
 public class RFIDMappingDAO {
 
     public void create(RFIDMapping mapping) throws SQLException {
@@ -68,7 +65,7 @@ public class RFIDMappingDAO {
         return Optional.empty();
     }
 
-    /** Returns the RFID mapping for a specific vehicle (one-to-one). */
+    // Returns the RFID mapping for a specific vehicle (one-to-one).
     public Optional<RFIDMapping> findByVehicleId(int vehicleId) throws SQLException {
         String sql = "SELECT * FROM rfid_mapping WHERE vehicle_id = ? AND status = 'Active'";
 
@@ -85,7 +82,7 @@ public class RFIDMappingDAO {
         return Optional.empty();
     }
 
-    /** Returns ALL RFID mappings for a vehicle regardless of status. Use for deletion. */
+    // Returns ALL RFID mappings for a vehicle regardless of status. Use for deletion.
     public List<RFIDMapping> findAllByVehicleId(int vehicleId) throws SQLException {
         String sql = "SELECT * FROM rfid_mapping WHERE vehicle_id = ?";
         List<RFIDMapping> mappings = new ArrayList<>();
@@ -103,7 +100,7 @@ public class RFIDMappingDAO {
         return mappings;
     }
 
-    /** Returns all RFID mappings for vehicles belonging to an owner (via JOIN). */
+    // Returns all RFID mappings for vehicles belonging to an owner (via JOIN).
     public List<RFIDMapping> findByOwnerId(int ownerId) throws SQLException {
         String sql = """
                 SELECT rm.*

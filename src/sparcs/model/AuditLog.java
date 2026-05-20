@@ -2,9 +2,8 @@ package model;
 
 import java.time.LocalDateTime;
 
-/**
- * Audit Log Model
- */
+// Audit Log Model
+
 public class AuditLog {
     private int auditId;
     private Integer userId;

@@ -19,15 +19,8 @@ import java.awt.event.*;
 import java.sql.SQLException;
 import java.util.List;
 
-/**
- * SPARCS — Admin Manage Accounts Screen (v2)
- * Redesigned to match design system: consistent with AdminAuditLogScreen.
- * - Badge renderers for Status (ACTIVE/INACTIVE) and Role (ADMIN/USER)
- * - Rounded card container wrapping search + table + actions
- * - Proper search field with focus ring
- * - Action buttons styled per design system (Danger / Success / Secondary)
- * - Table header, row, hover all matching #1A1650 / #241E6B
- */
+// SPARCS — Admin "Manage Accounts" screen.
+
 public class AdminManageAccountsScreen {
 
     // ── Design tokens ────────────────────────────────────────────────────────
@@ -656,7 +649,7 @@ public class AdminManageAccountsScreen {
         return d;
     }
 
-    /** Wraps the form panel in a DialogUtil-style card with rounded corners + purple border glow. */
+    // Wraps the form panel in a DialogUtil-style card with rounded corners + purple border glow.
     private static JPanel wrapInCard(JPanel inner) {
         JPanel card = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {
@@ -718,7 +711,7 @@ public class AdminManageAccountsScreen {
     }
 
     // ── Component builders ────────────────────────────────────────────────────
-    /** Search field with placeholder simulation and focus ring. */
+    // Search field with placeholder simulation and focus ring.
     private static JTextField buildSearchField(String placeholder) {
         JTextField field = new JTextField() {
             private boolean focused = false;
@@ -843,7 +836,7 @@ public class AdminManageAccountsScreen {
         return cb;
     }
 
-    /** Primary gradient button (#7C5CBF → #D63880). */
+    // /** Primary gradient button (#7C5CBF → #D63880). */
     private static JButton buildGradientButton(String text) {
         JButton btn = new JButton(text) {
             @Override protected void paintComponent(Graphics g) {
@@ -867,12 +860,12 @@ public class AdminManageAccountsScreen {
         return btn;
     }
 
-    /** Danger button — #E8365D background. */
+    // /** Danger button — #E8365D background. */
     private static JButton buildDangerButton(String text) {
         return buildColorButton(text, C_RED);
     }
 
-    /** Success button — #1DB954 background. */
+    // /** Success button — #1DB954 background. */
     private static JButton buildSuccessButton(String text) {
         return buildColorButton(text, C_GREEN);
     }
@@ -930,10 +923,7 @@ public class AdminManageAccountsScreen {
         return btn;
     }
 
-    // ── Badge Renderers ───────────────────────────────────────────────────────
-    /**
-     * Status badge: ACTIVE → green, INACTIVE → orange (matches design system).
-     */
+    // Badge Renderer
     static class StatusBadgeRenderer implements TableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(
@@ -978,9 +968,7 @@ public class AdminManageAccountsScreen {
         }
     }
 
-    /**
-     * Role badge: ADMIN → purple, USER → blue chip.
-     */
+    // Role badge: ADMIN → purple, USER → blue chip.
     static class RoleBadgeRenderer implements TableCellRenderer {
         private static final Color ADMIN_BG = new Color(124, 92, 191, 46);
         private static final Color ADMIN_FG = new Color(167, 139, 250);  // light purple

@@ -8,9 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Parking Transaction Data Access Object
- */
+// Parking Transaction Data Access Object
 public class ParkingTransactionDAO {
 
     public void create(ParkingTransaction transaction) throws SQLException {

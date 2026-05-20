@@ -9,10 +9,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Parking Service
- * Handles parking operations: slot management and transaction queries.
- */
+// Parking Service
+// Handles parking operations: slot management and transaction queries.
+
 public class ParkingService {
 
     private final ParkingTransactionDAO transactionDAO;
@@ -25,7 +24,7 @@ public class ParkingService {
 
     // ── Slot queries ──────────────────────────────────────────────────────────
 
-    /** Returns all slots with status = AVAILABLE. */
+    // Returns all slots with status = AVAILABLE.
     public List<ParkingSlot> getAvailableSlots() throws SQLException {
         List<ParkingSlot> available = new ArrayList<>();
         for (ParkingSlot s : slotDAO.findAll()) {
@@ -34,7 +33,7 @@ public class ParkingService {
         return available;
     }
 
-    /** Returns all slots with status = OCCUPIED. */
+    // Returns all slots with status = OCCUPIED.
     public List<ParkingSlot> getOccupiedSlots() throws SQLException {
         List<ParkingSlot> occupied = new ArrayList<>();
         for (ParkingSlot s : slotDAO.findAll()) {
@@ -43,10 +42,8 @@ public class ParkingService {
         return occupied;
     }
 
-    /**
-     * Returns slots whose code starts with the given zone letter.
-     * e.g. getSlotsByZone("B") returns B-01 … B-08.
-     */
+    // Returns slots whose code starts with the given zone letter.
+     
     public List<ParkingSlot> getSlotsByZone(String zoneLetter) throws SQLException {
         List<ParkingSlot> zone = new ArrayList<>();
         String prefix = zoneLetter.toUpperCase() + "-";
@@ -58,7 +55,7 @@ public class ParkingService {
         return zone;
     }
 
-    /** Builds a full ParkingStatistics snapshot from the DB. */
+    // Builds a full ParkingStatistics snapshot from the DB.
     public ParkingStatistics getParkingStatistics() throws SQLException {
         List<ParkingSlot> all = slotDAO.findAll();
         int total = all.size(), available = 0, occupied = 0, reserved = 0;
@@ -80,12 +77,12 @@ public class ParkingService {
 
     // ── Transaction queries ───────────────────────────────────────────────────
 
-    /** Returns all in-progress transactions. */
+    // Returns all in-progress transactions.
     public List<ParkingTransaction> getActiveTransactions() throws SQLException {
         return transactionDAO.findInProgress();
     }
 
-    /** Returns all transactions with a pending payment. */
+    // Returns all transactions with a pending payment.
     public List<ParkingTransaction> getPendingPayments() throws SQLException {
         return transactionDAO.findPending();
     }

@@ -7,17 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Vehicle Owner Data Access Object — matches actual vehicle_owner table.
- * DB columns: owner_id, user_id, full_name, phone_number, address, created_at, updated_at
- */
+// Vehicle Owner Data Access Object — matches actual vehicle_owner table.
+ 
 public class VehicleOwnerDAO {
 
-    /**
-     * Creates a new owner row only if no owner exists for the given user_id.
-     * Returns the existing or newly created VehicleOwner.
-     */
+    // Creates a new owner row only if no owner exists for the given user_id.
+
     public VehicleOwner createOrFind(VehicleOwner owner) throws SQLException {
+        if (owner.getUserId() == null || owner.getUserId() <= 0) {
+            throw new SQLException("Cannot createOrFind vehicle_owner: user_id is missing or invalid.");
+        }
         List<VehicleOwner> existing = findAllByUserId(owner.getUserId());
         if (!existing.isEmpty()) {
             return existing.get(0);
@@ -33,7 +32,10 @@ public class VehicleOwnerDAO {
         try (Connection conn = DatabaseConfig.getInstance().getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setObject(1, owner.getUserId());
+            if (owner.getUserId() == null || owner.getUserId() <= 0) {
+                throw new SQLException("Cannot create vehicle_owner: user_id is missing or invalid.");
+            }
+            stmt.setInt(1, owner.getUserId());
             stmt.setString(2, owner.getFirstName() + " " + owner.getLastName());
             stmt.setString(3, owner.getContactNumber());
             stmt.setString(4, owner.getAddress());

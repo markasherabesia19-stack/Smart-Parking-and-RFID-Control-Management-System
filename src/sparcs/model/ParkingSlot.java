@@ -1,15 +1,10 @@
 package model;
 
-/**
- * Represents a single parking slot.
- *
- * status: "AVAILABLE" | "OCCUPIED" | "RESERVED"
- *
- * slotCode format: "A-01" … "E-08"  (5 zones × 8 slots = 40 total)
- * slotIndex: 0-based position in AppState.slotData[]
- *   Index = (zone row × 8) + (slot number - 1)
- *   e.g. A-01 → 0, A-08 → 7, B-01 → 8, E-08 → 39
- */
+// Represents a single parking slot.
+// status: "AVAILABLE" | "OCCUPIED" | "RESERVED"
+// slotCode format: "A-01" … "E-08"  (5 zones × 8 slots = 40 total)
+// slotIndex: 0-based position in AppState.slotData[]
+ 
 public class ParkingSlot {
 
     public static final String AVAILABLE = "AVAILABLE";
@@ -46,10 +41,9 @@ public class ParkingSlot {
     public boolean isOccupied()  { return OCCUPIED.equals(status);  }
     public boolean isReserved()  { return RESERVED.equals(status);  }
 
-    /**
-     * Converts slotCode (e.g. "B-04") to a 0-based index into AppState.slotData[].
-     * Zone A=0, B=1, C=2, D=3, E=4. Slot numbers are 1-based.
-     */
+    // Converts slotCode (e.g. "B-04") to a 0-based index into AppState.slotData[].
+    // Zone A=0, B=1, C=2, D=3, E=4. Slot numbers are 1-based.
+    
     public int getSlotIndex() {
         if (slotCode == null || slotCode.length() < 4) return -1;
         char zoneChar = Character.toUpperCase(slotCode.charAt(0));

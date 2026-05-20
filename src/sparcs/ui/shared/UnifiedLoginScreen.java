@@ -346,7 +346,7 @@ public class UnifiedLoginScreen {
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    /** Resets a text field to its placeholder state cleanly — no ghost text. */
+    // Resets a text field to its placeholder state cleanly — no ghost text.
     static void resetToPlaceholder(JTextField field, String placeholder) {
         field.setText(placeholder);
         field.setForeground(new Color(200, 190, 255, 200));
@@ -361,11 +361,6 @@ public class UnifiedLoginScreen {
         return lbl;
     }
 
-    /**
-     * Consistent styled text field — matches password field visually.
-     * Uses custom paintComponent for rounded bg + border so there's no
-     * opaque rectangle bleed-through (the ghost text artifact).
-     */
     static JTextField makeStyledTextField(String placeholder) {
         JTextField field = new JTextField() {
             private boolean focused = false;
@@ -417,7 +412,7 @@ public class UnifiedLoginScreen {
         return field;
     }
 
-    /** @deprecated Use makeStyledTextField() for text fields instead. */
+    // @deprecated Use makeStyledTextField() for text fields instead.
     static JTextField makeField(String placeholder, boolean isPassword) {
         return makeStyledTextField(placeholder);
     }

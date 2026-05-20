@@ -50,9 +50,19 @@ public class UserDashboardScreen {
         JPanel topBar = new JPanel(new BorderLayout());
         topBar.setBackground(C_BG_PANEL);
         topBar.setBorder(new EmptyBorder(14, 24, 14, 24));
-        String greeting = "HELLO, " + (state.currentUsername.isEmpty() ? "USER" : state.currentUsername.toUpperCase()) + "!";
-        topBar.add(UIFactory.lbl(greeting, Font.BOLD, 20, C_WHITE), BorderLayout.WEST);
+        JLabel greetingLbl = UIFactory.lbl("HELLO, USER!", Font.BOLD, 20, C_WHITE);
+        topBar.add(greetingLbl, BorderLayout.WEST);
         content.add(topBar, BorderLayout.NORTH);
+
+        // Update greeting with the logged-in username every time this screen is shown
+        content.addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & java.awt.event.HierarchyEvent.SHOWING_CHANGED) != 0
+                    && content.isShowing()) {
+                String name = (state.currentUsername == null || state.currentUsername.isEmpty())
+                        ? "USER" : state.currentUsername.toUpperCase();
+                greetingLbl.setText("HELLO, " + name + "!");
+            }
+        });
 
         // ── 3 Stat cards with accent bars ────────────────────────────────────
         JPanel statsRow = new JPanel(new GridLayout(1, 3, 12, 0));
@@ -500,9 +510,7 @@ public class UserDashboardScreen {
 
     private record ActivityRow(boolean isEntry, String slot, String timeLabel, String fee) {}
 
-    /**
-     * status: "PARKED" | "RESERVED" | "INACTIVE"
-     */
+    // status: "PARKED" | "RESERVED" | "INACTIVE"
     private record VehicleRFIDInfo(String rfidTag, String vehicleInfo, String status, String parkedSlot) {
         boolean isParked()   { return "PARKED".equals(status); }
         boolean isReserved() { return "RESERVED".equals(status); }
@@ -849,7 +857,7 @@ public class UserDashboardScreen {
     // Helpers
     // =========================================================================
 
-    /** Queries the DB for the current user's wallet balance. */
+    // Queries the DB for the current user's wallet balance.
     private static String fetchWalletBalance(AppState state) {
         if (state.currentUsername == null || state.currentUsername.isEmpty()) return "—";
         try {
@@ -864,7 +872,7 @@ public class UserDashboardScreen {
         }
     }
 
-    /** Updates the value label of an accentStatCard(). */
+    // Updates the value label of an accentStatCard().
     private static void setStatCardValue(JPanel card, String value) {
         // accentStatCard structure: card → [strut NORTH, body CENTER]
         // body is a BoxLayout panel: [label, strut, valueLbl, strut, subLbl]

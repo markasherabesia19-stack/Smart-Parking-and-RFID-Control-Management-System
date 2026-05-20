@@ -48,14 +48,19 @@ public class UserRFIDCardScreen {
         topBar.add(subLbl, BorderLayout.EAST);
         content.add(topBar, BorderLayout.NORTH);
 
-        // ── Load data ─────────────────────────────────────────────────────────
-        List<VehicleWithRFID> entries = loadVehiclesWithRFID(state);
+        // ── Scroll pane ref so we can replace it on reload ────────────────────
+        JScrollPane[] scrollRef = new JScrollPane[1];
+
+        Runnable reload = () -> {
+            if (scrollRef[0] != null) content.remove(scrollRef[0]);
+
+            List<VehicleWithRFID> entries = loadVehiclesWithRFID(state);
 
         // ── Centered scrollable wrapper ────────────────────────────────────────
-        JPanel cardsContainer = new JPanel();
-        cardsContainer.setLayout(new BoxLayout(cardsContainer, BoxLayout.Y_AXIS));
-        cardsContainer.setOpaque(false);
-        cardsContainer.setBorder(new EmptyBorder(32, 0, 32, 0));
+            JPanel cardsContainer = new JPanel();
+            cardsContainer.setLayout(new BoxLayout(cardsContainer, BoxLayout.Y_AXIS));
+            cardsContainer.setOpaque(false);
+            cardsContainer.setBorder(new EmptyBorder(32, 0, 32, 0));
 
         if (entries.isEmpty()) {
             JPanel emptyWrap = new JPanel(new GridBagLayout());
@@ -100,18 +105,33 @@ public class UserRFIDCardScreen {
         }
 
         // Center the cards horizontally
-        JPanel centerWrapper = new JPanel(new GridBagLayout());
-        centerWrapper.setOpaque(false);
-        centerWrapper.add(cardsContainer, new GridBagConstraints());
+            JPanel centerWrapper = new JPanel(new GridBagLayout());
+            centerWrapper.setOpaque(false);
+            centerWrapper.add(cardsContainer, new GridBagConstraints());
 
-        JScrollPane scroll = new JScrollPane(centerWrapper);
-        scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
-        scroll.getViewport().setBackground(C_BG_DARK);
-        scroll.setBorder(BorderFactory.createEmptyBorder());
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
-        scroll.getVerticalScrollBar().setBackground(C_BG_DARK);
-        content.add(scroll, BorderLayout.CENTER);
+            JScrollPane scroll = new JScrollPane(centerWrapper);
+            scroll.setOpaque(false);
+            scroll.getViewport().setOpaque(false);
+            scroll.getViewport().setBackground(C_BG_DARK);
+            scroll.setBorder(BorderFactory.createEmptyBorder());
+            scroll.getVerticalScrollBar().setUnitIncrement(16);
+            scroll.getVerticalScrollBar().setBackground(C_BG_DARK);
+
+            scrollRef[0] = scroll;
+            content.add(scroll, BorderLayout.CENTER);
+            content.revalidate();
+            content.repaint();
+        };
+
+        // ── Reload every time this screen becomes visible ─────────────────────
+        root.addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override public void componentShown(java.awt.event.ComponentEvent e) {
+                reload.run();
+            }
+        });
+
+        // Initial load
+        reload.run();
 
         root.add(content, BorderLayout.CENTER);
         return root;

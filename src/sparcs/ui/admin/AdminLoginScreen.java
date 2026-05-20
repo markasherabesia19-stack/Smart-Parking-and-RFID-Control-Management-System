@@ -18,11 +18,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.sql.SQLException;
 
-/**
- * SPARCS — Admin login screen.
- * Styled to match UserLoginScreen: gradient background, logo above card,
- * frosted card, rounded transparent input fields, same button styles.
- */
+// SPARCS — Admin login screen.
+// Styled to match UserLoginScreen: gradient background, logo above card,
+// frosted card, rounded transparent input fields, same button styles.
+
 public class AdminLoginScreen {
 
     private static BufferedImage bgImage;

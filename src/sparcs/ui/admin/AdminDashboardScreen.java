@@ -245,10 +245,6 @@ public class AdminDashboardScreen {
         statsRow.add(accentStatCard("PENDING FEES",    calculatePendingFees(),                new Color(255, 140, 66)));  // #FF8C42
     }
 
-    /**
-     * Stat card with a thin colored accent bar on top — copied from AdminSlotMapScreen.
-     * Layout: [accent bar 4px] / [value + label body]
-     */
     private static JPanel accentStatCard(String label, String value, Color accentColor) {
         JPanel card = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {

@@ -2,10 +2,9 @@ package model;
 
 import java.time.LocalDateTime;
 
-/**
- * RFID Mapping Model
- * Each RFID tag maps to a unique Vehicle, not an owner.
- */
+// RFID Mapping Model
+// Each RFID tag maps to a unique Vehicle, not an owner.
+
 public class RFIDMapping {
     private int rfidId;
     private String rfidTag;

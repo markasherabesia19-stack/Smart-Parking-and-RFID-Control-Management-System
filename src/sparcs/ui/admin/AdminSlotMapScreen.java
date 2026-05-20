@@ -12,12 +12,11 @@ import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 
-/**
- * SPARCS — Admin slot map screen.
- * Reloads slot data from DB every time the screen becomes visible,
- * AND immediately whenever state.notifySlotChange() is called
- * (e.g. right after a vehicle entry or exit).
- */
+// SPARCS — Admin slot map screen.
+// Reloads slot data from DB every time the screen becomes visible,
+// AND immediately whenever state.notifySlotChange() is called
+// (e.g. right after a vehicle entry or exit).
+
 public class AdminSlotMapScreen {
 
     public static JPanel build(CardLayout cardLayout, JPanel rootPanel, AppState state) {
@@ -130,10 +129,7 @@ public class AdminSlotMapScreen {
         statsRow.add(accentStatCard("Reserved",  String.valueOf(state.reservedSlots),  C_RESERVED));
     }
 
-    /**
-     * Stat card with a thin colored accent bar on top matching the status color.
-     * Layout: [accent bar 4px] / [value + label body]
-     */
+
     private static JPanel accentStatCard(String label, String value, Color accentColor) {
         JPanel card = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g) {

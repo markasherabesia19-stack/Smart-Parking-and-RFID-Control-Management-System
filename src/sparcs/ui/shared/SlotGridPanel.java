@@ -10,7 +10,7 @@ import java.awt.*;
 
 public class SlotGridPanel {
 
-    /** Compact mini grid (no labels). userView hides the "reserved" state. */
+    // Compact mini grid (no labels). userView hides the "reserved" state. 
     public static JPanel buildMiniGrid(AppState state, boolean userView) {
         JPanel grid = new JPanel(new GridLayout(5, 8, 4, 4));
         grid.setOpaque(false);
@@ -34,7 +34,7 @@ public class SlotGridPanel {
         return grid;
     }
 
-    /** Full labelled grid with tooltips. userView hides the "reserved" state. */
+    // Full labelled grid with tooltips. userView hides the "reserved" state.
     public static JPanel buildFullGrid(AppState state, boolean userView) {
         JPanel grid = new JPanel(new GridLayout(5, 8, 6, 6));
         grid.setOpaque(false);
@@ -128,10 +128,9 @@ public class SlotGridPanel {
         return wrapper;
     }
 
-    /**
-     * Clickable grid — each slot is a button that triggers the callback when clicked.
-     * userView hides the "reserved" state.
-     */
+    // Clickable grid — each slot is a button that triggers the callback when clicked.
+    // userView hides the "reserved" state.
+
     public static JPanel buildClickableGrid(AppState state, boolean userView, SlotClickListener listener) {
         JPanel grid = new JPanel(new GridLayout(5, 8, 6, 6));
         grid.setOpaque(false);
@@ -199,7 +198,7 @@ public class SlotGridPanel {
         return grid;
     }
 
-    /** Callback interface for slot clicks. */
+    // Callback interface for slot clicks.
     public interface SlotClickListener {
         void onSlotClicked(int slotIndex, String slotCode);
     }

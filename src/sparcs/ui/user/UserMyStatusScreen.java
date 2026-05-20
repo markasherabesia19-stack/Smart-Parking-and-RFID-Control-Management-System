@@ -424,7 +424,7 @@ public class UserMyStatusScreen {
         return card;
     }
 
-    /** Two-line stacked label block — design system: 11px 600 CAPS label, 13px body value. */
+    // Two-line stacked label block — design system: 11px 600 CAPS label, 13px body value.
     private static JPanel infoBlock(String label, String value, Color valueColor) {
         JPanel block = new JPanel();
         block.setLayout(new BoxLayout(block, BoxLayout.Y_AXIS));
@@ -446,7 +446,7 @@ public class UserMyStatusScreen {
         return block;
     }
 
-    /** Full-width fee block — green value matching revenue style, ₱ currency. */
+    // Full-width fee block — green value matching revenue style, ₱ currency.
     private static JPanel accrualBlock(String label, String value) {
         JPanel block = new JPanel(new BorderLayout(8, 0));
         block.setOpaque(false);
@@ -466,7 +466,7 @@ public class UserMyStatusScreen {
         return block;
     }
 
-    /** Computes parking fee — identical formula to AdminFeesScreen.computeFee(). */
+    //Computes parking fee — identical formula to AdminFeesScreen.computeFee().
     private static int computeLiveFee(long totalMinutes) {
         long hours = (long) Math.ceil(totalMinutes / 60.0);
         if (hours == 0) hours = 1;
@@ -475,7 +475,7 @@ public class UserMyStatusScreen {
         return 30 + (int)(hours - 1) * 20;
     }
 
-    /** Format minutes as e.g. "2h 34m" or "45m". */
+    // Format minutes as e.g. "2h 34m" or "45m".
     private static String formatDuration(int totalMinutes) {
         if (totalMinutes < 60) return totalMinutes + "m";
         int h = totalMinutes / 60;
@@ -483,12 +483,6 @@ public class UserMyStatusScreen {
         return h + "h " + m + "m";
     }
 
-    // ── Classification helpers ─────────────────────────────────────────────────
-    /**
-     * Active: car is physically parked and session is in progress.
-     * RESERVED transactions are intentionally excluded — the vehicle has not
-     * entered yet, so it must not appear in "Active Sessions".
-     */
     private static boolean isCurrentTransaction(ParkingTransaction txn) {
         // Hide if: reserved, already paid, completed, or exited
         if ("RESERVED".equalsIgnoreCase(txn.getTransactionStatus()))   return false;

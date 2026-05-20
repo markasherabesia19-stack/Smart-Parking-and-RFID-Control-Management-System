@@ -8,20 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Data Access Object for the parking_slot table.
- *
- * Real schema:
- *   CREATE TABLE parking_slot (
- *       slot_id   INT PRIMARY KEY AUTO_INCREMENT,
- *       slot_code VARCHAR(10)  NOT NULL UNIQUE,   -- e.g. "B-04"
- *       status    VARCHAR(10)  NOT NULL DEFAULT 'AVAILABLE',  -- 'AVAILABLE'|'OCCUPIED'|'RESERVED'
- *       zone      VARCHAR(2)   NOT NULL            -- e.g. "B"
- *   );
- */
 public class ParkingSlotDAO {
 
-    /** Returns all slots ordered by slot_code. */
+    // Returns all slots ordered by slot_code.
     public List<ParkingSlot> findAll() throws SQLException {
         String sql = "SELECT * FROM parking_slot ORDER BY slot_code";
         List<ParkingSlot> slots = new ArrayList<>();
@@ -35,7 +24,7 @@ public class ParkingSlotDAO {
         return slots;
     }
 
-    /** Finds a slot by its display code, e.g. "B-04". Case-insensitive. */
+    // Finds a slot by its display code, e.g. "B-04". Case-insensitive.
     public Optional<ParkingSlot> findBySlotCode(String slotCode) throws SQLException {
         String sql = "SELECT * FROM parking_slot WHERE UPPER(slot_code) = UPPER(?)";
 
@@ -50,7 +39,7 @@ public class ParkingSlotDAO {
         return Optional.empty();
     }
 
-    /** Finds a slot by its primary key. */
+    // Finds a slot by its primary key.
     public Optional<ParkingSlot> findById(int slotId) throws SQLException {
         String sql = "SELECT * FROM parking_slot WHERE slot_id = ?";
 
@@ -82,22 +71,22 @@ public class ParkingSlotDAO {
         }
     }
 
-    /** Convenience: mark a slot as OCCUPIED. */
+    // Convenience: mark a slot as OCCUPIED.
     public void occupySlot(int slotId) throws SQLException {
         updateSlotStatus(slotId, ParkingSlot.OCCUPIED);
     }
 
-    /** Convenience: mark a slot as RESERVED (shown as yellow on the slot map). */
+    // Convenience: mark a slot as RESERVED (shown as yellow on the slot map).
     public void reserveSlot(int slotId) throws SQLException {
         updateSlotStatus(slotId, ParkingSlot.RESERVED);
     }
 
-    /** Convenience: mark a slot as AVAILABLE. */
+    // Convenience: mark a slot as AVAILABLE.
     public void vacateSlot(int slotId) throws SQLException {
         updateSlotStatus(slotId, ParkingSlot.AVAILABLE);
     }
 
-    /** Count slots by status string. */
+    // Count slots by status string.
     public int countByStatus(String status) throws SQLException {
         String sql = "SELECT COUNT(*) FROM parking_slot WHERE status = ?";
 
@@ -113,7 +102,7 @@ public class ParkingSlotDAO {
     }
 
 
-    /** Finds the slot currently occupied by the given vehicle. */
+    // Finds the slot currently occupied by the given vehicle.
     public Optional<ParkingSlot> findByVehicleId(int vehicleId) throws SQLException {
         String sql = "SELECT * FROM parking_slot WHERE current_vehicle_id = ?";
 
@@ -128,7 +117,7 @@ public class ParkingSlotDAO {
         return Optional.empty();
     }
 
-    /** Sets or clears the current_vehicle_id for a slot. Pass null to clear. */
+    // Sets or clears the current_vehicle_id for a slot. Pass null to clear.
     public void updateCurrentVehicle(int slotId, Integer vehicleId) throws SQLException {
         String sql = "UPDATE parking_slot SET current_vehicle_id = ? WHERE slot_id = ?";
 

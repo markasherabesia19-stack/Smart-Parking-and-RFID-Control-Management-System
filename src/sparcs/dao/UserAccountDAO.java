@@ -71,10 +71,8 @@ public class UserAccountDAO {
         return Optional.empty();
     }
 
-    /**
-     * Finds a user by username including inactive accounts.
-     * Used for login authentication to check and show deactivation message.
-     */
+    // Finds a user by username including inactive accounts.
+    // Used for login authentication to check and show deactivation message.
     public Optional<UserAccount> findByUsernameAny(String username) throws SQLException {
         String sql = "SELECT * FROM user_account WHERE username = ?";
 
@@ -132,10 +130,7 @@ public class UserAccountDAO {
         return accounts;
     }
 
-    /**
-     * Finds all user accounts, including inactive ones.
-     * Used for admin account management.
-     */
+    // Finds all user accounts, including inactive ones. Used for admin account management.
     public List<UserAccount> findAllIncludingInactive() throws SQLException {
         String sql = "SELECT * FROM user_account ORDER BY created_at DESC";
         List<UserAccount> accounts = new ArrayList<>();
@@ -151,7 +146,8 @@ public class UserAccountDAO {
         return accounts;
     }
 
-    /**
+    // Updates the details of an existing user account.
+    public void update(UserAccount userAccount) throws SQLException {
         String sql = "UPDATE user_account SET username = ?, role = ?, email = ?, full_name = ?, is_active = ? " +
                 "WHERE user_id = ?";
 
@@ -172,10 +168,8 @@ public class UserAccountDAO {
         }
     }
 
-    /**
-     * Updates only the password for a user.
-     * Used for password change operations.
-     */
+    // Updates only the password for a user. Used for password change operations.
+
     public void updatePassword(int userId, String passwordHash) throws SQLException {
         String sql = "UPDATE user_account SET password_hash = ? WHERE user_id = ?";
 
@@ -192,10 +186,8 @@ public class UserAccountDAO {
         }
     }
 
-    /**
-     * Adds amount to the user's wallet balance (cash-in).
-     * Uses a direct SQL increment to avoid race conditions.
-     */
+    // Adds amount to the user's wallet balance (cash-in). Uses a direct SQL increment to avoid race conditions.
+
     public void addWalletBalance(int userId, BigDecimal amount) throws SQLException {
         ensureWalletBalanceColumn();
         String sql = "UPDATE user_account SET wallet_balance = wallet_balance + ? WHERE user_id = ?";
@@ -221,11 +213,6 @@ public class UserAccountDAO {
         }
     }
 
-    /**
-     * Deducts amount from the user's wallet balance (fee collection).
-     * Uses a direct SQL decrement to avoid race conditions.
-     * Throws IllegalStateException if the resulting balance would go below zero.
-     */
     public void deductWalletBalance(int userId, BigDecimal amount) throws SQLException {
         ensureWalletBalanceColumn();
         // Guard: check current balance first to give a meaningful error
@@ -259,10 +246,8 @@ public class UserAccountDAO {
         }
     }
 
-    /**
-     * Returns the current wallet balance for a user.
-     * Returns 0 if column doesn't exist or user not found.
-     */
+    // Returns the current wallet balance for a user.
+     
     public BigDecimal getWalletBalance(int userId) throws SQLException {
         ensureWalletBalanceColumn();
         String sql = "SELECT wallet_balance FROM user_account WHERE user_id = ?";

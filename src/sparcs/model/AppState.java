@@ -9,11 +9,7 @@ import static util.UIConstants.TOTAL_SLOTS;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * SPARCS - Shared application state.
- *
- * Holds the current user session, slot data, and backend services.
- */
+// SPARCS - Shared application state. Holds the current user session, slot data, and backend services.
 public class AppState {
 
     // ── Session ───────────────────────────────────────────────────────────────
@@ -31,11 +27,11 @@ public class AppState {
     public int occupiedSlots  = 0;
     public int reservedSlots  = 0;
 
-    /** 0 = available, 1 = occupied, 2 = reserved */
+    // 0 = available, 1 = occupied, 2 = reserved
     public final int[] slotData = new int[TOTAL_SLOTS];
 
     // ── Slot Map Refresh Listeners ────────────────────────────────────────────
-    /** Any panel that shows slot data registers a Runnable here to be notified on changes. */
+    // Any panel that shows slot data registers a Runnable here to be notified on changes.
     private final List<Runnable> slotChangeListeners = new ArrayList<>();
 
     public void addSlotChangeListener(Runnable listener) {
@@ -46,10 +42,7 @@ public class AppState {
         slotChangeListeners.remove(listener);
     }
 
-    /**
-     * Call this after any entry/exit operation to push the change to all
-     * registered slot-map panels immediately, without waiting for navigation.
-     */
+
     public void notifySlotChange() {
         loadSlotDataFromDB();
         for (Runnable listener : slotChangeListeners) {
@@ -62,17 +55,15 @@ public class AppState {
         loadSlotDataFromDB();
     }
 
-    /** Initialize backend services. */
+    // Initialize backend services.
     private void initServices() {
         this.authService    = new AuthenticationService();
         this.parkingService = new ParkingService();
         this.feeService     = new FeeCalculationService();
     }
 
-    /**
-     * Loads every slot's actual status from the parking_slot table into
-     * slotData[] and recalculates the three summary counts.
-     */
+    // Loads every slot's actual status from the parking_slot table into
+    // slotData[] and recalculates the three summary counts.
     public void loadSlotDataFromDB() {
         for (int i = 0; i < TOTAL_SLOTS; i++) slotData[i] = 0;
         availableSlots = TOTAL_SLOTS;
@@ -108,12 +99,12 @@ public class AppState {
         }
     }
 
-    /** Legacy alias — delegates to loadSlotDataFromDB(). */
+    // Legacy alias — delegates to loadSlotDataFromDB().
     public void initSlotData() {
         loadSlotDataFromDB();
     }
 
-    /** Clears the active session (used on sign-out). */
+    // Clears the active session (used on sign-out).
     public void clearSession() {
         currentRole        = "";
         currentUsername    = "";
@@ -126,7 +117,7 @@ public class AppState {
     public ParkingService         getParkingService() { return parkingService; }
     public FeeCalculationService  getFeeService()     { return feeService;     }
 
-    /** Set current user after successful authentication. */
+    // Set current user after successful authentication.
     public void setCurrentUser(UserAccount user) {
         this.currentUserAccount = user;
         if (user != null) {
