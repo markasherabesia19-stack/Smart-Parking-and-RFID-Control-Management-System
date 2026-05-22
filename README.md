@@ -1,8 +1,8 @@
 # SPARCS — Smart Parking and RFID Control Management System
 
-A Java desktop application that automates campus-level parking operations through RFID-based vehicle identification, real-time slot tracking, and a role-based management interface backed by a MySQL relational database.
+> A Java desktop application that automates campus-level parking operations through RFID-based vehicle identification, real-time slot tracking, and a role-based management interface backed by a MySQL relational database.
 
-Built for **CMSC 127 – File Processing and Database Systems**, Second Semester AY 2025–2026  
+Built for **CMSC 127 – File Processing and Database Systems**, Second Semester AY 2025–2026
 University of the Philippines Tacloban College
 
 ---
@@ -13,18 +13,17 @@ University of the Philippines Tacloban College
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
+- [Build & Distribution](#build--distribution)
 - [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Database Setup](#database-setup)
-  - [Environment Configuration](#environment-configuration)
-  - [Compiling](#compiling)
-  - [Running](#running)
-- [Admin Account Setup](#admin-account-setup)
+  - [Option A — End Users (Pre-built)](#option-a--end-users-pre-built)
+  - [Option B — Developers (Build from Source)](#option-b--developers-build-from-source)
+- [Default Credentials](#default-credentials)
 - [Usage](#usage)
   - [Admin Portal](#admin-portal)
   - [User Portal](#user-portal)
 - [Database Schema](#database-schema)
 - [Sample Queries](#sample-queries)
+- [Troubleshooting](#troubleshooting)
 - [Authors](#authors)
 
 ---
@@ -43,22 +42,23 @@ The system provides a centralized, database-backed platform for automated entry/
 
 ## Features
 
-**Admin Portal**
+### Admin Portal
 - Real-time dashboard with slot counts, revenue, and pending fees
-- Revenue reports
-- Interactive slot map
-- Fee schedule configuration
+- Interactive slot map across zones, color-coded by availability
 - Simulated RFID entry/exit processing via ZXing barcodes
 - Vehicle and owner registration and management
+- Fee schedule configuration and outstanding fee tracking
+- Revenue reports (today / weekly) with charts
 - Complete, read-only audit log of all system events
-- Import/export in CSV, JSON, and SQL formats
+- Account management (create, deactivate, reset passwords)
+- Import/export in CSV formats
 
-**User Portal**
-- Personalized dashboard with current slot, duration, estimated fee, and wallet balance
+### User Portal
+- Personalized dashboard: current slot, duration, estimated fee, wallet balance
 - Slot availability view by zone
 - Full parking transaction history
 - Fee schedule viewer with billing explanation
-- RFID barcode card viewer
+- Scannable RFID barcode card
 
 ---
 
@@ -70,8 +70,9 @@ The system provides a centralized, database-backed platform for automated entry/
 | GUI | Java Swing + JavaFX |
 | Database | MySQL 8.0 |
 | DB Connectivity | JDBC (`mysql-connector-j-9.6.0`) |
-| RFID Simulation | ZXing barcode library (`core-3.5.2`, `javase-3.5.2`) |
+| RFID Simulation | ZXing (`core-3.5.2`, `javase-3.5.2`) |
 | Architecture | MVC with DAO layer, CardLayout navigation |
+
 
 ---
 
@@ -79,116 +80,145 @@ The system provides a centralized, database-backed platform for automated entry/
 
 ```
 SPARCS/
-├── src/
-│   └── sparcs/          # All Java source files
-├── lib/                 # Bundled JAR dependencies
+├── src/                 # Java source files
+├── lib/                 # External JAR dependencies
 │   ├── core-3.5.2.jar
 │   ├── javase-3.5.2.jar
 │   └── mysql-connector-j-9.6.0.jar
-├── assets/              # Application assets (icons, images)
+├── assets/              # Icons, images, and UI resources
 ├── db/
-│   └── sparcs_db.sql    # Full database dump with sample data
-├── out/                 # Compiled .class files (generated)
-└── db.properties        # Database credentials (NOT committed — create manually)
+│   └── sparcs_db.sql    # Database schema and sample data
+└── out/                 # Compiled .class files (generated)
+
 ```
 
+> `out/` is generated during the build and is gitignored — do not commit it.
+
 ---
+
+## Build & Distribution
+
+```
+build.bat                # Automates compilation and packaging
+
+SPARCS_Submit/
+├── SPARCS.jar           # Runnable fat JAR with bundled dependencies
+├── run.bat              # Launch script
+├── SETUP_FIRST.bat      # First-time database setup/import script
+└── db/                  # SQL dump copy for deployment
+
+```
+
+> Distribution Notes
+- build.bat is an internal build automation script used to compile and package the application.
+- SPARCS_Submit/ contains the generated deployment-ready version of the system.
+- The distributed package is intended for Windows environments and includes all required dependencies.
+
+---
+
 
 ## Getting Started
 
-### Prerequisites
+### Option A — End Users (Pre-built)
 
-- Java Development Kit (JDK) 21 or higher
-- MySQL Server 8.0 or higher
+> ✅ Recommended if you just want to **run the application** without setting up a Java development environment.
 
-Verify your Java installation:
-```bash
-java --version
-```
+**Requirements:**
+- Windows operating system
+- [MySQL Server 8.0+](https://dev.mysql.com/downloads/mysql/) installed and running
+- Java 21+ installed ([Download JDK 21](https://www.oracle.com/java/technologies/downloads/#java21))
 
-### Database Setup
+**Steps:**
 
-1. Start your MySQL server.
-2. Create the database:
-```sql
-CREATE DATABASE sparcs_db;
-```
-3. Import the provided SQL dump:
-```bash
-mysql -u root -p sparcs_db < db/sparcs_db.sql
-```
-4. Confirm all tables were created: `user_account`, `vehicle_owner`, `vehicle`, `rfid_mapping`, `parking_slot`, `fee_schedule`, `parking_transaction`, `audit_log`.
+1. Download the pre-built distribution from Google Drive:
+    **[SPARCS Google Drive](https://drive.google.com/drive/folders/1ui39P6RkPBnmqWNa50Dlg5hVeQNWolFN)**
 
-The dump includes sample data: 40 pre-configured parking slots across 5 zones (A–E), one sample vehicle owner, one registered vehicle, and three sample parking transactions.
+2. Extract the downloaded zip to any folder.
 
-### Environment Configuration
+3. Open the extracted folder and run **`SETUP_FIRST.bat`** to import the database:
+   - It will prompt for your MySQL username and password.
+   - This creates the `sparcs_db` database and all required tables automatically.
 
-Create a file named `db.properties` in the **project root directory** (this file is gitignored — do not commit it):
+4. Open `db.properties` and confirm your MySQL credentials match:
+   ```properties
+   db.url=jdbc:mysql://localhost:3306/sparcs_db
+   db.username=your_mysql_username
+   db.password=your_mysql_password
+   db.driver=com.mysql.cj.jdbc.Driver
+   ```
 
-```properties
-db.url=jdbc:mysql://localhost:3306/sparcs_db
-db.username=root
-db.password=your_mysql_password
-db.driver=com.mysql.cj.jdbc.Driver
-```
+5. Double-click **`SPARCS.exe`** (or run **`run.bat`**) to launch the application.
 
-### Compiling
-
-**Windows (PowerShell)**
-```powershell
-New-Item -ItemType Directory -Force -Path out
-Get-ChildItem -Recurse -Filter "*.java" -Path src | ForEach-Object {
-  javac -d out -cp "lib/*;src/sparcs;assets" $_.FullName
-}
-Copy-Item "db.properties" "out/db.properties" -Force
-```
-
-**Linux / macOS**
-```bash
-mkdir -p out
-find src -name "*.java" | xargs javac -d out -cp "lib/*:src/sparcs:assets"
-cp db.properties out/db.properties
-```
-
-### Running
-
-**Windows (PowerShell)**
-```powershell
-java -cp "out;lib/*;assets" SPARCS
-```
-
-**Linux / macOS**
-```bash
-java -cp "out:lib/*:assets" SPARCS
-```
-
-The application launches with a splash screen and animation, then presents the **Role Picker** screen.
+> ⚠️ Always run the app from **within the extracted folder**, not from inside the zip archive.
 
 ---
 
-## Admin Account Setup
+### Option B — Developers (Build from Source)
 
-Admin accounts are not created through the GUI. Use the bundled `HashGenerator` utility to generate a secure password hash, then insert the record directly into the database.
+> ✅ Recommended if you want to **modify, contribute, or build** the project yourself.
 
-**Step 1 — Generate a password hash**
+**Requirements:**
+- Windows operating system
+- [JDK 21+](https://www.oracle.com/java/technologies/downloads/#java21) installed and on your `PATH`
+- [MySQL Server 8.0+](https://dev.mysql.com/downloads/mysql/) installed and running
+- Git
 
-Windows:
-```powershell
-javac -d out -cp "lib/*;src/sparcs;assets" src/sparcs/HashGenerator.java
-java -cp "out;lib/*" HashGenerator your_password
-```
+**Steps:**
 
-Linux / macOS:
-```bash
-javac -d out -cp "lib/*:src/sparcs:assets" src/sparcs/HashGenerator.java
-java -cp "out:lib/*" HashGenerator your_password
-```
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/markasherabesia19-stack/smart-parking-and-rfid-con.git
+   cd smart-parking-and-rfid-con
+   ```
 
-**Step 2 — Insert the admin record into MySQL**
-```sql
-INSERT INTO user_account (username, password_hash, role, email)
-VALUES ('admin_username', '<generated_hash>', 'ADMIN', 'admin@sparcs.com');
-```
+2. Create a `db.properties` file in the **project root** (this file is gitignored — do not commit it):
+   ```properties
+   db.url=jdbc:mysql://localhost:3306/sparcs_db
+   db.username=your_mysql_username
+   db.password=your_mysql_password
+   db.driver=com.mysql.cj.jdbc.Driver
+   ```
+
+3. Import the database:
+   ```bash
+   mysql -u root -p sparcs_db < db/sparcs_db.sql
+   ```
+
+4. Run the build script:
+   ```bat
+   build.bat
+   ```
+   This will:
+   - Clean and recompile all source files
+   - Merge all dependencies into a fat JAR
+   - Copy assets and `db.properties`
+   - Produce a ready-to-run **`SPARCS_Submit/`** folder containing:
+     - `SPARCS.jar` — the application
+     - `run.bat` — launch script
+     - `SETUP_FIRST.bat` — database import helper
+     - `db/` — SQL dump
+
+5. Launch the application:
+   ```bat
+   cd SPARCS_Submit
+   java -jar SPARCS.jar
+   ```
+   Or simply double-click **`run.bat`** inside `SPARCS_Submit/`.
+
+> 💡 To produce a `SPARCS.exe`, wrap `SPARCS.jar` using [Launch4j](https://launch4j.sourceforge.net/) and point it to the JAR as the entry point.
+
+---
+
+## Default Credentials
+
+After the first successful database setup, log in using the embedded administrator account:
+
+| Field | Value |
+|---|---|
+| Username | `admin1` |
+| Password | `cue` |
+
+> ⚠️ It is **strongly recommended** to change the default password immediately after the first login via the **Manage Accounts** screen.
 
 ---
 
@@ -199,13 +229,14 @@ VALUES ('admin_username', '<generated_hash>', 'ADMIN', 'admin@sparcs.com');
 | Screen | Description |
 |---|---|
 | Dashboard | Real-time counts of available/occupied slots, today's revenue, and pending fees |
-| Slot Map | 40-slot interactive grid across Zones A–E; green = available, red = occupied |
+| Slot Map | 40-slot interactive grid across Zones A–E; green = available, red = occupied, orange = reserved |
 | Entry / Exit | Enter or scan a vehicle's RFID/barcode to process entry or exit automatically |
 | Vehicles | Searchable table of all registered vehicles; supports edit |
 | Register Vehicle | Add a new owner and vehicle simultaneously |
-| Fee Management | Configure fee schedules and view outstanding unpaid fees |
-| Reports | Revenue summaries (today/week/month), weekly chart, top users |
+| Fee Management | Configure fee schedules; view outstanding unpaid fees |
+| Reports | Revenue summaries (today/week/month), weekly chart, average duration, top users |
 | Audit Log | Read-only chronological feed of all system events |
+| Manage Accounts | Create, deactivate, and reset passwords for all user accounts |
 | Import / Export | Backup and restore data in CSV, JSON, or SQL format |
 
 ### User Portal
@@ -216,86 +247,31 @@ VALUES ('admin_username', '<generated_hash>', 'ADMIN', 'admin@sparcs.com');
 | Slot View | Available and occupied slot counts by zone |
 | History | Chronological log of all past parking sessions |
 | Fee Schedule | Current rates with a billing logic explainer |
-| RFID Card | Scannable barcode for the registered vehicle |
+| RFID Card | Scannable barcode for the registered vehicle (used by admin for entry/exit simulation) |
 
-New users may register directly from the User Login screen.
-
----
-
-## Database Schema
-
-```
-VEHICLE_OWNER   (owner_id PK, user_id FK, full_name, phone_number, address, ...)
-VEHICLE         (vehicle_id PK, plate_number, owner_id FK, vehicle_type, color, model,
-                 parking_status, is_active, ...)
-RFID_MAPPING    (rfid_id PK, rfid_tag_number, vehicle_id FK, status, ...)
-USER_ACCOUNT    (user_id PK, username, password_hash, role, email, wallet_balance, ...)
-PARKING_SLOT    (slot_id PK, slot_code, status, current_vehicle_id, zone, ...)
-FEE_SCHEDULE    (fee_id PK, fee_name, fee_per_hour, daily_rate, grace_period_minutes, ...)
-PARKING_TRANS.  (transaction_id PK, vehicle_id FK, slot_id FK, entry_time, exit_time,
-                 duration_minutes, calculated_fee, payment_status, status, ...)
-AUDIT_LOG       (log_id PK, user_id FK, action, resource_type, resource_id,
-                 changes_log, ip_address, created_at)
-```
-
-All schemas are in 3NF. The database is named `sparcs_db` and runs on MySQL 8.0.
+New users may register directly from the Login Screen. Self-registered accounts are automatically assigned the **USER** role. Administrator accounts can only be created through the **Manage Accounts** screen by an existing admin.
 
 ---
 
-## Sample Queries
-
-**Vehicle entry sequence**
-```sql
--- 1. Look up vehicle by RFID tag
-SELECT v.* FROM vehicle v
-JOIN rfid_mapping r ON v.vehicle_id = r.vehicle_id
-WHERE r.rfid_tag_number = ? AND r.status = 'Active';
-
--- 2. Find an available slot
-SELECT slot_id FROM parking_slot WHERE status = 'AVAILABLE' LIMIT 1;
-
--- 3. Record the transaction
-INSERT INTO parking_transaction (vehicle_id, slot_id, entry_time, payment_status, status)
-VALUES (?, ?, NOW(), 'PENDING', 'IN_PROGRESS');
-
--- 4. Mark slot as occupied
-UPDATE parking_slot SET status = 'OCCUPIED', current_vehicle_id = ?, entry_time = NOW()
-WHERE slot_id = ?;
-
--- 5. Update vehicle parking status
-UPDATE vehicle SET parking_status = 'Parked' WHERE vehicle_id = ?;
-```
-
-**Revenue report**
-```sql
-SELECT DATE(entry_time) AS parking_date,
-       COUNT(*) AS total_transactions,
-       SUM(calculated_fee) AS total_revenue
-FROM parking_transaction
-WHERE status = 'COMPLETED'
-GROUP BY DATE(entry_time)
-ORDER BY parking_date DESC;
-```
-
-All database operations use JDBC prepared statements to prevent SQL injection.
-
----
 
 ## Troubleshooting
 
-| Problem | Check |
+| Problem | Solution |
 |---|---|
-| App won't launch | Confirm `java --version` returns 21+ |
-| DB connection error | Confirm MySQL is running and `db.properties` credentials are correct |
-| Missing tables | Re-run the SQL dump import |
-| `ClassNotFoundException` | Confirm all JARs are in `lib/` and the classpath is correct |
-| `out/` directory missing | Create it manually before compiling |
+| App won't launch | Confirm Java 21+ is installed (`java --version`) and that you're running from inside the extracted folder |
+| DB connection error | Confirm MySQL is running and that `db.properties` credentials are correct |
+| Missing tables | Re-run `SETUP_FIRST.bat` or re-import `db/sparcs_db.sql` manually |
+| Default admin not working | Open MySQL Workbench, connect to `sparcs_db`, and confirm a row with `role = 'ADMIN'` exists in `user_account` |
+| `build.bat` fails | Confirm JDK 21+ is on your `PATH` and that all JARs are present in `lib/` |
 
 ---
 
-## Authors
+## Contributors
 
-**Abesia, Mark Asher G. · Adona, Cueshe Alyannah E. · Balano, Marriane A.**  
-CMSC 127 – File Processing and Database Systems  
+-  **Abesia, Mark Asher G.** - BSCS 2
+-  **Adona, Cueshe Alyannah E.** - BSCS 2
+-  **Balano, Marriane A.** - BSCS 2
+
+**CMSC 127 – File Processing and Database Systems**  
 University of the Philippines Tacloban College  
 Second Semester AY 2025–2026
